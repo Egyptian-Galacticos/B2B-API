@@ -1,2 +1,2 @@
-npx lint-staged
 vendor/bin/pint
+npx lint-staged
