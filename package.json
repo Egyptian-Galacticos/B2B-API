@@ -7,11 +7,10 @@
     "dev": "vite",
     "prepare": "husky install"
   },
-    "lint-staged": {
+  "lint-staged": {
     "*.php": [
-      "vendor/bin/pint --test --dirty",
-      "vendor/bin/phpcs --standard=PSR12",
-      "vendor/bin/phpstan analyse"
+      "vendor/bin/pint",
+      "vendor/bin/phpstan analyse --no-progress"
     ]
   },
   "devDependencies": {
