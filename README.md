@@ -1,13 +1,129 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# B2B API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A modern B2B (Business-to-Business) API application built with Laravel framework, featuring JWT authentication and professional development workflows.
 
-## About Laravel
+## 🚀 Features
+
+- **JWT Authentication**: Secure token-based authentication system
+- **RESTful API**: Clean and consistent API endpoints
+- **Code Quality**: Laravel Pint formatting and PHPStan static analysis
+- **Pre-commit Hooks**: Automated code quality checks before commits
+- **Professional Setup**: Modern development workflow with Husky and lint-staged
+
+## 🛠️ Technologies
+
+- **Laravel 12**: Latest Laravel framework
+- **JWT Auth**: Token-based authentication
+- **Laravel Pint**: Code formatting
+- **PHPStan**: Static analysis
+- **Husky**: Git hooks
+- **SQLite**: Database (development)
+
+## 📋 Requirements
+
+- PHP >= 8.2
+- Composer
+- Node.js & npm
+- SQLite (for development)
+
+## 🔧 Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Egyptian-Galacticos/B2B-API.git
+   cd B2B-API
+   ```
+
+2. **Install PHP dependencies**
+   ```bash
+   composer install
+   ```
+
+3. **Install Node.js dependencies**
+   ```bash
+   npm install
+   ```
+
+4. **Environment setup**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   php artisan jwt:secret
+   ```
+
+5. **Database setup**
+   ```bash
+   touch database/database.sqlite
+   php artisan migrate
+   ```
+
+6. **Install Git hooks**
+   ```bash
+   npm run prepare
+   ```
+
+## 🚀 Usage
+
+### Start the development server
+```bash
+php artisan serve
+```
+
+### API Endpoints
+
+#### Authentication
+- `POST /api/register` - Register a new user
+- `POST /api/login` - Login user
+- `POST /api/logout` - Logout user (requires auth)
+- `POST /api/refresh` - Refresh JWT token (requires auth)
+- `GET /api/me` - Get authenticated user (requires auth)
+
+## 🔒 Authentication
+
+This API uses JWT (JSON Web Tokens) for authentication. Include the token in the Authorization header:
+
+```bash
+Authorization: Bearer {your-jwt-token}
+```
+
+## 🧪 Testing
+
+```bash
+# Run tests
+php artisan test
+
+# Run with coverage
+php artisan test --coverage
+```
+
+## 📝 Code Quality
+
+This project uses automated code quality tools:
+
+- **Laravel Pint**: Automatic code formatting
+- **PHPStan**: Static analysis for bug detection
+- **Pre-commit hooks**: Automatic checks before commits
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Commit using conventional commits
+5. Push to the branch
+6. Open a Pull Request
+
+## 📄 License
+
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## 👥 Team
+
+Developed by [Egyptian Galacticos](https://github.com/Egyptian-Galacticos)
+
+---
+
+**Built with ❤️ using Laravel Framework**
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
