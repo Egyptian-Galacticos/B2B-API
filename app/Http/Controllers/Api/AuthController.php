@@ -7,6 +7,8 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
+use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
@@ -46,6 +48,13 @@ class AuthController extends Controller
      *
      * Register a new user account and receive a JWT token.
      *
+     * @response array{
+     * message: string,
+     * user: User,
+     * access_token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.....',
+     * token_type: 'bearer',
+     * expires_in: int
+     * }
      *
      * @unauthenticated
      *
@@ -102,17 +111,15 @@ class AuthController extends Controller
      * Invalidate the current JWT token to log out the user.
      *
      *
-     * @response 200 {
+     * @response  {
      *   "message": "Successfully logged out"
      * }
-     * @response 401 {
+     * @response  {
      *   "error": "Token not provided"
      * }
-     * @response 500 {
+     * @response  {
      *   "error": "Failed to logout"
      * }
-     *
-     * @authenticated
      */
     public function logout(): JsonResponse
     {
@@ -137,15 +144,14 @@ class AuthController extends Controller
      * Get a new JWT token using the current token.
      *
      *
-     * @response 200 {
+     * @response  {
      *   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
      *   "token_type": "bearer",
      *   "expires_in": 3600
      * }
-     * @response 401 {
-     *   "error": "Token is invalid"
+     * @response  {
+     *   "error": "Failed to refresh token"
      * }
-     * @response JWTAuth
      */
     public function refresh(): JsonResponse
     {
@@ -157,9 +163,9 @@ class AuthController extends Controller
                 'token_type' => 'bearer',
                 'expires_in' => config('jwt.ttl') * 60,
             ]);
-        } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+        } catch (TokenInvalidException $e) {
             return response()->json(['error' => 'Token is invalid'], 401);
-        } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+        } catch (TokenExpiredException $e) {
             return response()->json(['error' => 'Token has expired'], 401);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Token refresh failed'], 401);
