@@ -11,8 +11,23 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
+    /**
+     * User login
+     *
+     * Authenticate user with email and password to receive a JWT token.
+     *
+     *
+     * @unauthenticated
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function login(Request $request): JsonResponse
     {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
         $credentials = $request->only('email', 'password');
 
         if (! $token = JWTAuth::attempt($credentials)) {
@@ -26,6 +41,16 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * User registration
+     *
+     * Register a new user account and receive a JWT token.
+     *
+     *
+     * @unauthenticated
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function register(Request $request): JsonResponse
     {
         $validatedData = $request->validate([
@@ -51,6 +76,15 @@ class AuthController extends Controller
         ], 201);
     }
 
+    /**
+     * Get authenticated user
+     *
+     * Retrieve the currently authenticated user's information.
+     *
+     * @response User
+     *
+     * @headers Authorization Bearer {token}
+     */
     public function me(): JsonResponse
     {
         try {
@@ -62,6 +96,24 @@ class AuthController extends Controller
         }
     }
 
+    /**
+     * User logout
+     *
+     * Invalidate the current JWT token to log out the user.
+     *
+     *
+     * @response 200 {
+     *   "message": "Successfully logged out"
+     * }
+     * @response 401 {
+     *   "error": "Token not provided"
+     * }
+     * @response 500 {
+     *   "error": "Failed to logout"
+     * }
+     *
+     * @authenticated
+     */
     public function logout(): JsonResponse
     {
         $token = JWTAuth::getToken();
@@ -79,6 +131,22 @@ class AuthController extends Controller
         }
     }
 
+    /**
+     * Refresh JWT token
+     *
+     * Get a new JWT token using the current token.
+     *
+     *
+     * @response 200 {
+     *   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+     *   "token_type": "bearer",
+     *   "expires_in": 3600
+     * }
+     * @response 401 {
+     *   "error": "Token is invalid"
+     * }
+     * @response JWTAuth
+     */
     public function refresh(): JsonResponse
     {
         try {
