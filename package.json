@@ -11,9 +11,10 @@
   },
   "lint-staged": {
     "*.php": [
-      "vendor/bin/pint",
-      "vendor/bin/phpstan analyse --no-progress"
-    ]
+    "php vendor/bin/pint --test",
+    "php vendor/bin/phpstan analyse --no-progress",
+    "git add"
+  ]
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
