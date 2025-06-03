@@ -15,15 +15,16 @@ return new class extends Migration
             $table->id();
             $table->foreignId('contract_id')
                 ->constrained('contracts')
-                ->onDelete('cascade');
-            $table->enum('type', ['escrow_release', 'direct', 'refund'])->default('direct');
-            $table->enum('status', ['pending', 'completed', 'failed'])->default('pending');
+                ->onDelete('cascade')->index();
+            $table->enum('type', ['escrow_release', 'direct', 'refund'])->default('direct')->index();
+            $table->enum('status', ['pending', 'completed', 'failed'])->default('pending')->index();
             $table->decimal('amount', 15, 2);
-            $table->string('currency', 3)->default('USD');
+            $table->string('currency', 3)->default('USD')->index();
             $table->string('payment_method')->nullable();
-            $table->string('transaction_id')->nullable()->unique();
+            $table->string('transaction_id')->nullable();
+            $table->string('transaction_id')->whenNotNull()->unique();
             $table->json('metadata')->nullable();
-            $table->timestamp('processed_at')->nullable();
+            $table->timestamp('processed_at')->nullable()->index();
             $table->timestamps();
             $table->softDeletes();
         });

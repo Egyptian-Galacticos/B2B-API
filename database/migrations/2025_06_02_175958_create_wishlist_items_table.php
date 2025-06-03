@@ -15,11 +15,13 @@ return new class extends Migration
             $table->id();
             $table->foreignId('wishlist_id')
                 ->constrained('wishlists')
-                ->onDelete('cascade');
+                ->onDelete('cascade')
+                ->index();
             $table->foreignId('product_id')
                 ->constrained('products')
-                ->onDelete('cascade');
-            $table->timestamp('added_at')->useCurrent();
+                ->onDelete('cascade')
+                ->index();
+            $table->timestamp('added_at')->useCurrent()->index();
             $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();

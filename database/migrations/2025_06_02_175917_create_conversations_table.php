@@ -13,15 +13,16 @@ return new class extends Migration
     {
         Schema::create('conversations', function (Blueprint $table) {
             $table->id();
-            $table->enum('type', ['direct', 'contract'])->default('direct');
+            $table->enum('type', ['direct', 'contract'])->default('direct')->index();
             $table->string('title')->nullable();
             $table->json('participant_ids');
             $table->foreignId('last_message_id')
                 ->nullable()
                 ->constrained('messages')
-                ->nullOnDelete();
-            $table->timestamp('last_activity_at')->nullable();
-            $table->boolean('is_active')->default(true);
+                ->nullOnDelete()
+                ->index();
+            $table->timestamp('last_activity_at')->nullable()->index();
+            $table->boolean('is_active')->default(true)->index();
             $table->timestamps();
             $table->softDeletes();
         });

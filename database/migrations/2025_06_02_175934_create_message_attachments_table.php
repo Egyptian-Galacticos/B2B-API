@@ -15,13 +15,14 @@ return new class extends Migration
             $table->id();
             $table->foreignId('message_id')
                 ->constrained('messages')
-                ->onDelete('cascade');
+                ->onDelete('cascade')
+                ->index();
             $table->string('file_name');
             $table->string('file_url');
-            $table->string('file_type');
+            $table->string('file_type')->index();
             $table->unsignedBigInteger('file_size');
             $table->string('thumbnail_url')->nullable();
-            $table->timestamp('uploaded_at')->useCurrent();
+            $table->timestamp('uploaded_at')->useCurrent()->index();
             $table->timestamps();
             $table->softDeletes();
         });
