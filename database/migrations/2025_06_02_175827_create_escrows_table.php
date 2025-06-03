@@ -15,11 +15,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('contract_id')
                 ->constrained('contracts')
-                ->onDelete('cascade');
+                ->onDelete('cascade')
+                ->index();
             $table->enum('status', ['pending', 'released', 'refunded'])
-                ->default('pending');
+                ->default('pending')->index();
             $table->decimal('amount', 15, 2);
-            $table->string('currency', 3)->default('USD');
+            $table->string('currency', 3)->default('USD')->index();
             $table->timestamps();
             $table->softDeletes();
         });

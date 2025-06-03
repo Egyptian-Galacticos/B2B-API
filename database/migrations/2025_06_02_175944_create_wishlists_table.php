@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')
                 ->constrained('users')
-                ->onDelete('cascade');
+                ->onDelete('cascade')->index();
             $table->unique('user_id'); // each user can have only one wishlist
             $table->timestamps();
             $table->softDeletes();
