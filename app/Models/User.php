@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
@@ -12,7 +13,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'email',
@@ -21,7 +22,7 @@ class User extends Authenticatable implements JWTSubject
         'last_name',
         'phone_number',
         'is_email_verified',
-        'is_active',
+        'status',
         'profile_image_url',
         'last_login_at',
     ];
@@ -68,7 +69,7 @@ class User extends Authenticatable implements JWTSubject
      */
     public function isSuspended(): bool
     {
-        return $this->is_active === 'suspended';
+        return $this->status === 'suspended';
     }
 
     /**
