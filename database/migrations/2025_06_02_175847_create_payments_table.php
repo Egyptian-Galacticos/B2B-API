@@ -13,9 +13,12 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('contract_id')
-                ->constrained('contracts')
-                ->onDelete('cascade')->index();
+            $table->unsignedBigInteger('contract_id')->index();
+
+            $table->foreign('contract_id', 'fk_payments_contract_id')
+                ->references('id')
+                ->on('contracts')
+                ->onDelete('cascade');
             $table->enum('type', ['escrow_release', 'direct', 'refund'])->default('direct')->index();
             $table->enum('status', ['pending', 'completed', 'failed'])->default('pending')->index();
             $table->decimal('amount', 15, 2);

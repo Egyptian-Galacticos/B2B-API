@@ -13,9 +13,11 @@ return new class extends Migration
     {
         Schema::create('wishlists', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')
-                ->constrained('users')
-                ->onDelete('cascade')->index();
+            $table->unsignedBigInteger('user_id')->index();
+            $table->foreign('user_id', 'fk_wishlists_user_id')
+                ->references('id')
+                ->on('users')
+                ->onDelete('cascade');
             $table->unique('user_id'); // each user can have only one wishlist
             $table->timestamps();
             $table->softDeletes();

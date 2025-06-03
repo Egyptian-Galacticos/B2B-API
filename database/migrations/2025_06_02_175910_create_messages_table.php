@@ -13,14 +13,16 @@ return new class extends Migration
     {
         Schema::create('messages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('conversation_id')
-                ->constrained('conversations')
-                ->onDelete('cascade')
-                ->index();
-            $table->foreignId('sender_id')
-                ->constrained('users')
-                ->onDelete('cascade')
-                ->index();
+            $table->foreignId('conversation_id')->index();
+            $table->foreign('conversation_id', 'fk_messages_conversation_id')
+                ->references('id')
+                ->on('conversations')
+                ->onDelete('cascade');
+            $table->foreignId('sender_id')->index();
+            $table->foreign('sender_id', 'fk_messages_sender_id')
+                ->references('id')
+                ->on('users')
+                ->onDelete('cascade');
             $table->text('content')->nullable();
             $table->enum('type', ['text', 'image', 'file'])->default('text')->index();
             $table->timestamp('sent_at')->useCurrent()->index();

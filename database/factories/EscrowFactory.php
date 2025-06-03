@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Contract;
 use App\Models\Escrow;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -20,7 +21,7 @@ class EscrowFactory extends Factory
     public function definition(): array
     {
         return [
-            // 'contract_id' => Contract::factory(),
+            'contract_id' => Contract::factory(),
             'status' => $this->faker->randomElement(['pending', 'released', 'refunded']),
             'amount' => $this->faker->randomFloat(2, 100, 50000),
             'currency' => 'USD',
