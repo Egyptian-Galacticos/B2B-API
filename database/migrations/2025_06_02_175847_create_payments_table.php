@@ -21,8 +21,7 @@ return new class extends Migration
             $table->decimal('amount', 15, 2);
             $table->string('currency', 3)->default('USD')->index();
             $table->string('payment_method')->nullable();
-            $table->string('transaction_id')->nullable();
-            $table->string('transaction_id')->whenNotNull()->unique();
+            $table->string('transaction_id')->nullable()->unique();
             $table->json('metadata')->nullable();
             $table->timestamp('processed_at')->nullable()->index();
             $table->timestamps();
