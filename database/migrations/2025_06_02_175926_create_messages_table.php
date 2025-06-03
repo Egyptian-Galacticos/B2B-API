@@ -15,14 +15,16 @@ return new class extends Migration
             $table->id();
             $table->foreignId('conversation_id')
                 ->constrained('conversations')
-                ->onDelete('cascade');
+                ->onDelete('cascade')
+                ->index();
             $table->foreignId('sender_id')
                 ->constrained('users')
-                ->onDelete('cascade');
+                ->onDelete('cascade')
+                ->index();
             $table->text('content')->nullable();
-            $table->enum('type', ['text', 'image', 'file'])->default('text');
-            $table->timestamp('sent_at')->useCurrent();
-            $table->boolean('is_read')->default(false);
+            $table->enum('type', ['text', 'image', 'file'])->default('text')->index();
+            $table->timestamp('sent_at')->useCurrent()->index();
+            $table->boolean('is_read')->default(false)->index();
             $table->timestamps();
             $table->softDeletes();
         });

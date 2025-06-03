@@ -24,6 +24,7 @@ return new class extends Migration
             $table->enum('type', ['corporation', 'llc', 'partnership', 'sole_proprietorship', 'other'])->nullable(); // company types to be reviewed and confirmed**
             $table->boolean('is_verified')->default(false);
             $table->timestamps();
+            $table->softDeletes();
 
         });
     }
