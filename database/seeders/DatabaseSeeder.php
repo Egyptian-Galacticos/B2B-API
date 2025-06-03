@@ -11,6 +11,7 @@ use App\Models\QuoteItem;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
@@ -20,12 +21,19 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // User::factory(10)->create();
+        $roles = ['buyer', 'seller', 'admin'];
+        foreach ($roles as $role) {
+            if (! Role::where('name', $role)->exists()) {
+                Role::create(['name' => $role]);
+            }
+        }
 
-        User::factory()->create([
+        $user = User::factory()->create([
             'first_name' => 'Test',
             'last_name' => 'User',
             'email' => 'test@example.com',
         ]);
+        $user->assignRole('admin');
 
         // Create categories with subcategories
         $category = Category::factory()->create();
