@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\ResetPasswordRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -23,20 +27,24 @@ class AuthController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function login(Request $request): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
-
         $credentials = $request->only('email', 'password');
 
         if (! $token = JWTAuth::attempt($credentials)) {
-            return response()->json(['error' => 'Unauthorised'], 401);
+            return response()->json([
+                'error' => 'Invalid credentials',
+                'message' => 'The provided email or password is incorrect.',
+            ], 401);
         }
 
+        // Update last login timestamp
+        $user = JWTAuth::user();
+        $user->update(['last_login_at' => now()]);
+
         return response()->json([
+            'message' => 'Login successful',
+            'user' => new UserResource($user),
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => config('jwt.ttl') * 60,
@@ -60,25 +68,28 @@ class AuthController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function register(Request $request): JsonResponse
+    public function register(RegisterRequest $request): JsonResponse
     {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
+        $validatedData = $request->validated();
 
         $user = User::create([
-            'name' => $validatedData['name'],
+            'first_name' => $validatedData['first_name'],
+            'last_name' => $validatedData['last_name'],
             'email' => $validatedData['email'],
             'password' => Hash::make($validatedData['password']),
+            'phone_number' => $validatedData['phone_number'] ?? null,
+            'profile_image_url' => $validatedData['profile_image_url'] ?? null,
+            'is_email_verified' => false, // Will be verified later via email
+            'status' => 'active',
+            'last_login_at' => now(),
         ]);
-
+        // Assign role if provided
+        $user->assignRole($validatedData['role']);
         $token = JWTAuth::fromUser($user);
 
         return response()->json([
-            'message' => 'Registered successfully',
-            'user' => $user,
+            'message' => 'Registration successful',
+            'user' => new UserResource($user),
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => config('jwt.ttl') * 60,
@@ -94,12 +105,12 @@ class AuthController extends Controller
      *
      * @headers Authorization Bearer {token}
      */
-    public function me(): JsonResponse
+    public function me()
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
 
-            return response()->json($user);
+            return new UserResource($user);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
@@ -170,5 +181,56 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => 'Token refresh failed'], 401);
         }
+    }
+
+    /**
+     * Reset user password
+     *
+     * Reset the user's password using a reset token.
+     *
+     * @response  {
+     *   "message": "Password has been successfully reset",
+     *   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+     *   "token_type": "bearer",
+     *   "expires_in": 3600,
+     *   "user": User
+     * }
+     * @response  {
+     *   "error": "Failed to reset password"
+     * }
+     */
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+        // Validate the request
+        $validatedData = $request->validated();
+
+        // Use Laravel's Password facade to handle the reset
+        $status = Password::reset(
+            [
+                'email' => $validatedData['email'],
+                'password' => $validatedData['password'],
+                'password_confirmation' => $validatedData['password_confirmation'],
+                'token' => $validatedData['token'],
+            ],
+            function ($user, $password) {
+                $user->password = Hash::make($password);
+                $user->save();
+            }
+        );
+        $token = JWTAuth::attempt([
+            'email' => $validatedData['email'],
+            'password' => $validatedData['password'],
+        ]);
+
+        if ($status === Password::PASSWORD_RESET) {
+            return response()->json([
+                'message' => 'Password has been successfully reset',
+                'access_token' => $token,
+                'token_type' => 'bearer',
+                'expires_in' => config('jwt.ttl') * 60,
+            ]);
+        }
+
+        return response()->json(['error' => 'Failed to reset password'], 400);
     }
 }
