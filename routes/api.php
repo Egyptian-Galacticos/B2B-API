@@ -9,7 +9,7 @@ Route::prefix('auth')->group(function () {
     Route::post('register', [AuthController::class, 'register'])->name('auth.register');
     Route::get('me', [AuthController::class, 'me'])->name('auth.me');
     Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
-    Route::post('refresh', [AuthController::class, 'refresh'])->name('auth.refresh');
+    Route::post('refresh/{token}', [AuthController::class, 'refresh'])->name('auth.refresh');
 })->middleware('is_email_verified');
 
 Route::get('/email/verify/{id}', [AuthController::class, 'verifyEmail'])->name('api.verification.verify');
