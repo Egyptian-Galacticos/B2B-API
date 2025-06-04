@@ -16,13 +16,12 @@ class ProductController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return AnonymousResourceCollection
      *
      * @response ProductResource[]
      *
      * @unauthenticated
      */
-    public function index()
+    public function index(): AnonymousResourceCollection
     {
         $products = Product::with(['seller', 'category'])
             ->where('is_active', true)
