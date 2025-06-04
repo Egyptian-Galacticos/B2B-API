@@ -10,8 +10,11 @@ Route::prefix('auth')->group(function () {
     Route::get('me', [AuthController::class, 'me'])->name('auth.me');
     Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
     Route::post('refresh', [AuthController::class, 'refresh'])->name('auth.refresh');
-    Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('auth.reset-password');
-});
+})->middleware('is_email_verified');
 
+Route::get('/email/verify/{id}', [AuthController::class, 'verifyEmail'])->name('api.verification.verify');
+Route::get('/email/resend/{id}', [AuthController::class, 'resendVerificationEmail'])->name('api.verification.resend');
+Route::post('/password/forgot', [AuthController::class, 'sendResetLink'])->name('api.password.forgot');
+Route::post('/password/reset', [AuthController::class, 'resetPassword'])->name('api.password.reset');
 Route::resource('products', ProductController::class)
     ->only(['index', 'show', 'store', 'update', 'destroy']);
