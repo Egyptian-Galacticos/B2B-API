@@ -8,20 +8,28 @@ use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Notifications\VerifyEmail;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
+    use ApiResponse;
+
     /**
      * User login
      *
      * Authenticate user with email and password to receive a JWT token.
      *
+     * @bodyParam  email anas@anas.com
+     * @bodyParam string $password User's password.
      *
      * @unauthenticated
      *
@@ -32,23 +40,20 @@ class AuthController extends Controller
         $credentials = $request->only('email', 'password');
 
         if (! $token = JWTAuth::attempt($credentials)) {
-            return response()->json([
-                'error' => 'Invalid credentials',
-                'message' => 'The provided email or password is incorrect.',
-            ], 401);
+
+            return $this->apiResponse(null, 'Invalid credentials', 401);
         }
 
         // Update last login timestamp
         $user = JWTAuth::user();
         $user->update(['last_login_at' => now()]);
 
-        return response()->json([
-            'message' => 'Login successful',
+        return $this->apiResponse([
             'user' => new UserResource($user),
             'access_token' => $token,
-            'token_type' => 'bearer',
             'expires_in' => config('jwt.ttl') * 60,
-        ]);
+        ], 'Login successful', 200);
+
     }
 
     /**
@@ -84,8 +89,9 @@ class AuthController extends Controller
             'last_login_at' => now(),
         ]);
         // Assign role if provided
-        $user->assignRole($validatedData['role']);
+        $user->assignRole($validatedData['roles']);
         $token = JWTAuth::fromUser($user);
+        $user->notify(new VerifyEmail);
 
         return response()->json([
             'message' => 'Registration successful',
@@ -199,38 +205,113 @@ class AuthController extends Controller
      *   "error": "Failed to reset password"
      * }
      */
-    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    public function verifyEmail(Request $request, $id): JsonResponse
     {
-        // Validate the request
-        $validatedData = $request->validated();
+        if (! $request->hasValidSignature()) {
+            return response()->json(['error' => 'Invalid or expired verification link'], 400);
+        }
+        $user = User::findOrFail($id);
+        if ($user->is_email_verified) {
+            return response()->json(['message' => 'Email already verified'], 200);
+        }
+        $user->is_email_verified = true;
+        $user->save();
 
-        // Use Laravel's Password facade to handle the reset
-        $status = Password::reset(
-            [
-                'email' => $validatedData['email'],
-                'password' => $validatedData['password'],
-                'password_confirmation' => $validatedData['password_confirmation'],
-                'token' => $validatedData['token'],
-            ],
-            function ($user, $password) {
-                $user->password = Hash::make($password);
-                $user->save();
-            }
-        );
-        $token = JWTAuth::attempt([
-            'email' => $validatedData['email'],
-            'password' => $validatedData['password'],
+        return response()->json(['message' => 'Email successfully verified'], 200);
+    }
+
+    /**
+     * Resend verification email
+     *
+     * Resend the email verification notification to the user.
+     *
+     * @response  {
+     *   "message": "Verification email sent successfully"
+     * }
+     * @response  {
+     *   "error": "Email already verified"
+     * }
+     *
+     * @unauthenticated
+     */
+    public function resendVerificationEmail($id): JsonResponse
+    {
+        $user = User::findOrFail($id);
+        if ($user->is_email_verified) {
+            return response()->json(['message' => 'Email already verified'], 200);
+        }
+        $user->notify(new VerifyEmail);
+
+        return response()->json(['message' => "Verification email sent successfully to {$user->email}"], 200);
+    }
+
+    /**
+     * Send password reset link
+     *
+     * Send a password reset link to the user's email.
+     *
+     * @response  {
+     *   "message": "Reset link sent to your email"
+     * }
+     * @response  {
+     *   "error": "Failed to send reset link"
+     * }
+     *
+     * @unauthenticated
+     */
+    public function sendResetLink(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:users,email',
         ]);
 
-        if ($status === Password::PASSWORD_RESET) {
-            return response()->json([
-                'message' => 'Password has been successfully reset',
-                'access_token' => $token,
-                'token_type' => 'bearer',
-                'expires_in' => config('jwt.ttl') * 60,
-            ]);
+        if ($validator->fails()) {
+            return $this->apiResponse([
+                'errors' => $validator->errors(),
+            ], 'Validation failed', 422);
+        }
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return $this->apiResponse(null, 'Reset link sent to your email', 200);
         }
 
-        return response()->json(['error' => 'Failed to reset password'], 400);
+        return $this->apiResponse(null, 'Failed to send reset link', 500);
+
+    }
+
+    /**
+     * Reset user password
+     *
+     * Reset the user's password using the provided token.
+     *
+     * @response  {
+     *   "message": "Password has been successfully reset"
+     * }
+     * @response  {
+     *   "error": "Failed to reset password"
+     * }
+     *
+     * @unauthenticated
+     */
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+
+        $status = Password::reset([
+            'email' => $request->email,
+            'token' => $request->token,
+            'password' => $request->password,
+        ], function ($user, $password) {
+            $user->password = Hash::make($password);
+            $user->save();
+        });
+        echo $status;
+        if ($status === Password::PASSWORD_RESET) {
+            return $this->apiResponse(null, 'Password has been successfully reset', 200);
+        }
+
+        return $this->apiResponse(null, 'Failed to reset password', 500);
     }
 }
