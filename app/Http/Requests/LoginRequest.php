@@ -17,24 +17,27 @@ class LoginRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
+     * @example {
+     *     'email': "anas@gmail.com",
+     *    'password': "strongpassword123",
+     * }
+     *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
+            // @example anas@gmail.com
             'email' => [
                 'required',
                 'email:rfc,dns',
                 'max:255',
             ],
+            // @example strongpassword123
             'password' => [
                 'required',
                 'string',
                 'min:8',
-            ],
-            'remember_me' => [
-                'sometimes',
-                'boolean',
             ],
         ];
     }

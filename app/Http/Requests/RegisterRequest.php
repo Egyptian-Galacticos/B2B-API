@@ -22,24 +22,28 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
+            // @example anas
             'first_name' => [
                 'required',
                 'string',
                 'max:255',
                 'regex:/^[a-zA-Z\s]+$/', // Only letters and spaces
             ],
+            // @example kafr elzyat
             'last_name' => [
                 'required',
                 'string',
                 'max:255',
                 'regex:/^[a-zA-Z\s]+$/', // Only letters and spaces
             ],
+            // @example eldoc@gmail.com
             'email' => [
                 'required',
                 'email:rfc,dns',
                 'max:255',
                 'unique:users,email',
             ],
+            // @example StrongPassword123!
             'password' => [
                 'required',
                 'string',
@@ -47,6 +51,7 @@ class RegisterRequest extends FormRequest
                 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/', // Strong password
                 'confirmed',
             ],
+            // @example +201234567890
             'phone_number' => [
                 'sometimes',
                 'nullable',
@@ -60,10 +65,13 @@ class RegisterRequest extends FormRequest
                 'url',
                 'max:2048',
             ],
-            'role' => [
+            'roles' => [
+                'required',
+                'array',
+            ],
+            'roles.*' => [
                 'string',
-                'in:seller,buyer:required',
-                'exists:roles,name',
+                'in:seller,buyer',
             ],
         ];
     }
