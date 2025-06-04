@@ -9,9 +9,7 @@ use Illuminate\Notifications\Notification;
 class CustomResetPasswordNotification extends Notification
 {
     use Queueable;
-
     public $token;
-
     public $email;
 
     /**

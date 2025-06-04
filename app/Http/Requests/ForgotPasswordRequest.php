@@ -40,8 +40,8 @@ class ForgotPasswordRequest extends FormRequest
     {
         return [
             'email.required' => 'Email address is required.',
-            'email.email' => 'Please provide a valid email address.',
-            'email.exists' => 'We could not find a user with that email address.',
+            'email.email'    => 'Please provide a valid email address.',
+            'email.exists'   => 'We could not find a user with that email address.',
         ];
     }
 }

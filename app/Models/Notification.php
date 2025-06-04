@@ -30,10 +30,10 @@ class Notification extends Model
     protected function casts(): array
     {
         return [
-            'data' => 'array',
-            'is_read' => 'boolean',
+            'data'       => 'array',
+            'is_read'    => 'boolean',
             'created_at' => 'datetime',
-            'read_at' => 'datetime',
+            'read_at'    => 'datetime',
         ];
     }
 
@@ -56,12 +56,12 @@ class Notification extends Model
     public function getTypeDisplayAttribute(): array
     {
         return match ($this->type) {
-            'email' => ['text' => 'Email', 'icon' => 'envelope', 'class' => 'primary'],
-            'sms' => ['text' => 'SMS', 'icon' => 'mobile', 'class' => 'success'],
-            'push' => ['text' => 'Push', 'icon' => 'bell', 'class' => 'warning'],
+            'email'  => ['text' => 'Email', 'icon' => 'envelope', 'class' => 'primary'],
+            'sms'    => ['text' => 'SMS', 'icon' => 'mobile', 'class' => 'success'],
+            'push'   => ['text' => 'Push', 'icon' => 'bell', 'class' => 'warning'],
             'in_app' => ['text' => 'In-App', 'icon' => 'computer', 'class' => 'info'],
             'system' => ['text' => 'System', 'icon' => 'gear', 'class' => 'secondary'],
-            default => ['text' => 'Unknown', 'icon' => 'question', 'class' => 'dark'],
+            default  => ['text' => 'Unknown', 'icon' => 'question', 'class' => 'dark'],
         };
     }
 
@@ -207,10 +207,10 @@ class Notification extends Model
     ): self {
         return self::create([
             'user_id' => $user->id,
-            'type' => $type,
-            'title' => $title,
+            'type'    => $type,
+            'title'   => $title,
             'message' => $message,
-            'data' => $data,
+            'data'    => $data,
         ]);
     }
 

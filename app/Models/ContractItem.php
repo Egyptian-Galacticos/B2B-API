@@ -10,9 +10,7 @@ class ContractItem extends Model
 {
     /** @use HasFactory<\Database\Factories\ContractItemFactory> */
     use HasFactory;
-
     public $timestamps = false; // No automatic timestamps
-
     protected $fillable = [
         'contract_id',
         'product_id',
@@ -21,9 +19,8 @@ class ContractItem extends Model
         'total_price',
         'specifications',
     ];
-
     protected $casts = [
-        'unit_price' => 'decimal:2',
+        'unit_price'  => 'decimal:2',
         'total_price' => 'decimal:2',
     ];
 

@@ -22,12 +22,12 @@ class ConversationFactory extends Factory
         $userIds = User::inRandomOrder()->take(2)->pluck('id')->toArray();
 
         return [
-            'type' => $this->faker->randomElement(['direct', 'contract']),
-            'title' => $this->faker->sentence(3),
-            'participant_ids' => $userIds,
-            'last_message_id' => null,
+            'type'             => $this->faker->randomElement(['direct', 'contract']),
+            'title'            => $this->faker->sentence(3),
+            'participant_ids'  => $userIds,
+            'last_message_id'  => null,
             'last_activity_at' => $this->faker->dateTimeBetween('-1 month', 'now'),
-            'is_active' => $this->faker->boolean(80),
+            'is_active'        => $this->faker->boolean(80),
         ];
     }
 
@@ -38,7 +38,7 @@ class ConversationFactory extends Factory
                 'conversation_id' => $conversation->id,
             ]);
             $conversation->update([
-                'last_message_id' => $message->id,
+                'last_message_id'  => $message->id,
                 'last_activity_at' => $message->sent_at,
             ]);
         });

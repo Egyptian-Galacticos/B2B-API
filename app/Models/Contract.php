@@ -12,7 +12,6 @@ class Contract extends Model
 {
     /** @use HasFactory<ContractFactory> */
     use HasFactory;
-
     protected $fillable = [
         'contract_number',
         'buyer_id',
@@ -27,12 +26,11 @@ class Contract extends Model
         'terms_and_conditions',
         'metadata',
     ];
-
     protected $casts = [
-        'contract_date' => 'datetime',
+        'contract_date'      => 'datetime',
         'estimated_delivery' => 'datetime',
-        'metadata' => 'array',
-        'total_amount' => 'decimal:2',
+        'metadata'           => 'array',
+        'total_amount'       => 'decimal:2',
     ];
 
     /**

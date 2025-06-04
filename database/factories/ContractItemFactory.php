@@ -21,11 +21,11 @@ class ContractItemFactory extends Factory
         $totalPrice = $quantity * $unitPrice;
 
         return [
-            'contract_id' => \App\Models\Contract::factory(),
-            'product_id' => \App\Models\Product::factory(),
-            'quantity' => $quantity,
-            'unit_price' => $unitPrice,
-            'total_price' => $totalPrice,
+            'contract_id'    => \App\Models\Contract::factory(),
+            'product_id'     => \App\Models\Product::factory(),
+            'quantity'       => $quantity,
+            'unit_price'     => $unitPrice,
+            'total_price'    => $totalPrice,
             'specifications' => $this->faker->sentence(),
         ];
     }

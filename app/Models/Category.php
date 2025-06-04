@@ -12,7 +12,6 @@ class Category extends Model
 {
     /** @use HasFactory<CategoryFactory> */
     use HasFactory;
-
     protected $fillable = [
         'name',
         'description',
@@ -21,7 +20,6 @@ class Category extends Model
         'level',
         'is_active',
     ];
-
     protected $casts = [
         'is_active' => 'boolean',
     ];

@@ -18,17 +18,17 @@ class QuoteFactory extends Factory
     {
         return [
             'quote_number' => 'QUO-'.$this->faker->unique()->numerify('######'),
-            'buyer_id' => \App\Models\User::factory(),
-            'seller_id' => \App\Models\User::factory(),
-            'status' => $this->faker->randomElement(['draft', 'sent', 'accepted', 'declined', 'expired']),
+            'buyer_id'     => \App\Models\User::factory(),
+            'seller_id'    => \App\Models\User::factory(),
+            'status'       => $this->faker->randomElement(['draft', 'sent', 'accepted', 'declined', 'expired']),
             'total_amount' => $this->faker->randomFloat(2, 500, 50000),
-            'currency' => $this->faker->randomElement(['USD', 'EUR', 'GBP']),
-            'valid_until' => $this->faker->dateTimeBetween('now', '+30 days'),
-            'terms' => $this->faker->paragraphs(2, true),
-            'metadata' => [
+            'currency'     => $this->faker->randomElement(['USD', 'EUR', 'GBP']),
+            'valid_until'  => $this->faker->dateTimeBetween('now', '+30 days'),
+            'terms'        => $this->faker->paragraphs(2, true),
+            'metadata'     => [
                 'payment_terms' => $this->faker->randomElement(['Net 30', 'Net 60', 'COD', 'Prepaid']),
                 'delivery_time' => $this->faker->numberBetween(7, 60).' days',
-                'warranty' => $this->faker->randomElement(['1 year', '2 years', '6 months', 'No warranty']),
+                'warranty'      => $this->faker->randomElement(['1 year', '2 years', '6 months', 'No warranty']),
             ],
         ];
     }

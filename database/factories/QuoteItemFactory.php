@@ -21,11 +21,11 @@ class QuoteItemFactory extends Factory
         $totalPrice = $quantity * $unitPrice;
 
         return [
-            'quote_id' => \App\Models\Quote::factory(),
-            'product_id' => \App\Models\Product::factory(),
-            'quantity' => $quantity,
-            'unit_price' => $unitPrice,
-            'total_price' => $totalPrice,
+            'quote_id'       => \App\Models\Quote::factory(),
+            'product_id'     => \App\Models\Product::factory(),
+            'quantity'       => $quantity,
+            'unit_price'     => $unitPrice,
+            'total_price'    => $totalPrice,
             'specifications' => $this->faker->sentence(),
         ];
     }

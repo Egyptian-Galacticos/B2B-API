@@ -10,7 +10,6 @@ class Payment extends Model
 {
     /** @use HasFactory<\Database\Factories\PaymentFactory> */
     use HasFactory, SoftDeletes;
-
     protected $fillable = [
         'contract_id',
         'type',
@@ -22,14 +21,13 @@ class Payment extends Model
         'metadata',
         'processed_at',
     ];
-
     protected $casts = [
-        'amount' => 'decimal:2',
-        'metadata' => 'array',
+        'amount'       => 'decimal:2',
+        'metadata'     => 'array',
         'processed_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'created_at'   => 'datetime',
+        'updated_at'   => 'datetime',
+        'deleted_at'   => 'datetime',
     ];
 
     public function contract()

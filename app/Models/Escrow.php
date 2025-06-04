@@ -10,16 +10,14 @@ class Escrow extends Model
 {
     /** @use HasFactory<\Database\Factories\EscrowFactory> */
     use HasFactory, SoftDeletes;
-
     protected $fillable = [
         'contract_id',
         'status',
         'amount',
         'currency',
     ];
-
     protected $casts = [
-        'amount' => 'decimal:2',
+        'amount'     => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

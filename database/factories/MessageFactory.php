@@ -20,11 +20,11 @@ class MessageFactory extends Factory
     {
         return [
             'conversation_id' => Conversation::factory(),
-            'sender_id' => User::factory(),
-            'content' => $this->faker->paragraph(),
-            'type' => $this->faker->randomElement(['text', 'image', 'file']),
-            'sent_at' => $this->faker->dateTimeBetween('-1 month', 'now'),
-            'is_read' => $this->faker->boolean(80),
+            'sender_id'       => User::factory(),
+            'content'         => $this->faker->paragraph(),
+            'type'            => $this->faker->randomElement(['text', 'image', 'file']),
+            'sent_at'         => $this->faker->dateTimeBetween('-1 month', 'now'),
+            'is_read'         => $this->faker->boolean(80),
         ];
     }
 }

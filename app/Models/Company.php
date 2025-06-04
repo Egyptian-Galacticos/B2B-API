@@ -16,16 +16,20 @@ class Company extends Model
      */
     protected $fillable = [
         'name',
+        'email',
         'tax_id',
+        'company_phone',
         'commercial_registration',
         'address',
-        'city',
-        'country',
+        'logo',
         'website',
         'description',
+        'is_email_verified',
+        'user_id',
+        'city',
+        'country',
         'type',
         'is_verified',
-        'email',
     ];
 
     /**
@@ -34,10 +38,11 @@ class Company extends Model
     protected function casts(): array
     {
         return [
-            'address' => 'array',
-            'is_verified' => 'boolean',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
+            'address'           => 'array',
+            'is_email_verified' => 'boolean',
+            'created_at'        => 'datetime',
+            'updated_at'        => 'datetime',
+            'user_id'           => 'integer',
         ];
     }
 
@@ -86,12 +91,12 @@ class Company extends Model
     public function getTypeDisplayAttribute(): string
     {
         return match ($this->type) {
-            'corporation' => 'Corporation',
-            'llc' => 'Limited Liability Company',
-            'partnership' => 'Partnership',
+            'corporation'         => 'Corporation',
+            'llc'                 => 'Limited Liability Company',
+            'partnership'         => 'Partnership',
             'sole_proprietorship' => 'Sole Proprietorship',
-            'other' => 'Other',
-            default => 'Unknown',
+            'other'               => 'Other',
+            default               => 'Unknown',
         };
     }
 

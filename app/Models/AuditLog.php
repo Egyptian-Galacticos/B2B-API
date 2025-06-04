@@ -30,7 +30,7 @@ class AuditLog extends Model
     protected function casts(): array
     {
         return [
-            'metadata' => 'array',
+            'metadata'   => 'array',
             'created_at' => 'datetime',
         ];
     }
@@ -62,11 +62,11 @@ class AuditLog extends Model
     public function entity()
     {
         return match ($this->entity_type) {
-            'user' => $this->belongsTo(User::class, 'entity_id'),
-            'company' => $this->belongsTo(Company::class, 'entity_id'),
+            'user'         => $this->belongsTo(User::class, 'entity_id'),
+            'company'      => $this->belongsTo(Company::class, 'entity_id'),
             'kyc_document' => $this->belongsTo(KycDocument::class, 'entity_id'),
             'notification' => $this->belongsTo(Notification::class, 'entity_id'),
-            default => null,
+            default        => null,
         };
     }
 

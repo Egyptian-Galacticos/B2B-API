@@ -10,7 +10,6 @@ class Conversation extends Model
 {
     /** @use HasFactory<\Database\Factories\ConversationFactory> */
     use HasFactory, SoftDeletes;
-
     protected $fillable = [
         'type',
         'title',
@@ -19,14 +18,13 @@ class Conversation extends Model
         'last_activity_at',
         'is_active',
     ];
-
     protected $casts = [
-        'participant_ids' => 'array',
+        'participant_ids'  => 'array',
         'last_activity_at' => 'datetime',
-        'is_active' => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'is_active'        => 'boolean',
+        'created_at'       => 'datetime',
+        'updated_at'       => 'datetime',
+        'deleted_at'       => 'datetime',
     ];
 
     public function messages()

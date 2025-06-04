@@ -17,10 +17,6 @@ class LoginRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @example {
-     *     'email': "anas@gmail.com",
-     *    'password': "strongpassword123",
-     * }
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
@@ -33,7 +29,7 @@ class LoginRequest extends FormRequest
                 'email:rfc,dns',
                 'max:255',
             ],
-            // @example strongpassword123
+            // @example StrongPassword123!
             'password' => [
                 'required',
                 'string',
@@ -50,10 +46,10 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.required' => 'Email address is required.',
-            'email.email' => 'Please provide a valid email address.',
+            'email.required'    => 'Email address is required.',
+            'email.email'       => 'Please provide a valid email address.',
             'password.required' => 'Password is required.',
-            'password.min' => 'Password must be at least 8 characters long.',
+            'password.min'      => 'Password must be at least 8 characters long.',
         ];
     }
 }

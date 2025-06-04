@@ -20,21 +20,21 @@ class ContractFactory extends Factory
         $estimatedDelivery = $this->faker->dateTimeBetween($contractDate, '+3 months');
 
         return [
-            'contract_number' => 'CON-'.$this->faker->unique()->numerify('######'),
-            'buyer_id' => \App\Models\User::factory(),
-            'seller_id' => \App\Models\User::factory(),
-            'status' => $this->faker->randomElement(['draft', 'active', 'completed', 'cancelled']),
-            'total_amount' => $this->faker->randomFloat(2, 1000, 100000),
-            'currency' => $this->faker->randomElement(['USD', 'EUR', 'GBP']),
-            'contract_date' => $contractDate,
-            'estimated_delivery' => $estimatedDelivery,
-            'shipping_address' => $this->faker->address(),
-            'billing_address' => $this->faker->address(),
+            'contract_number'      => 'CON-'.$this->faker->unique()->numerify('######'),
+            'buyer_id'             => \App\Models\User::factory(),
+            'seller_id'            => \App\Models\User::factory(),
+            'status'               => $this->faker->randomElement(['draft', 'active', 'completed', 'cancelled']),
+            'total_amount'         => $this->faker->randomFloat(2, 1000, 100000),
+            'currency'             => $this->faker->randomElement(['USD', 'EUR', 'GBP']),
+            'contract_date'        => $contractDate,
+            'estimated_delivery'   => $estimatedDelivery,
+            'shipping_address'     => $this->faker->address(),
+            'billing_address'      => $this->faker->address(),
             'terms_and_conditions' => $this->faker->paragraphs(3, true),
-            'metadata' => [
-                'payment_terms' => $this->faker->randomElement(['Net 30', 'Net 60', 'COD', 'Prepaid']),
+            'metadata'             => [
+                'payment_terms'   => $this->faker->randomElement(['Net 30', 'Net 60', 'COD', 'Prepaid']),
                 'shipping_method' => $this->faker->randomElement(['Air', 'Sea', 'Land', 'Express']),
-                'incoterms' => $this->faker->randomElement(['FOB', 'CIF', 'EXW', 'DDP']),
+                'incoterms'       => $this->faker->randomElement(['FOB', 'CIF', 'EXW', 'DDP']),
             ],
         ];
     }

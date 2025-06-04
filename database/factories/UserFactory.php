@@ -22,17 +22,16 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
-
         return [
-            'email' => fake()->unique()->safeEmail(),
-            'password' => static::$password ??= Hash::make('password'),
-            'first_name' => fake()->firstName(),
-            'last_name' => fake()->lastName(),
-            'phone_number' => fake()->phoneNumber(),
+            'first_name'        => fake()->firstName(),
+            'last_name'         => fake()->lastName(),
+            'email'             => fake()->unique()->safeEmail(),
             'is_email_verified' => fake()->boolean(80), // 80% chance of being verified
-            'status' => fake()->randomElement(['active', 'suspended', 'pending']),
-            'profile_image_url' => fake()->optional()->imageUrl(200, 200, 'people'),
-            'last_login_at' => fake()->optional()->dateTimeBetween('-30 days', 'now'),
+            'password'          => static::$password ??= Hash::make('password'),
+            'phone_number'      => fake()->phoneNumber(),
+            'status'            => fake()->randomElement(['active', 'suspended', 'pending']),
+            'last_login_at'     => fake()->optional()->dateTimeBetween('-30 days', 'now'),
+            'remember_token'    => \Illuminate\Support\Str::random(10),
         ];
     }
 
@@ -57,14 +56,35 @@ class UserFactory extends Factory
     }
 
     /**
+     * Indicate that the user is pending approval.
+     */
+    public function pending(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status'            => 'pending',
+            'is_email_verified' => false,
+        ]);
+    }
+
+    /**
+     * Indicate that the user is suspended.
+     */
+    public function suspended(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'suspended',
+        ]);
+    }
+
+    /**
      * Indicate that the user is a seller with recent login.
      */
     public function seller(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'active',
+            'status'            => 'active',
             'is_email_verified' => true,
-            'last_login_at' => fake()->dateTimeBetween('-7 days', 'now'),
+            'last_login_at'     => fake()->dateTimeBetween('-7 days', 'now'),
         ]);
     }
 }

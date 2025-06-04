@@ -50,13 +50,13 @@ class ResetPasswordRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.required' => 'Email address is required.',
-            'email.email' => 'Please provide a valid email address.',
-            'email.exists' => 'We could not find a user with that email address.',
-            'token.required' => 'Reset token is required.',
-            'password.required' => 'Password is required.',
-            'password.min' => 'Password must be at least 8 characters long.',
-            'password.regex' => 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.',
+            'email.required'     => 'Email address is required.',
+            'email.email'        => 'Please provide a valid email address.',
+            'email.exists'       => 'We could not find a user with that email address.',
+            'token.required'     => 'Reset token is required.',
+            'password.required'  => 'Password is required.',
+            'password.min'       => 'Password must be at least 8 characters long.',
+            'password.regex'     => 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.',
             'password.confirmed' => 'Password confirmation does not match.',
         ];
     }

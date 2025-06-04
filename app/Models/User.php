@@ -6,6 +6,7 @@ namespace App\Models;
 use App\Notifications\CustomResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -16,7 +17,6 @@ class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, HasRoles, Notifiable, SoftDeletes;
-
     protected $fillable = [
         'email',
         'password',
@@ -26,7 +26,6 @@ class User extends Authenticatable implements JWTSubject
         'is_email_verified',
         'email_verified_at',
         'status',
-        'profile_image_url',
         'last_login_at',
     ];
 
@@ -45,9 +44,10 @@ class User extends Authenticatable implements JWTSubject
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
             'is_email_verified' => 'boolean',
-            'last_login_at' => 'datetime',
+            'status'            => 'string',
+            'last_login_at'     => 'datetime',
         ];
     }
 
@@ -67,7 +67,7 @@ class User extends Authenticatable implements JWTSubject
     /**
      * Check if user is active.
      */
-    public function status(): bool
+    public function isActive(): bool
     {
         return $this->status === 'active';
     }
@@ -78,6 +78,14 @@ class User extends Authenticatable implements JWTSubject
     public function isSuspended(): bool
     {
         return $this->status === 'suspended';
+    }
+
+    /**
+     * Check if user is pending.
+     */
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
     }
 
     /**
@@ -152,10 +160,10 @@ class User extends Authenticatable implements JWTSubject
     /**
      * Scope to get active users only.
      */
-    public function scopeActive($query)
-    {
-        return $query->where('status', 'active');
-    }
+    // public function scopeActive($query)
+    // {
+    //     return $query->where('status', 'active');
+    // }
 
     /**
      * Scope to get verified users only.
@@ -196,5 +204,15 @@ class User extends Authenticatable implements JWTSubject
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new CustomResetPasswordNotification($token, $this->email));
+    }
+
+    public function refreshToken(): HasOne
+    {
+        return $this->hasOne(RefreshToken::class);
+    }
+
+    public function company(): HasOne
+    {
+        return $this->hasOne(Company::class);
     }
 }

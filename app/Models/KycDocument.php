@@ -33,7 +33,7 @@ class KycDocument extends Model
     {
         return [
             'submitted_at' => 'datetime',
-            'reviewed_at' => 'datetime',
+            'reviewed_at'  => 'datetime',
         ];
     }
 
@@ -59,13 +59,13 @@ class KycDocument extends Model
     public function getTypeDisplayAttribute(): string
     {
         return match ($this->type) {
-            'passport' => 'Passport',
-            'national_id' => 'National ID',
+            'passport'        => 'Passport',
+            'national_id'     => 'National ID',
             'drivers_license' => 'Driver\'s License',
-            'utility_bill' => 'Utility Bill',
-            'bank_statement' => 'Bank Statement',
-            'other' => 'Other Document',
-            default => 'Unknown Document',
+            'utility_bill'    => 'Utility Bill',
+            'bank_statement'  => 'Bank Statement',
+            'other'           => 'Other Document',
+            default           => 'Unknown Document',
         };
     }
 
@@ -75,11 +75,11 @@ class KycDocument extends Model
     public function getStatusDisplayAttribute(): array
     {
         return match ($this->status) {
-            'pending' => ['text' => 'Pending Review', 'class' => 'warning'],
-            'approved' => ['text' => 'Approved', 'class' => 'success'],
-            'rejected' => ['text' => 'Rejected', 'class' => 'danger'],
+            'pending'      => ['text' => 'Pending Review', 'class' => 'warning'],
+            'approved'     => ['text' => 'Approved', 'class' => 'success'],
+            'rejected'     => ['text' => 'Rejected', 'class' => 'danger'],
             'under_review' => ['text' => 'Under Review', 'class' => 'info'],
-            default => ['text' => 'Unknown', 'class' => 'secondary'],
+            default        => ['text' => 'Unknown', 'class' => 'secondary'],
         };
     }
 
@@ -141,9 +141,9 @@ class KycDocument extends Model
     public function approve(int $reviewerId): bool
     {
         return $this->update([
-            'status' => 'approved',
-            'reviewer_id' => $reviewerId,
-            'reviewed_at' => now(),
+            'status'           => 'approved',
+            'reviewer_id'      => $reviewerId,
+            'reviewed_at'      => now(),
             'rejection_reason' => null,
         ]);
     }
@@ -154,9 +154,9 @@ class KycDocument extends Model
     public function reject(int $reviewerId, string $reason): bool
     {
         return $this->update([
-            'status' => 'rejected',
-            'reviewer_id' => $reviewerId,
-            'reviewed_at' => now(),
+            'status'           => 'rejected',
+            'reviewer_id'      => $reviewerId,
+            'reviewed_at'      => now(),
             'rejection_reason' => $reason,
         ]);
     }
@@ -167,7 +167,7 @@ class KycDocument extends Model
     public function markUnderReview(int $reviewerId): bool
     {
         return $this->update([
-            'status' => 'under_review',
+            'status'      => 'under_review',
             'reviewer_id' => $reviewerId,
         ]);
     }

@@ -10,7 +10,6 @@ class Message extends Model
 {
     /** @use HasFactory<\Database\Factories\MessageFactory> */
     use HasFactory, SoftDeletes;
-
     protected $fillable = [
         'conversation_id',
         'sender_id',
@@ -19,10 +18,9 @@ class Message extends Model
         'sent_at',
         'is_read',
     ];
-
     protected $casts = [
-        'sent_at' => 'datetime',
-        'is_read' => 'boolean',
+        'sent_at'    => 'datetime',
+        'is_read'    => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

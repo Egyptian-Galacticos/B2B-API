@@ -11,7 +11,6 @@ class Product extends Model
 {
     /** @use HasFactory<\Database\Factories\ProductFactory> */
     use HasFactory;
-
     protected $fillable = [
         'seller_id',
         'sku',
@@ -29,13 +28,12 @@ class Product extends Model
         'dimensions',
         'is_active',
     ];
-
     protected $casts = [
         'specifications' => 'array',
         'certifications' => 'array',
-        'dimensions' => 'array',
-        'is_active' => 'boolean',
-        'price' => 'decimal:2',
+        'dimensions'     => 'array',
+        'is_active'      => 'boolean',
+        'price'          => 'decimal:2',
     ];
 
     public function seller(): BelongsTo

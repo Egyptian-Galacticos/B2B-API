@@ -10,7 +10,6 @@ class MessageAttachment extends Model
 {
     /** @use HasFactory<\Database\Factories\MessageAttachmentFactory> */
     use HasFactory, SoftDeletes;
-
     protected $fillable = [
         'message_id',
         'file_name',
@@ -20,13 +19,12 @@ class MessageAttachment extends Model
         'thumbnail_url',
         'uploaded_at',
     ];
-
     protected $casts = [
-        'file_size' => 'integer',
+        'file_size'   => 'integer',
         'uploaded_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'created_at'  => 'datetime',
+        'updated_at'  => 'datetime',
+        'deleted_at'  => 'datetime',
     ];
 
     public function message()

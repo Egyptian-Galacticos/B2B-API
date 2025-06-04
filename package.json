@@ -11,6 +11,7 @@
   },
   "lint-staged": {
     "*.php": [
+    "php vendor/bin/pint",
     "php vendor/bin/pint --test",
     "php vendor/bin/phpstan analyse --no-progress",
     "git add"

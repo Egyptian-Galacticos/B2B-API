@@ -10,16 +10,14 @@ class WishlistItem extends Model
 {
     /** @use HasFactory<\Database\Factories\WishlistItemFactory> */
     use HasFactory, SoftDeletes;
-
     protected $fillable = [
         'wishlist_id',
         'product_id',
         'added_at',
         'notes',
     ];
-
     protected $casts = [
-        'added_at' => 'datetime',
+        'added_at'   => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
