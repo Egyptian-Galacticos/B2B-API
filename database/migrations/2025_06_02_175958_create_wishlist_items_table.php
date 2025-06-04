@@ -13,14 +13,17 @@ return new class extends Migration
     {
         Schema::create('wishlist_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('wishlist_id')
-                ->constrained('wishlists')
-                ->onDelete('cascade')
-                ->index();
-            $table->foreignId('product_id')
-                ->constrained('products')
-                ->onDelete('cascade')
-                ->index();
+            $table->unsignedBigInteger('wishlist_id')->index();
+            $table->foreign('wishlist_id', 'fk_wishlist_items_wishlist_id')
+                ->references('id')
+                ->on('wishlists')
+                ->onDelete('cascade');
+
+            $table->unsignedBigInteger('product_id')->index();
+            $table->foreign('product_id', 'fk_wishlist_items_product_id')
+                ->references('id')
+                ->on('products')
+                ->onDelete('cascade');
             $table->timestamp('added_at')->useCurrent()->index();
             $table->text('notes')->nullable();
             $table->timestamps();

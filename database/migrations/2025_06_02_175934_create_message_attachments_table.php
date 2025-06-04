@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::create('message_attachments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('message_id')
-                ->constrained('messages')
-                ->onDelete('cascade')
-                ->index();
+            $table->foreignId('message_id')->index();
+            $table->foreign('message_id', 'fk_message_attachments_message_id')
+                ->references('id')
+                ->on('messages')
+                ->onDelete('cascade');
             $table->string('file_name');
             $table->string('file_url');
             $table->string('file_type')->index();

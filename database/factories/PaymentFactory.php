@@ -16,7 +16,7 @@ class PaymentFactory extends Factory
         $paymentMethod = 'bank_transfer';
 
         return [
-            // 'contract_id' => Contract::factory(),
+            'contract_id' => Contract::factory(),
             'type' => $this->faker->randomElement(['direct', 'escrow_release', 'refund']),
             'status' => $isCompleted ? 'completed' : $this->faker->randomElement(['pending', 'failed']),
             'amount' => $this->faker->randomFloat(2, 10, 10000),

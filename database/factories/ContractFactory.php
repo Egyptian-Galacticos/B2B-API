@@ -23,7 +23,7 @@ class ContractFactory extends Factory
             'contract_number' => 'CON-'.$this->faker->unique()->numerify('######'),
             'buyer_id' => \App\Models\User::factory(),
             'seller_id' => \App\Models\User::factory(),
-            'status' => $this->faker->randomElement(['draft', 'pending', 'active', 'completed', 'cancelled']),
+            'status' => $this->faker->randomElement(['draft', 'active', 'completed', 'cancelled']),
             'total_amount' => $this->faker->randomFloat(2, 1000, 100000),
             'currency' => $this->faker->randomElement(['USD', 'EUR', 'GBP']),
             'contract_date' => $contractDate,

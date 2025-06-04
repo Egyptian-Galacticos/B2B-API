@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Product;
 use App\Models\Wishlist;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -19,7 +20,7 @@ class WishlistItemFactory extends Factory
     {
         return [
             'wishlist_id' => Wishlist::factory(),
-            // 'product_id' => Product::factory(),
+            'product_id' => Product::factory(),
             'added_at' => $this->faker->dateTimeBetween('-2 months', 'now'),
             'notes' => $this->faker->optional()->sentence(),
         ];

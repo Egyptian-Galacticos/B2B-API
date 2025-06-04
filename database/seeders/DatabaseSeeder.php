@@ -5,10 +5,17 @@ namespace Database\Seeders;
 use App\Models\Category;
 use App\Models\Contract;
 use App\Models\ContractItem;
+use App\Models\Conversation;
+use App\Models\Escrow;
+use App\Models\Message;
+use App\Models\MessageAttachment;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\User;
+use App\Models\Wishlist;
+use App\Models\WishlistItem;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
@@ -49,5 +56,12 @@ class DatabaseSeeder extends Seeder
         // Create quotes with items
         $quote = Quote::factory()->sent()->create();
         $quoteItem = QuoteItem::factory()->create(['quote_id' => $quote->id]);
+        Escrow::factory()->count(5)->create();
+        Payment::factory()->count(5)->create();
+        Conversation::factory()->count(3)->create();
+        Message::factory()->count(10)->create();
+        MessageAttachment::factory()->count(5)->create();
+        Wishlist::factory()->count(5)->create();
+        WishlistItem::factory()->count(15)->create();
     }
 }
