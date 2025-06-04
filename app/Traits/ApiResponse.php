@@ -9,7 +9,7 @@ trait ApiResponse
         return response()->json([
             'success' => $status < 400 ? true : false,
             'message' => $message,
-            'data' => $data,
+            'data'    => $data,
         ], $status);
     }
 }
