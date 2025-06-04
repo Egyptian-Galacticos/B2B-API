@@ -19,8 +19,8 @@ return new class extends Migration
             $table->string('last_name');
             $table->string('phone_number')->nullable();
             $table->boolean('is_email_verified')->default(false);
-            $table->enum('status', ['active', 'inactive', 'suspended'])->default('active'); // used status instead of is_active for clarity
-            $table->string('profile_image_url')->nullable();
+
+            $table->enum('status', ['active', 'suspended', 'pending'])->default('active');
             $table->timestamp('last_login_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
