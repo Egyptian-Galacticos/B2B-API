@@ -23,6 +23,7 @@ return new class extends Migration
             $table->text('description');
             $table->string('email');
             $table->boolean('is_email_verified')->default(false);
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
 
             $table->timestamps();
             $table->softDeletes();
