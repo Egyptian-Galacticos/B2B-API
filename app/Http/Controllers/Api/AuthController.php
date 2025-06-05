@@ -10,6 +10,8 @@ use App\Http\Resources\UserResource;
 use App\Models\Company;
 use App\Models\RefreshToken;
 use App\Models\User;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Registered;
 use App\Traits\ApiResponse;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -56,6 +58,7 @@ class AuthController extends Controller
 
         $user->load('roles', 'company');
 
+        event(new Login('api', $user, false));
         return $this->apiResponse([
             'user' => new UserResource($user),
             'access_token' => $token,
@@ -77,6 +80,8 @@ class AuthController extends Controller
     public function register(RegisterRequest $request): JsonResponse
     {
         $validated = $request->validated();
+
+        event(new Registered($user));
 
         DB::beginTransaction();
 
