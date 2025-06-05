@@ -97,6 +97,13 @@ return [
         ],
     ],
 
+    'verification' => [
+        'expire' => env('EMAIL_VERIFICATION_EXPIRE', 60),
+        'throttle' => [
+            'max_attempts' => 3,
+            'decay_minutes' => 15,
+        ],
+    ],
     /*
     |--------------------------------------------------------------------------
     | Password Confirmation Timeout

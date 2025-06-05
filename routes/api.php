@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\ProductController;
 use Illuminate\Support\Facades\Route;
 
@@ -12,8 +13,15 @@ Route::prefix('auth')->group(function () {
     Route::post('refresh/{token}', [AuthController::class, 'refresh'])->name('auth.refresh');
 })->middleware('is_email_verified');
 
-Route::get('/email/verify/{id}', [AuthController::class, 'verifyEmail'])->name('api.verification.verify');
-Route::get('/email/resend/{id}', [AuthController::class, 'resendVerificationEmail'])->name('api.verification.resend');
+Route::prefix('auth')->group(function () {
+    Route::middleware('auth:api')->group(function () {
+        Route::post('email/send-verification', [EmailVerificationController::class, 'send']);
+        Route::post('email/resend-verification', [EmailVerificationController::class, 'resend']);
+        Route::get('email/status', [EmailVerificationController::class, 'status']);
+    });
+
+    Route::post('email/verify', [EmailVerificationController::class, 'verify']);
+});
 Route::post('/password/forgot', [AuthController::class, 'sendResetLink'])->name('api.password.forgot');
 Route::post('/password/reset', [AuthController::class, 'resetPassword'])->name('api.password.reset');
 Route::resource('products', ProductController::class)

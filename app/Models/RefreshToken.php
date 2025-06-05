@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class RefreshToken extends Model
 {
     protected $fillable = ['user_id'];
+
     protected $casts = [
         'expires_at' => 'datetime',
-        'revoked'    => 'boolean',
+        'revoked' => 'boolean',
     ];
 
     public function user()

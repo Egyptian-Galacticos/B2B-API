@@ -21,6 +21,7 @@ return new class extends Migration
             $table->boolean('is_email_verified')->default(false);
 
             $table->enum('status', ['active', 'suspended', 'pending'])->default('active');
+            $table->string('profile_image_url')->nullable();
             $table->timestamp('last_login_at')->nullable();
             $table->rememberToken();
             $table->timestamps();

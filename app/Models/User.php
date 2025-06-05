@@ -24,6 +24,7 @@ class User extends Authenticatable implements JWTSubject
         'last_name',
         'phone_number',
         'is_email_verified',
+        'email_verified_at',
         'status',
         'profile_image_url',
         'last_login_at',
@@ -58,6 +59,11 @@ class User extends Authenticatable implements JWTSubject
         return "{$this->first_name} {$this->last_name}";
     }
 
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
+
     /**
      * Check if user is active.
      */
@@ -79,7 +85,12 @@ class User extends Authenticatable implements JWTSubject
      */
     public function hasVerifiedEmail(): bool
     {
-        return $this->is_email_verified;
+        return $this->is_email_verified && $this->email_verified_at !== null;
+    }
+
+    public function emailVerificationTokens()
+    {
+        return $this->hasMany(EmailVerificationToken::class);
     }
 
     /**

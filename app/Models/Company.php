@@ -25,6 +25,7 @@ class Company extends Model
         'description',
         'type',
         'is_verified',
+        'email',
     ];
 
     /**
@@ -33,6 +34,7 @@ class Company extends Model
     protected function casts(): array
     {
         return [
+            'address' => 'array',
             'is_verified' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
