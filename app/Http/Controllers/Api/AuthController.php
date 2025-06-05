@@ -8,6 +8,8 @@ use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -41,6 +43,8 @@ class AuthController extends Controller
         // Update last login timestamp
         $user = JWTAuth::user();
         $user->update(['last_login_at' => now()]);
+
+        event(new Login('api', $user, false));
 
         return response()->json([
             'message' => 'Login successful',
@@ -86,6 +90,8 @@ class AuthController extends Controller
         // Assign role if provided
         $user->assignRole($validatedData['role']);
         $token = JWTAuth::fromUser($user);
+
+        event(new Registered($user));
 
         return response()->json([
             'message' => 'Registration successful',
