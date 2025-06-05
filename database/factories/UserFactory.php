@@ -30,7 +30,7 @@ class UserFactory extends Factory
             'last_name' => fake()->lastName(),
             'phone_number' => fake()->phoneNumber(),
             'is_email_verified' => fake()->boolean(80), // 80% chance of being verified
-            'status' => fake()->randomElement(['active', 'inactive', 'suspended']),
+            'status' => fake()->randomElement(['active', 'suspended', 'pending']),
             'profile_image_url' => fake()->optional()->imageUrl(200, 200, 'people'),
             'last_login_at' => fake()->optional()->dateTimeBetween('-30 days', 'now'),
         ];
