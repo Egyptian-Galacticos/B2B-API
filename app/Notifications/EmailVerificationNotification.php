@@ -10,15 +10,13 @@ use Illuminate\Notifications\Notification;
 class EmailVerificationNotification extends Notification implements ShouldQueue
 {
     use Queueable;
-
     public string $token;
-
     public string $verificationUrl;
 
     public function __construct(string $token)
     {
         $this->token = $token;
-        $this->verificationUrl = config('app.frontend_url').'/verify-email?token='.$token;
+        $this->verificationUrl = config('app.frontend_url').'/auth/verify-email?token='.$token;
 
         $this->onQueue('emails');
         $this->delay(now()->addSeconds(5));
