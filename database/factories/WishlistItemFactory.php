@@ -21,7 +21,7 @@ class WishlistItemFactory extends Factory
         return [
             'wishlist_id' => Wishlist::factory(),
             'product_id' => Product::factory(),
-            'added_at' => $this->faker->dateTimeBetween('-2 months', 'now'),
+            'added_at' => $this->faker->dateTimeBetween('-2 months', 'now')->format('Y-m-d H:i:s'),
             'notes' => $this->faker->optional()->sentence(),
         ];
     }

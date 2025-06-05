@@ -12,17 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('companies', function (Blueprint $table) {
-            $table->id(); // bigint primary key
+            $table->id();
             $table->string('name');
             $table->string('tax_id')->nullable();
+            $table->string('company_phone')->nullable();
             $table->string('commercial_registration')->nullable();
-            $table->text('address')->nullable();
-            $table->string('city')->nullable();
-            $table->string('country')->nullable();
+            $table->json('address');
+            $table->string('logo')->nullable();
             $table->string('website')->nullable();
             $table->text('description')->nullable();
-            $table->enum('type', ['corporation', 'llc', 'partnership', 'sole_proprietorship', 'other'])->nullable(); // company types to be reviewed and confirmed**
-            $table->boolean('is_verified')->default(false);
+            $table->string('email');
+            $table->boolean('is_email_verified')->default(false);
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
+
             $table->timestamps();
             $table->softDeletes();
 

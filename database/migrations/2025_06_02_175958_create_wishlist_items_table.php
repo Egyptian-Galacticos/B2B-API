@@ -24,7 +24,7 @@ return new class extends Migration
                 ->references('id')
                 ->on('products')
                 ->onDelete('cascade');
-            $table->timestamp('added_at')->useCurrent()->index();
+            $table->dateTime('added_at')->index();
             $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();
