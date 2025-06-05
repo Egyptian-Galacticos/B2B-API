@@ -2,46 +2,65 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class RefreshToken extends Model
 {
-    protected $fillable = ['user_id'];
-
+    use HasFactory;
+    protected $fillable = [
+        'user_id',
+        'token',
+        'expires_at',
+        'revoked',
+    ];
     protected $casts = [
         'expires_at' => 'datetime',
-        'revoked' => 'boolean',
+        'revoked'    => 'boolean',
     ];
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    public function scopeActive($query)
-    {
-        return $query->where('revoked', false)->where('expires_at', '>', now());
-    }
-
-    public function isExpired()
-    {
-        return $this->expires_at->isPast();
-    }
 
     protected static function boot()
     {
         parent::boot();
-        static::creating(function ($model) {
-            if ($model->user_id) {
-                static::where('user_id', $model->user_id)
-                    ->delete();
-            }
-            if (! $model->user_id) {
-                throw new \InvalidArgumentException('User ID is required for creating a refresh token.');
-            }
-            $model->token = bin2hex(random_bytes(32));
-            $model->expires_at = now()->addDays(30);
-            $model->revoked = false;
+
+        static::creating(function ($token) {
+            $token->token = Str::random(64);
+            $token->expires_at = now()->addDays(30);
+            $token->revoked = false;
         });
+    }
+
+    /**
+     * Check if the refresh token is active (not expired and not revoked)
+     */
+    public function isActive(): bool
+    {
+        return ! $this->revoked && $this->expires_at->isFuture();
+    }
+
+    /**
+     * Check if the refresh token is expired
+     */
+    public function isExpired(): bool
+    {
+        return $this->expires_at->isPast();
+    }
+
+    /**
+     * Revoke the refresh token
+     */
+    public function revoke(): bool
+    {
+        return $this->update(['revoked' => true]);
+    }
+
+    /**
+     * Get the user that owns the refresh token
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

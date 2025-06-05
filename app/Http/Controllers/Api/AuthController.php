@@ -10,6 +10,7 @@ use App\Http\Resources\UserResource;
 use App\Models\Company;
 use App\Models\RefreshToken;
 use App\Models\User;
+use App\Services\EmailVerificationService;
 use App\Traits\ApiResponse;
 use Exception;
 use Illuminate\Auth\Events\Login;
@@ -33,9 +34,6 @@ class AuthController extends Controller
      *
      * Authenticate user with email and password to receive a JWT token.
      *
-     * @bodyParam  email anas@anas.com
-     * @bodyParam string $password User's password.
-     *
      * @unauthenticated
      *
      * @throws \Illuminate\Validation\ValidationException
@@ -45,7 +43,7 @@ class AuthController extends Controller
         $credentials = $request->validated();
         if (! $token = JWTAuth::attempt($credentials)) {
 
-            return $this->apiResponse(null, 'Invalid credentials', 401);
+            return $this->apiResponseErrors('Invalid credentials', ['error' => 'Unauthorized'], 401);
         }
         // Update last login timestamp
         $user = JWTAuth::user();
@@ -124,7 +122,7 @@ class AuthController extends Controller
             $token = JWTAuth::fromUser($user);
 
             // Send email verification notification
-            app(\App\Services\EmailVerificationService::class)->sendVerification($user);
+            app(EmailVerificationService::class)->sendVerification($user);
 
             DB::commit();
 
@@ -189,7 +187,8 @@ class AuthController extends Controller
             return $this->apiResponseErrors('User not found', [], 404);
         }
         try {
-            RefreshToken::where('user_id', '=', $user->id)->delete();
+            RefreshToken::where('user_id', $user->id)
+                ->delete();
             JWTAuth::invalidate($token);
 
             return $this->apiResponse(null, 'Successfully logged out', 200);
@@ -202,43 +201,46 @@ class AuthController extends Controller
      * Refresh JWT token
      *
      * Get a new JWT token using the current token.
-     *
-     *
-     * @response  {
-     *   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-     *   "token_type": "bearer",
-     *   "expires_in": 3600
-     * }
-     * @response  {
-     *   "error": "Failed to refresh token"
-     * }
-     *
-     * @unauthenticated
      */
     public function refresh($token): JsonResponse
     {
         try {
-            $refreshToken = RefreshToken::where('token', '=', $token)->first();
+            $refreshToken = RefreshToken::where('token', $token)->first();
 
-            if (! $refreshToken || ! $refreshToken->active() || $refreshToken->revoked) {
-                return $this->apiResponseErrors('Invalid or expired refresh token', [], 401);
+            // Check if refresh token exists, is active, and not revoked
+            if (! $refreshToken || ! $refreshToken->isActive() || $refreshToken->revoked) {
+                return $this->apiResponseErrors('Invalid or expired refresh token', [
+                    'token_error' => 'Refresh token is invalid, expired, or revoked',
+                ], 401);
             }
+
             $user = $refreshToken->user;
             if (! $user) {
-                return $this->apiResponseErrors('Associated user not found', [], 401);
+                return $this->apiResponseErrors('Associated user not found', [
+                    'user_error' => 'User associated with this token no longer exists',
+                ], 401);
             }
+
+            // Generate new access token
             $newToken = JWTAuth::fromUser($user);
 
             return $this->apiResponse([
                 'access_token' => $newToken,
                 'expires_in'   => config('jwt.ttl') * 60,
             ], 'Token refreshed successfully', 200);
+
         } catch (TokenInvalidException $e) {
-            return $this->apiResponseErrors('Token is invalid', ['token_error' => $e->getMessage()], 401);
+            return $this->apiResponseErrors('Token is invalid', [
+                'token_error' => $e->getMessage(),
+            ], 401);
         } catch (TokenExpiredException $e) {
-            return $this->apiResponseErrors('Token has expired', ['token_error' => $e->getMessage()], 401);
+            return $this->apiResponseErrors('Token has expired', [
+                'token_error' => $e->getMessage(),
+            ], 401);
         } catch (\Exception $e) {
-            return $this->apiResponseErrors('Token refresh failed', ['error' => $e->getMessage()], 401);
+            return $this->apiResponseErrors('Token refresh failed', [
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 
