@@ -189,7 +189,7 @@ class AuthController extends Controller
             return $this->apiResponseErrors('User not found', [], 404);
         }
         try {
-            RefreshToken::where('user_id', $user->id)->delete();
+            RefreshToken::where('user_id', '=', $user->id)->delete();
             JWTAuth::invalidate($token);
 
             return $this->apiResponse(null, 'Successfully logged out', 200);
