@@ -59,11 +59,6 @@ class User extends Authenticatable implements JWTSubject
         return "{$this->first_name} {$this->last_name}";
     }
 
-    public function company()
-    {
-        return $this->belongsTo(Company::class);
-    }
-
     /**
      * Check if user is active.
      */
