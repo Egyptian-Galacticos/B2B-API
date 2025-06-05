@@ -252,9 +252,7 @@ class AuthController extends Controller
      *
      * Reset the user's password using a reset token.
      *
-     * @response  {
-     *   "error": "Failed to reset password"
-     * }
+     * @unauthenticated
      */
     public function sendResetLink(Request $request): JsonResponse
     {
