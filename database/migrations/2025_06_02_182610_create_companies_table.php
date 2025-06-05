@@ -19,8 +19,8 @@ return new class extends Migration
             $table->string('commercial_registration')->nullable();
             $table->json('address');
             $table->string('logo')->nullable();
-            $table->string('website');
-            $table->text('description');
+            $table->string('website')->nullable();
+            $table->text('description')->nullable();
             $table->string('email');
             $table->boolean('is_email_verified')->default(false);
             $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
