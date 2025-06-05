@@ -10,7 +10,6 @@ use App\Http\Resources\UserResource;
 use App\Models\Company;
 use App\Models\RefreshToken;
 use App\Models\User;
-use App\Notifications\VerifyEmail;
 use App\Traits\ApiResponse;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -58,10 +57,10 @@ class AuthController extends Controller
         $user->load('roles', 'company');
 
         return $this->apiResponse([
-            'user'          => new UserResource($user),
-            'access_token'  => $token,
+            'user' => new UserResource($user),
+            'access_token' => $token,
             'refresh_token' => $refreshToken->token,
-            'expires_in'    => config('jwt.ttl') * 60,
+            'expires_in' => config('jwt.ttl') * 60,
         ], 'Login successful', 200);
     }
 
@@ -84,13 +83,13 @@ class AuthController extends Controller
         try {
             // Create user with all required fields
             $user = User::create([
-                'first_name'        => $validated['user']['first_name'],
-                'last_name'         => $validated['user']['last_name'],
-                'email'             => $validated['user']['email'],
-                'password'          => Hash::make($validated['user']['password']),
-                'phone_number'      => $validated['user']['phone_number'] ?? null,
+                'first_name' => $validated['user']['first_name'],
+                'last_name' => $validated['user']['last_name'],
+                'email' => $validated['user']['email'],
+                'password' => Hash::make($validated['user']['password']),
+                'phone_number' => $validated['user']['phone_number'] ?? null,
                 'is_email_verified' => false,
-                'status'            => 'active',
+                'status' => 'active',
             ]);
 
             // Assign roles
@@ -104,16 +103,16 @@ class AuthController extends Controller
 
             // Create company
             Company::create([
-                'user_id'                 => $user->id,
-                'name'                    => $validated['company']['name'],
-                'email'                   => $validated['company']['email'],
-                'tax_id'                  => $validated['company']['tax_id'] ?? null,
-                'company_phone'           => $validated['company']['company_phone'] ?? null,
+                'user_id' => $user->id,
+                'name' => $validated['company']['name'],
+                'email' => $validated['company']['email'],
+                'tax_id' => $validated['company']['tax_id'] ?? null,
+                'company_phone' => $validated['company']['company_phone'] ?? null,
                 'commercial_registration' => $validated['company']['commercial_registration'] ?? null,
-                'website'                 => $validated['company']['website'] ?? null,
-                'description'             => $validated['company']['description'] ?? null,
-                'logo'                    => $validated['company']['logo'] ?? null,
-                'address'                 => $validated['company']['address'],
+                'website' => $validated['company']['website'] ?? null,
+                'description' => $validated['company']['description'] ?? null,
+                'logo' => $validated['company']['logo'] ?? null,
+                'address' => $validated['company']['address'],
             ]);
 
             // // Load roles and company relationships
@@ -123,15 +122,15 @@ class AuthController extends Controller
             $token = JWTAuth::fromUser($user);
 
             // Send email verification notification
-            $user->notify(new VerifyEmail);
+            app(\App\Services\EmailVerificationService::class)->sendVerification($user);
 
             DB::commit();
 
             return $this->apiResponse([
-                'user'          => new UserResource($user),
-                'access_token'  => $token,
+                'user' => new UserResource($user),
+                'access_token' => $token,
                 'refresh_token' => RefreshToken::create(['user_id' => $user->id])->token,
-                'expires_in'    => config('jwt.ttl') * 60,
+                'expires_in' => config('jwt.ttl') * 60,
             ], 'Registration successful. Please check your email to verify your account.', 201);
 
         } catch (Exception $e) {
@@ -139,7 +138,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'message' => 'Registration failed',
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -231,7 +230,7 @@ class AuthController extends Controller
 
             return $this->apiResponse([
                 'access_token' => $newToken,
-                'expires_in'   => config('jwt.ttl') * 60,
+                'expires_in' => config('jwt.ttl') * 60,
             ], 'Token refreshed successfully', 200);
         } catch (TokenInvalidException $e) {
             return response()->json(['error' => 'Token is invalid'], 401);
@@ -250,60 +249,6 @@ class AuthController extends Controller
      * @response  {
      *   "error": "Failed to reset password"
      * }
-     */
-    public function verifyEmail(Request $request, $id): JsonResponse
-    {
-        if (! $request->hasValidSignature()) {
-            return response()->json(['error' => 'Invalid or expired verification link'], 400);
-        }
-        $user = User::findOrFail($id);
-        if ($user->is_email_verified) {
-            return response()->json(['message' => 'Email already verified'], 200);
-        }
-        $user->is_email_verified = true;
-        $user->save();
-
-        return response()->json(['message' => 'Email successfully verified'], 200);
-    }
-
-    /**
-     * Resend verification email
-     *
-     * Resend the email verification notification to the user.
-     *
-     * @response  {
-     *   "message": "Verification email sent successfully"
-     * }
-     * @response  {
-     *   "error": "Email already verified"
-     * }
-     *
-     * @unauthenticated
-     */
-    public function resendVerificationEmail($id): JsonResponse
-    {
-        $user = User::findOrFail($id);
-        if ($user->is_email_verified) {
-            return response()->json(['message' => 'Email already verified'], 200);
-        }
-        $user->notify(new VerifyEmail);
-
-        return response()->json(['message' => "Verification email sent successfully to {$user->email}"], 200);
-    }
-
-    /**
-     * Send password reset link
-     *
-     * Send a password reset link to the user's email.
-     *
-     * @response  {
-     *   "message": "Reset link sent to your email"
-     * }
-     * @response  {
-     *   "error": "Failed to send reset link"
-     * }
-     *
-     * @unauthenticated
      */
     public function sendResetLink(Request $request): JsonResponse
     {
@@ -346,8 +291,8 @@ class AuthController extends Controller
     {
 
         $status = Password::reset([
-            'email'    => $request->email,
-            'token'    => $request->token,
+            'email' => $request->email,
+            'token' => $request->token,
             'password' => $request->password,
         ], function ($user, $password) {
             $user->password = Hash::make($password);
