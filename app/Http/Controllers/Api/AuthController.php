@@ -18,7 +18,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
@@ -43,8 +42,7 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request): JsonResponse
     {
-        $credentials = $request->only('email', 'password');
-
+        $credentials = $request->validated();
         if (! $token = JWTAuth::attempt($credentials)) {
 
             return $this->apiResponse(null, 'Invalid credentials', 401);
@@ -142,10 +140,7 @@ class AuthController extends Controller
         } catch (Exception $e) {
             DB::rollBack();
 
-            return response()->json([
-                'message' => 'Registration failed',
-                'error'   => $e->getMessage(),
-            ], 500);
+            return $this->apiResponseErrors('Registration failed', ['error' => $e->getMessage()], 500);
         }
     }
 
@@ -169,11 +164,11 @@ class AuthController extends Controller
 
             return $this->apiResponse(new UserResource($user), 'User retrieved successfully', 200);
         } catch (TokenExpiredException $e) {
-            return $this->apiResponse(null, 'Token has expired', 401);
+            return $this->apiResponseErrors('Token has expired', ['token_error' => $e->getMessage()], 401);
         } catch (TokenInvalidException $e) {
-            return $this->apiResponse(null, 'Invalid token', 401);
+            return $this->apiResponseErrors('Invalid token', ['token_error' => $e->getMessage()], 401);
         } catch (\Exception $e) {
-            return $this->apiResponse(null, 'Unauthorized', 401);
+            return $this->apiResponseErrors('Unauthorized', ['error' => $e->getMessage()], 401);
         }
     }
 
@@ -188,10 +183,10 @@ class AuthController extends Controller
         $user = JWTAuth::user();
 
         if (! $token) {
-            return $this->apiResponse(null, 'No token provided', 400);
+            return $this->apiResponseErrors('No token provided', [], 400);
         }
         if (! $user) {
-            return $this->apiResponse(null, 'User not found', 404);
+            return $this->apiResponseErrors('User not found', [], 404);
         }
         try {
             RefreshToken::where('user_id', $user->id)->delete();
@@ -199,7 +194,7 @@ class AuthController extends Controller
 
             return $this->apiResponse(null, 'Successfully logged out', 200);
         } catch (\Exception $e) {
-            return $this->apiResponse(null, 'Failed to log out', 500);
+            return $this->apiResponseErrors('Failed to log out', ['error' => $e->getMessage()], 500);
         }
     }
 
@@ -223,14 +218,14 @@ class AuthController extends Controller
     public function refresh($token): JsonResponse
     {
         try {
-            $refreshToken = RefreshToken::where('token', $token)->first();
+            $refreshToken = RefreshToken::where('token', '=', $token)->first();
 
             if (! $refreshToken || ! $refreshToken->active() || $refreshToken->revoked) {
-                return response()->json(['error' => 'Invalid or expired refresh token'], 401);
+                return $this->apiResponseErrors('Invalid or expired refresh token', [], 401);
             }
             $user = $refreshToken->user;
             if (! $user) {
-                return response()->json(['error' => 'Associated user not found'], 401);
+                return $this->apiResponseErrors('Associated user not found', [], 401);
             }
             $newToken = JWTAuth::fromUser($user);
 
@@ -239,11 +234,11 @@ class AuthController extends Controller
                 'expires_in'   => config('jwt.ttl') * 60,
             ], 'Token refreshed successfully', 200);
         } catch (TokenInvalidException $e) {
-            return response()->json(['error' => 'Token is invalid'], 401);
+            return $this->apiResponseErrors('Token is invalid', ['token_error' => $e->getMessage()], 401);
         } catch (TokenExpiredException $e) {
-            return response()->json(['error' => 'Token has expired'], 401);
+            return $this->apiResponseErrors('Token has expired', ['token_error' => $e->getMessage()], 401);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 401);
+            return $this->apiResponseErrors('Token refresh failed', ['error' => $e->getMessage()], 401);
         }
     }
 
@@ -261,20 +256,30 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->apiResponse([
-                'errors' => $validator->errors(),
-            ], 'Validation failed', 422);
-        }
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
-
-        if ($status === Password::RESET_LINK_SENT) {
-            return $this->apiResponse(null, 'Reset link sent to your email', 200);
+            return $this->apiResponseErrors('Validation failed', $validator->errors()->toArray(), 422);
         }
 
-        return $this->apiResponse(null, 'Failed to send reset link', 500);
+        try {
+            $status = Password::sendResetLink(
+                $request->only('email')
+            );
 
+            if ($status === Password::RESET_LINK_SENT) {
+                return $this->apiResponse(null, 'Reset link sent to your email', 200);
+            }
+
+            // Handle different password reset statuses
+            $message = match ($status) {
+                Password::INVALID_USER    => 'User not found with that email address',
+                Password::RESET_THROTTLED => 'Please wait before requesting another reset link',
+                default                   => 'Failed to send reset link'
+            };
+
+            return $this->apiResponseErrors($message, ['status' => $status], 400);
+
+        } catch (\Exception $e) {
+            return $this->apiResponseErrors('Failed to send reset link', ['error' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -293,20 +298,33 @@ class AuthController extends Controller
      */
     public function resetPassword(ResetPasswordRequest $request): JsonResponse
     {
+        $validated = $request->validated();
 
-        $status = Password::reset([
-            'email'    => $request->email,
-            'token'    => $request->token,
-            'password' => $request->password,
-        ], function ($user, $password) {
-            $user->password = Hash::make($password);
-            $user->save();
-        });
-        echo $status;
-        if ($status === Password::PASSWORD_RESET) {
-            return $this->apiResponse(null, 'Password has been successfully reset', 200);
+        try {
+            $status = Password::reset([
+                'email'    => $validated['email'],
+                'token'    => $validated['token'],
+                'password' => $validated['password'],
+            ], function ($user, $password) {
+                $user->password = Hash::make($password);
+                $user->save();
+            });
+
+            if ($status === Password::PASSWORD_RESET) {
+                return $this->apiResponse(null, 'Password has been successfully reset', 200);
+            }
+
+            // Handle different password reset statuses
+            $message = match ($status) {
+                Password::INVALID_TOKEN => 'Invalid reset token',
+                Password::INVALID_USER  => 'User not found',
+                default                 => 'Failed to reset password'
+            };
+
+            return $this->apiResponseErrors($message, ['status' => $status], 400);
+
+        } catch (\Exception $e) {
+            return $this->apiResponseErrors('Password reset failed', ['error' => $e->getMessage()], 500);
         }
-
-        return $this->apiResponse(null, 'Failed to reset password', 500);
     }
 }
