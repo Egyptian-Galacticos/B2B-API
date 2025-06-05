@@ -201,6 +201,8 @@ class AuthController extends Controller
      * Refresh JWT token
      *
      * Get a new JWT token using the current token.
+     *
+     * @unauthenticated
      */
     public function refresh($token): JsonResponse
     {
