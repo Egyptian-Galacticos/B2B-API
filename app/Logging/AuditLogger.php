@@ -11,6 +11,52 @@ use Monolog\LogRecord;
 
 class AuditLogger
 {
+    private array $sensitiveKeys = [
+        'email',
+        'password',
+        'password_confirmation',
+        'first_name',
+        'last_name',
+        'phone_number',
+        'address',
+        'street',
+        'city',
+        'postal_code',
+        'country',
+        'credit_card',
+        'ssn',
+        'date_of_birth',
+        'api_token',
+        'access_token',
+        'session_id',
+        'passport_number',
+        'drivers_license',
+        'name',
+        'tax_id',
+        'company_phone',
+        'description',
+        'shipping_address',
+        'billing_address',
+        'terms_and_conditions',
+        'specifications',
+    ]; // List of sensitive keys to redact, to be updated as needed
+
+    /**
+     * Sanitize metadata by replacing sensitive fields with [REDACTED].
+     */
+    public function sanitizeMetadata(array $metadata): array
+    {
+        foreach ($this->sensitiveKeys as $key) {
+            if (isset($metadata[$key])) {
+
+                $metadata[$key] = '[REDACTED]';
+
+            }
+        }
+
+        return $metadata;
+    }
+
     public function __invoke(array $config): Logger
     {
         $logger = new Logger('audit');
@@ -20,6 +66,7 @@ class AuditLogger
             protected function write(LogRecord $record): void
             {
                 $context = $record['context'];
+                $sanitizedMetadata = (new AuditLogger)->sanitizeMetadata($context['metadata'] ?? []);
 
                 AuditLog::create([
                     'user_id' => $context['user_id'] ?? Auth::id(),
@@ -28,7 +75,7 @@ class AuditLogger
                     'entity_id' => $context['entity_id'] ?? null,
                     'ip_address' => $context['ip_address'] ?? Request::ip(),
                     'user_agent' => $context['user_agent'] ?? Request::userAgent(),
-                    'metadata' => $context['metadata'] ?? [],
+                    'metadata' => $sanitizedMetadata ?? [],
                     'created_at' => now(),
                 ]);
             }
