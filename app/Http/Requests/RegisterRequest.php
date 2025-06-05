@@ -2,14 +2,24 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class RegisterRequest extends FormRequest
+/**
+ * User registration request validation.
+ *
+ * This handles validation for new user registration including
+ * both buyer and seller account types with company information.
+ *
+ * @see \App\Http\Controllers\Api\AuthController::register()
+ */
+class RegisterRequest extends BaseRequest
 {
+    /**
+     * Determine if the user is authorized to make this request.
+     */
     public function authorize(): bool
     {
-        return true;
+        return true; // Anyone can register
     }
 
     public function rules(): array
@@ -44,11 +54,6 @@ class RegisterRequest extends FormRequest
             'company.company_phone' => ['required', 'string', 'max:25'],
             // @example 1234567890
             'company.commercial_registration' => ['required_if:roles,seller', 'string', 'max:255'],
-            // @example https://www.techcorp.com
-            'company.website' => ['nullable', 'url', 'max:255'],
-            // @example A leading tech company
-            'company.description' => ['nullable', 'string'],
-            'company.logo'        => ['nullable', 'image', 'max:2048', 'mimes:jpeg,png,jpg'],
             // Company Address
             'company.address' => ['required', 'array'],
             // @example 123 Tech Street
