@@ -103,30 +103,36 @@ class RegisterRequest extends BaseRequest
         ];
     }
 
+    /**
+     * Get the validation attributes for the request.
+     *
+     * @return array<string, string>
+     */
     public function attributes(): array
     {
         return [
-            'roles'            => 'Roles',
-            'user.firstName'   => 'First Name',
-            'user.lastName'    => 'Last Name',
-            'user.email'       => 'User Email',
-            'user.password'    => 'Password',
-            'user.phoneNumber' => 'Phone Number',
+            'roles'             => 'Roles',
+            'user.first_name'   => 'First Name',
+            'user.last_name'    => 'Last Name',
+            'user.email'        => 'User Email',
+            'user.password'     => 'Password',
+            'user.phone_number' => 'Phone Number',
 
-            'company.name'                   => 'Company Name',
-            'company.email'                  => 'Company Email',
-            'company.taxId'                  => 'Tax ID',
-            'company.companyPhone'           => 'Company Phone',
-            'company.commercialRegistration' => 'Commercial Registration',
-            'company.website'                => 'Website',
-            'company.description'            => 'Description',
-            'company.logo'                   => 'Company Logo',
+            'company.name'                    => 'Company Name',
+            'company.email'                   => 'Company Email',
+            'company.phone_number'            => 'Company Phone Number',
+            'company.tax_id'                  => 'Tax ID',
+            'company.company_phone'           => 'Company Phone',
+            'company.commercial_registration' => 'Commercial Registration',
+            'company.website'                 => 'Website',
+            'company.description'             => 'Description',
+            'company.logo'                    => 'Company Logo',
 
-            'company.address.street'  => 'Street',
-            'company.address.city'    => 'City',
-            'company.address.state'   => 'State',
-            'company.address.zipCode' => 'ZIP Code',
-            'company.address.country' => 'Country',
+            'company.address.street'   => 'Street',
+            'company.address.city'     => 'City',
+            'company.address.state'    => 'State',
+            'company.address.zip_code' => 'ZIP Code',
+            'company.address.country'  => 'Country',
         ];
     }
 }
