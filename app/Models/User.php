@@ -91,6 +91,11 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasRole('admin');
     }
 
+    public function isSeller(): bool
+    {
+        return $this->hasRole('seller');
+    }
+
     /**
      * Check if email is verified.
      */

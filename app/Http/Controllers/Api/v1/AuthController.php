@@ -48,17 +48,20 @@ class AuthController extends Controller
         }
 
         $user = JWTAuth::user();
-        if (! $user->isActive() && ! $user->hasRole('buyer')) {
+
+        // Check if user not suspended or inactive
+        if ($user->isSuspended()) {
             return $this->apiResponseErrors(
-                'Account inactive',
-                ['Your account is currently suspended or awaiting approval. Please contact support for assistance.'],
+                'Account suspended',
+                ['error' => 'Your account has been suspended. Please contact support for assistance.'],
                 403
             );
         }
-        if (! $user->is_email_verified) {
+
+        if (! $user->isActive() && ! $user->isSeller()) {
             return $this->apiResponseErrors(
-                'Email not verified',
-                ['Please verify your email address before logging in.'],
+                'Account inactive',
+                ['error' => 'Your account is currently suspended or awaiting approval. Please contact support for assistance.'],
                 403
             );
         }
