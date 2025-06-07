@@ -12,11 +12,8 @@ use Monolog\LogRecord;
 class AuditLogger
 {
     private array $sensitiveKeys = [
-        'email',
         'password',
         'password_confirmation',
-        'first_name',
-        'last_name',
         'phone_number',
         'address',
         'street',
@@ -69,14 +66,14 @@ class AuditLogger
                 $sanitizedMetadata = (new AuditLogger)->sanitizeMetadata($context['metadata'] ?? []);
 
                 AuditLog::create([
-                    'user_id' => $context['user_id'] ?? Auth::id(),
-                    'action' => $record['message'],
+                    'user_id'     => $context['user_id'] ?? Auth::id(),
+                    'action'      => $record['message'],
                     'entity_type' => $context['entity_type'] ?? null,
-                    'entity_id' => $context['entity_id'] ?? null,
-                    'ip_address' => $context['ip_address'] ?? Request::ip(),
-                    'user_agent' => $context['user_agent'] ?? Request::userAgent(),
-                    'metadata' => $sanitizedMetadata ?? [],
-                    'created_at' => now(),
+                    'entity_id'   => $context['entity_id'] ?? null,
+                    'ip_address'  => $context['ip_address'] ?? Request::ip(),
+                    'user_agent'  => $context['user_agent'] ?? Request::userAgent(),
+                    'metadata'    => $sanitizedMetadata ?? [],
+                    'created_at'  => now(),
                 ]);
             }
         });
