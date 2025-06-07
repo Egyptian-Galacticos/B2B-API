@@ -15,8 +15,8 @@ class EmailVerificationController extends BaseController
 
     public function __construct(private EmailVerificationService $service)
     {
-        $this->middleware('auth:api')->except('verify');
-        $this->middleware('throttle:6,1')->only(['send', 'resend']);
+        $this->middleware('auth:api')->except(['verify', 'verifyCompany']);
+        $this->middleware('throttle:6,1')->only(['send', 'resend', 'sendCompany', 'resendCompany']);
         $this->middleware(RestrictedDocsAccess::class);
     }
 
@@ -39,6 +39,29 @@ class EmailVerificationController extends BaseController
     }
 
     /**
+     * Send company email verification
+     *
+     * @group Email Verification
+     */
+    public function sendCompany(): JsonResponse
+    {
+        $user = auth()->user();
+        $company = $user->company;
+
+        if (! $company) {
+            return $this->apiResponse(null, 'No company associated with this user', 400);
+        }
+
+        if ($company->hasVerifiedEmail()) {
+            return $this->apiResponse(null, 'Company email already verified', 400);
+        }
+
+        $this->service->sendCompanyVerification($company);
+
+        return $this->apiResponse(null, 'Company verification email sent');
+    }
+
+    /**
      * Resend email verification
      *
      * @group Email Verification
@@ -46,6 +69,16 @@ class EmailVerificationController extends BaseController
     public function resend(): JsonResponse
     {
         return $this->send();
+    }
+
+    /**
+     * Resend company email verification
+     *
+     * @group Email Verification
+     */
+    public function resendCompany(): JsonResponse
+    {
+        return $this->sendCompany();
     }
 
     /**
@@ -74,10 +107,8 @@ class EmailVerificationController extends BaseController
     public function status(): JsonResponse
     {
         $user = auth()->user();
+        $status = $this->service->getVerificationStatus($user);
 
-        return $this->apiResponse([
-            'is_verified' => $user->hasVerifiedEmail(),
-            'email'       => $user->email,
-        ]);
+        return $this->apiResponse($status);
     }
 }
