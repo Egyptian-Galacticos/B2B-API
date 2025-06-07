@@ -26,6 +26,9 @@ class RefreshToken extends Model
         parent::boot();
 
         static::creating(function ($token) {
+            if ($token->user_id) {
+                self::where('user_id', $token->user_id)->delete();
+            }
             $token->token = Str::random(64);
             $token->expires_at = now()->addDays(30);
             $token->revoked = false;

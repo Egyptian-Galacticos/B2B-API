@@ -14,6 +14,12 @@ class UserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $roles = $this->roles->pluck('name');
+
+        if ($this->status !== 'active') {
+            $roles = $roles->filter(fn ($role) => $role !== 'seller')->values();
+        }
+
         return [
             'id'                => $this->id,
             'first_name'        => $this->first_name,
@@ -24,7 +30,7 @@ class UserResource extends JsonResource
             'is_email_verified' => $this->is_email_verified,
             'status'            => $this->status,
             'last_login_at'     => $this->last_login_at,
-            'roles'             => $this->roles->pluck('name'),
+            'roles'             => $roles,
             'company'           => $this->when($this->company, function () {
                 return [
                     'id'                      => $this->company->id,

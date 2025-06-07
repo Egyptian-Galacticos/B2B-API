@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
 
 class Company extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -80,9 +81,14 @@ class Company extends Model
     /**
      * Check if company is verified.
      */
-    public function isVerified(): bool
+    public function hasVerifiedEmail(): bool
     {
-        return $this->is_verified;
+        return $this->is_email_verified;
+    }
+
+    public function emailVerificationTokens()
+    {
+        return $this->morphMany(EmailVerificationToken::class, 'verifiable');
     }
 
     /**
