@@ -42,8 +42,8 @@ class AuthController extends Controller
     public function login(LoginRequest $request): JsonResponse
     {
         $credentials = $request->validated();
-        $token = JWTAuth::attempt($credentials);
-        if (! $token) {
+
+        if (! $token = JWTAuth::attempt($credentials)) {
 
             return $this->apiResponseErrors('Invalid credentials', ['error' => 'Unauthorized'], 401);
         }
