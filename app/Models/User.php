@@ -93,7 +93,7 @@ class User extends Authenticatable implements JWTSubject
 
     public function emailVerificationTokens()
     {
-        return $this->hasMany(EmailVerificationToken::class);
+        return $this->morphMany(EmailVerificationToken::class, 'verifiable');
     }
 
     /**

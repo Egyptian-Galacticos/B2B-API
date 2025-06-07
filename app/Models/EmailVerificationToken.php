@@ -6,22 +6,24 @@ use Illuminate\Database\Eloquent\Model;
 
 class EmailVerificationToken extends Model
 {
-    protected $fillable = ['user_id', 'token', 'expires_at'];
+    protected $fillable = [
+        'token',
+        'email',
+        'expires_at',
+        'verifiable_type',
+        'verifiable_id',
+    ];
+    protected $casts = [
+        'expires_at' => 'datetime',
+    ];
 
-    protected $casts = ['expires_at' => 'datetime'];
-
-    public function user()
+    public function verifiable()
     {
-        return $this->belongsTo(User::class);
+        return $this->morphTo();
     }
 
     public function isExpired(): bool
     {
         return $this->expires_at->isPast();
-    }
-
-    public function scopeValid($query)
-    {
-        return $query->where('expires_at', '>', now());
     }
 }

@@ -2,49 +2,86 @@
 
 namespace App\Services;
 
+use App\Models\Company;
 use App\Models\EmailVerificationToken;
 use App\Models\User;
+use App\Notifications\CompanyEmailVerificationNotification;
 use App\Notifications\EmailVerificationNotification;
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 
 class EmailVerificationService
 {
     public function sendVerification(User $user): void
     {
-        EmailVerificationToken::where('user_id', $user->id)->delete();
+        $user->emailVerificationTokens()->delete();
 
-        $plainToken = Str::random(64);
-        $hashedToken = hash('sha256', $plainToken);
+        $token = $this->createToken($user);
 
-        EmailVerificationToken::create([
-            'user_id' => $user->id,
-            'token' => $hashedToken,
-            'expires_at' => now()->addHour(),
+        $user->notify(new EmailVerificationNotification($token->token));
+    }
+
+    public function sendCompanyVerification(Company $company): void
+    {
+        $company->emailVerificationTokens()->delete();
+
+        $token = $this->createToken($company);
+
+        $company->notify(new CompanyEmailVerificationNotification($token->token));
+    }
+
+    private function createToken($verifiable): EmailVerificationToken
+    {
+        return EmailVerificationToken::create([
+            'token'           => Str::random(64),
+            'email'           => $verifiable->email,
+            'expires_at'      => Carbon::now()->addMinutes((int) config('auth.verification.expire', 60)),
+            'verifiable_type' => get_class($verifiable),
+            'verifiable_id'   => $verifiable->id,
         ]);
-
-        $user->notify(new EmailVerificationNotification($plainToken));
     }
 
     public function verify(string $token): bool
     {
-        $hashedToken = hash('sha256', $token);
-
-        $verificationToken = EmailVerificationToken::with('user')
-            ->where('token', $hashedToken)
+        $verificationToken = EmailVerificationToken::where('token', $token)
             ->where('expires_at', '>', now())
             ->first();
 
-        if (! $verificationToken || $verificationToken->user->hasVerifiedEmail()) {
+        if (! $verificationToken) {
             return false;
         }
 
-        $verificationToken->user->update([
-            'email_verified_at' => now(),
-            'is_email_verified' => true,
-        ]);
+        $verifiable = $verificationToken->verifiable;
+
+        if ($verifiable instanceof User) {
+            $verifiable->update([
+                'is_email_verified' => true,
+                'email_verified_at' => now(),
+            ]);
+        } elseif ($verifiable instanceof Company) {
+            $verifiable->update([
+                'is_email_verified' => true,
+            ]);
+        }
 
         $verificationToken->delete();
 
         return true;
+    }
+
+    public function getVerificationStatus(User $user): array
+    {
+        $company = $user->company;
+
+        return [
+            'user' => [
+                'is_verified' => $user->hasVerifiedEmail(),
+                'email'       => $user->email,
+            ],
+            'company' => $company ? [
+                'is_verified' => $company->hasVerifiedEmail(),
+                'email'       => $company->email,
+            ] : null,
+        ];
     }
 }
