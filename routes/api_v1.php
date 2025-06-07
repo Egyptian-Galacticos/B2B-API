@@ -16,8 +16,14 @@ Route::prefix('v1')->group(function () {
 
     Route::prefix('auth')->group(function () {
         Route::middleware('auth:api')->group(function () {
+            // user email verification
             Route::post('email/send-verification', [EmailVerificationController::class, 'send']);
             Route::post('email/resend-verification', [EmailVerificationController::class, 'resend']);
+
+            // company email verification
+            Route::post('company-email/send-verification', [EmailVerificationController::class, 'sendCompany']);
+            Route::post('company-email/resend-verification', [EmailVerificationController::class, 'resendCompany']);
+
             Route::get('email/status', [EmailVerificationController::class, 'status']);
         });
 
