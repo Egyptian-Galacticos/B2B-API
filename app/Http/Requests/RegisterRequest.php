@@ -10,7 +10,7 @@ use Illuminate\Validation\Rule;
  * This handles validation for new user registration including
  * both buyer and seller account types with company information.
  *
- * @see \App\Http\Controllers\Api\AuthController::register()
+ * @see \App\Http\Controllers\Api\v1\AuthController::register()
  */
 class RegisterRequest extends BaseRequest
 {
@@ -84,7 +84,8 @@ class RegisterRequest extends BaseRequest
             'user.email.email'         => 'Invalid user email format.',
             'user.email.unique'        => 'This email is already registered.',
             'user.password.required'   => 'Password is required.',
-            'user.password.regex'      => 'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&-).',        'user.password.confirmed' => 'Password confirmation does not match.',
+            'user.password.regex'      => 'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&-).',
+            'user.password.confirmed'  => 'Password confirmation does not match.',
             'user.phone_number.regex'  => 'Invalid phone number format.',
 
             // Company messages
