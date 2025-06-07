@@ -18,10 +18,24 @@ class IsEmailVerified
      */
     public function handle(Request $request, Closure $next): Response
     {
-
         $user = auth()->user();
-        if ($user && ! $user->is_email_verified) {
-            return $this->apiResponse(null, 'Email not verified', 403);
+
+        // If no authenticated user, let auth middleware handle it
+        if (! $user) {
+            return $next($request);
+        }
+
+        // Check if user's email is verified
+        if (! $user->is_email_verified) {
+            return $this->apiResponseErrors(
+                'Email verification required',
+                [
+                    'error'                 => 'Email not verified',
+                    'message'               => 'You must verify your email before accessing this resource.',
+                    'verification_required' => true,
+                ],
+                403
+            );
         }
 
         return $next($request);

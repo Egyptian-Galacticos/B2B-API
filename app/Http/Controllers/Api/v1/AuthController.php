@@ -55,6 +55,13 @@ class AuthController extends Controller
                 403
             );
         }
+        if (! $user->is_email_verified) {
+            return $this->apiResponseErrors(
+                'Email not verified',
+                ['Please verify your email address before logging in.'],
+                403
+            );
+        }
 
         $user->update(['last_login_at' => now()]);
         $refreshToken = RefreshToken::create([
