@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Api\v1;
 
 use App\Services\EmailVerificationService;
 use App\Traits\ApiResponse;
@@ -77,7 +77,7 @@ class EmailVerificationController extends BaseController
 
         return $this->apiResponse([
             'is_verified' => $user->hasVerifiedEmail(),
-            'email' => $user->email,
+            'email'       => $user->email,
         ]);
     }
 }

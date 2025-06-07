@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RefreshTokenRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Http\Resources\UserResource;
@@ -41,12 +42,21 @@ class AuthController extends Controller
     public function login(LoginRequest $request): JsonResponse
     {
         $credentials = $request->validated();
-        if (! $token = JWTAuth::attempt($credentials)) {
+        $token = JWTAuth::attempt($credentials);
+        if (! $token) {
 
             return $this->apiResponseErrors('Invalid credentials', ['error' => 'Unauthorized'], 401);
         }
-        // Update last login timestamp
+
         $user = JWTAuth::user();
+        if (! $user->isActive() && ! $user->hasRole('buyer')) {
+            return $this->apiResponseErrors(
+                'Account inactive',
+                ['Your account is currently suspended or awaiting approval. Please contact support for assistance.'],
+                403
+            );
+        }
+
         $user->update(['last_login_at' => now()]);
         $refreshToken = RefreshToken::create([
             'user_id' => $user->id,
@@ -200,21 +210,13 @@ class AuthController extends Controller
     /**
      * Refresh JWT token
      *
-     * Get a new JWT token using the current token.
      *
      * @unauthenticated
      */
-    public function refresh($token): JsonResponse
+    public function refresh(RefreshTokenRequest $request): JsonResponse
     {
         try {
-            $refreshToken = RefreshToken::where('token', $token)->first();
-
-            // Check if refresh token exists, is active, and not revoked
-            if (! $refreshToken || ! $refreshToken->isActive() || $refreshToken->revoked) {
-                return $this->apiResponseErrors('Invalid or expired refresh token', [
-                    'token_error' => 'Refresh token is invalid, expired, or revoked',
-                ], 401);
-            }
+            $refreshToken = RefreshToken::where('token', '=', $request->validated()['token'])->first();
 
             $user = $refreshToken->user;
             if (! $user) {
