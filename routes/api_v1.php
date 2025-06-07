@@ -28,7 +28,7 @@ Route::prefix('v1')->group(function () {
             Route::get('email/status', [EmailVerificationController::class, 'status']);
         });
 
-        Route::post('email/verify', [EmailVerificationController::class, 'verify']);
+        Route::post('email/verify', [EmailVerificationController::class, 'verify']); // work for both user and company email verification
     });
     Route::post('/reset-password', [AuthController::class, 'sendResetLink'])->name('api.password.forgot');
     Route::post('/forgot-password', [AuthController::class, 'resetPassword'])->name('api.password.reset');
