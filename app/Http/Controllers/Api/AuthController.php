@@ -42,7 +42,6 @@ class AuthController extends Controller
     {
         $credentials = $request->validated();
         if (! $token = JWTAuth::attempt($credentials)) {
-
             return $this->apiResponseErrors('Invalid credentials', ['error' => 'Unauthorized'], 401);
         }
         // Update last login timestamp

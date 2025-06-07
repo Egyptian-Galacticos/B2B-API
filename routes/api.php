@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\API\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -26,3 +27,8 @@ Route::post('/password/forgot', [AuthController::class, 'sendResetLink'])->name(
 Route::post('/password/reset', [AuthController::class, 'resetPassword'])->name('api.password.reset');
 Route::resource('products', ProductController::class)
     ->only(['index', 'show', 'store', 'update', 'destroy']);
+Route::middleware('auth:api')->group(function () {
+    Route::resource('users', UserController::class)->only(['destroy']);
+    Route::patch('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
+    Route::delete('users/{id}/forcedelete', [UserController::class, 'forceDelete'])->name('users.forceDelete');
+});
