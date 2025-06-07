@@ -105,8 +105,12 @@ class EmailVerificationController extends BaseController
         try {
             $user = auth()->user();
             $status = $this->service->getVerificationStatus($user);
+            $userStatus = $status['user']['is_verified'] ? 'User email is verified.' : 'User email is not verified.';
+            $companyStatus = $status['company']['is_verified'] ? 'Company email is verified.' : 'Company email is not verified.';
 
-            return $this->apiResponse($status);
+            $message = trim($userStatus.' '.$companyStatus);
+
+            return $this->apiResponse($status, $message);
         } catch (Exception $e) {
             return $this->apiResponse(null, 'Failed to retrieve status', 500);
         }
