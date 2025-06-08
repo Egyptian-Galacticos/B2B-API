@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\v1\AuthController;
 use App\Http\Controllers\Api\v1\EmailVerificationController;
 use App\Http\Controllers\Api\v1\ProductController;
+use App\Http\Controllers\Api\v1\SellerUpgradeController;
 use App\Http\Controllers\API\v1\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -39,6 +40,12 @@ Route::prefix('v1')->group(function () {
         Route::resource('users', UserController::class)->only(['destroy']);
         Route::patch('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
         Route::delete('users/{id}/forcedelete', [UserController::class, 'forceDelete'])->name('users.forceDelete');
+        Route::prefix('seller')->group(function () {
+            Route::post('upgrade', [SellerUpgradeController::class, 'upgradeToSeller']);
+            Route::get('upgrade-status', [SellerUpgradeController::class, 'getUpgradeStatus']);
+            Route::put('company', [SellerUpgradeController::class, 'updateCompany']);
+            Route::get('company', [SellerUpgradeController::class, 'getCompany']);
+        });
     });
 
 });
