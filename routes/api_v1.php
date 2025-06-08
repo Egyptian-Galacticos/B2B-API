@@ -4,48 +4,117 @@ use App\Http\Controllers\Api\v1\AuthController;
 use App\Http\Controllers\Api\v1\EmailVerificationController;
 use App\Http\Controllers\Api\v1\ProductController;
 use App\Http\Controllers\Api\v1\SellerUpgradeController;
-use App\Http\Controllers\API\v1\UserController;
+use App\Http\Controllers\Api\v1\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
+
+    // ========================================
+    // PUBLIC ROUTES (No Authentication Required)
+    // ========================================
+
     Route::prefix('auth')->group(function () {
+        // Authentication endpoints
         Route::post('login', [AuthController::class, 'login'])->name('auth.login');
         Route::post('register', [AuthController::class, 'register'])->name('auth.register');
-        Route::get('me', [AuthController::class, 'me'])->name('auth.me');
-        Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
-        Route::post('refresh-token', [AuthController::class, 'refresh'])->name('auth.refresh');
-    })->middleware('is_email_verified');
 
-    Route::prefix('auth')->group(function () {
-        Route::middleware('auth:api')->group(function () {
-            // user email verification
-            Route::post('email/send-verification', [EmailVerificationController::class, 'send']);
-            Route::post('email/resend-verification', [EmailVerificationController::class, 'resend']);
+        // Password reset endpoints
+        Route::post('forgot-password', [AuthController::class, 'sendResetLink'])->name('auth.forgot-password');
+        Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('auth.reset-password');
 
-            // company email verification
-            Route::post('company-email/send-verification', [EmailVerificationController::class, 'sendCompany']);
-            Route::post('company-email/resend-verification', [EmailVerificationController::class, 'resendCompany']);
-
-            Route::get('email/status', [EmailVerificationController::class, 'status']);
-        });
-
-        Route::post('email/verify', [EmailVerificationController::class, 'verify']); // work for both user and company email verification
-    });
-    Route::post('/reset-password', [AuthController::class, 'sendResetLink'])->name('api.password.forgot');
-    Route::post('/forgot-password', [AuthController::class, 'resetPassword'])->name('api.password.reset');
-    Route::resource('products', ProductController::class)
-        ->only(['index', 'show', 'store', 'update', 'destroy']);
-
-    Route::middleware('auth:api')->group(function () {
-        Route::resource('users', UserController::class)->only(['destroy']);
-        Route::patch('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
-        Route::delete('users/{id}/forcedelete', [UserController::class, 'forceDelete'])->name('users.forceDelete');
-        Route::prefix('seller')->group(function () {
-            Route::post('upgrade', [SellerUpgradeController::class, 'upgradeToSeller']);
-            Route::get('upgrade-status', [SellerUpgradeController::class, 'getUpgradeStatus']);
-            Route::put('company', [SellerUpgradeController::class, 'updateCompany']);
-            Route::get('company', [SellerUpgradeController::class, 'getCompany']);
-        });
+        // Email verification (token-based, no auth required)
+        Route::post('email/verify', [EmailVerificationController::class, 'verify'])->name('auth.email.verify');
     });
 
+    // Public products endpoint (browsing without auth)
+    Route::get('products', [ProductController::class, 'index'])->name('products.public.index');
+    Route::get('products/{product}', [ProductController::class, 'show'])->name('products.public.show');
+
+    // ========================================
+    // PROTECTED ROUTES (Authentication Required)
+    // ========================================
+
+    Route::middleware(['auth:api'])->group(function () {
+
+        // =====================================
+        // BASIC AUTH ROUTES (Just Authentication)
+        // =====================================
+        Route::prefix('auth')->group(function () {
+            Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
+            Route::post('refresh-token', [AuthController::class, 'refresh'])->name('auth.refresh');
+        });
+
+        // Email verification management (requires auth but not verified email)
+        Route::prefix('email')->group(function () {
+            Route::post('send-verification', [EmailVerificationController::class, 'send'])->name('email.send');
+            Route::post('resend-verification', [EmailVerificationController::class, 'resend'])->name('email.resend');
+            Route::get('status', [EmailVerificationController::class, 'status'])->name('email.status');
+        });
+
+        // Company email verification management
+        Route::prefix('company-email')->group(function () {
+            Route::post('send-verification', [EmailVerificationController::class, 'sendCompany'])->name('company-email.send');
+            Route::post('resend-verification', [EmailVerificationController::class, 'resendCompany'])->name('company-email.resend');
+        });
+
+        // ====================================================
+        // VERIFIED & ACTIVE USER ROUTES (Full Restrictions)
+        // ====================================================
+        Route::middleware(['is_email_verified', 'is_suspended'])->group(function () {
+
+            Route::get('me', [AuthController::class, 'me'])->name('auth.me');
+
+            // Product management (for sellers/admins)
+            Route::resource('products', ProductController::class)
+                ->except(['index', 'show']) // Exclude public endpoints
+                ->names([
+                    'store'   => 'products.store',
+                    'update'  => 'products.update',
+                    'destroy' => 'products.destroy',
+                ]);
+
+            // User management
+            Route::prefix('users')->group(function () {
+                Route::delete('{user}', [UserController::class, 'destroy'])->name('users.destroy');
+                Route::patch('{user}/restore', [UserController::class, 'restore'])->name('users.restore');
+                Route::delete('{user}/force-delete', [UserController::class, 'forceDelete'])->name('users.force-delete');
+            });
+
+            // Seller-specific routes
+            Route::prefix('seller')->group(function () {
+                // Seller upgrade management
+                Route::post('upgrade', [SellerUpgradeController::class, 'upgradeToSeller'])->name('seller.upgrade');
+                Route::get('upgrade-status', [SellerUpgradeController::class, 'getUpgradeStatus'])->name('seller.upgrade-status');
+
+                // Company management for sellers
+                Route::controller(SellerUpgradeController::class)->group(function () {
+                    Route::get('company', 'getCompany')->name('seller.company.show');
+                    Route::put('company', 'updateCompany')->name('seller.company.update');
+                });
+            });
+
+            // =====================================
+            // ROLE-BASED ROUTES (Add when needed)
+            // =====================================
+            /*
+            // Admin only routes
+            Route::middleware(['role:admin'])->group(function () {
+                Route::get('admin/dashboard', [AdminController::class, 'dashboard']);
+                Route::resource('admin/users', AdminUserController::class);
+            });
+
+            // Seller only routes
+            Route::middleware(['role:seller'])->group(function () {
+                Route::get('seller/dashboard', [SellerController::class, 'dashboard']);
+                Route::resource('seller/inventory', InventoryController::class);
+            });
+
+            // Buyer only routes
+            Route::middleware(['role:buyer'])->group(function () {
+                Route::resource('orders', OrderController::class);
+                Route::resource('cart', CartController::class);
+            });
+            */
+        });
+    });
 });
