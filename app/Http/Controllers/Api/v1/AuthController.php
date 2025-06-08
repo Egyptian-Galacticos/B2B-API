@@ -208,7 +208,8 @@ class AuthController extends Controller
     public function refresh(RefreshTokenRequest $request): JsonResponse
     {
         try {
-            $refreshToken = RefreshToken::where('token', '=', $request->validated()['token'])->first();
+            $refresh_token = $request->validated()['refresh_token'];
+            $refreshToken = RefreshToken::where('token', '=', $refresh_token)->first();
 
             $user = $refreshToken->user;
             if (! $user) {

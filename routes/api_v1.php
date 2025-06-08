@@ -17,6 +17,7 @@ Route::prefix('v1')->group(function () {
         // Authentication endpoints
         Route::post('login', [AuthController::class, 'login'])->name('auth.login');
         Route::post('register', [AuthController::class, 'register'])->name('auth.register');
+        Route::post('refresh-token', [AuthController::class, 'refresh'])->name('auth.refresh');
 
         // Password reset endpoints
         Route::post('forgot-password', [AuthController::class, 'sendResetLink'])->name('auth.forgot-password');
@@ -41,7 +42,6 @@ Route::prefix('v1')->group(function () {
         // =====================================
         Route::prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
-            Route::post('refresh-token', [AuthController::class, 'refresh'])->name('auth.refresh');
         });
 
         // Email verification management (requires auth but not verified email)

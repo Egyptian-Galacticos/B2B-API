@@ -25,7 +25,7 @@ class RefreshTokenRequest extends BaseRequest
             'refresh_token' => [
                 'required',
                 'string',
-                'exists:refresh_tokens,refresh_token',
+                'exists:refresh_tokens,token',
             ],
         ];
     }
