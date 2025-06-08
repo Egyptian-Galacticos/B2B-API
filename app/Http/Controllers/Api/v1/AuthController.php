@@ -49,23 +49,6 @@ class AuthController extends Controller
 
         $user = JWTAuth::user();
 
-        // Check if user not suspended or inactive
-        if ($user->isSuspended()) {
-            return $this->apiResponseErrors(
-                'Account suspended',
-                ['error' => 'Your account has been suspended. Please contact support for assistance.'],
-                403
-            );
-        }
-
-        if (! $user->isActive() && ! $user->isSeller()) {
-            return $this->apiResponseErrors(
-                'Account inactive',
-                ['error' => 'Your account is currently suspended or awaiting approval. Please contact support for assistance.'],
-                403
-            );
-        }
-
         $user->update(['last_login_at' => now()]);
         $refreshToken = RefreshToken::create([
             'user_id' => $user->id,
