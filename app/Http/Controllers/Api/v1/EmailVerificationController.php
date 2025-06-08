@@ -20,6 +20,11 @@ class EmailVerificationController extends BaseController
         $this->middleware(RestrictedDocsAccess::class);
     }
 
+    /**
+     * Handle Mail Sending
+     *
+     * Core logic for sending verification emails to users
+     */
     private function handelMail(bool $isResend = false): JsonResponse
     {
         try {
@@ -39,16 +44,31 @@ class EmailVerificationController extends BaseController
         }
     }
 
+    /**
+     * Send Verification Email
+     *
+     * Sends initial verification email to user
+     */
     public function send(): JsonResponse
     {
         return $this->handelMail(false);
     }
 
+    /**
+     * Resend Verification Email
+     *
+     * Resends verification email to user
+     */
     public function resend(): JsonResponse
     {
         return $this->handelMail(true);
     }
 
+    /**
+     * Handle Company Mail Sending
+     *
+     * Core logic for sending verification emails to companies
+     */
     private function handleCompanySend(bool $isResend = false): JsonResponse
     {
         try {
@@ -73,16 +93,31 @@ class EmailVerificationController extends BaseController
         }
     }
 
+    /**
+     * Send Company Verification
+     *
+     * Sends initial verification email to company
+     */
     public function sendCompany(): JsonResponse
     {
         return $this->handleCompanySend(false);
     }
 
+    /**
+     * Resend Company Verification
+     *
+     * Resends verification email to company
+     */
     public function resendCompany(): JsonResponse
     {
         return $this->handleCompanySend(true);
     }
 
+    /**
+     * Verify Email
+     *
+     * Verifies email address using provided token
+     */
     public function verify(Request $request): JsonResponse
     {
         try {
@@ -100,6 +135,11 @@ class EmailVerificationController extends BaseController
         }
     }
 
+    /**
+     * Get Verification Status
+     *
+     * Retrieves current verification status for both user and company emails
+     */
     public function status(): JsonResponse
     {
         try {

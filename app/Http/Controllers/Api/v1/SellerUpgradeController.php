@@ -5,7 +5,8 @@ namespace App\Http\Controllers\Api\v1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SellerUpgradeRequest;
 use App\Http\Requests\UpdateCompanyRequest;
-use App\Models\Company;
+use App\Http\Resources\CompanyResource;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -17,14 +18,16 @@ class SellerUpgradeController extends Controller
     use ApiResponse;
 
     /**
-     * Upgrade user to seller by updating company profile with required seller data
+     * Upgrade user to seller.
+     *
+     * This method allows a user to upgrade their account to a seller account.
      */
     public function upgradeToSeller(SellerUpgradeRequest $request): JsonResponse
     {
         try {
             $user = Auth::user();
             assert($user instanceof User);
-            // Check if user is already a seller
+
             if ($user->isSeller()) {
                 return $this->apiResponse(null, 'User is already a seller', 400);
             }
@@ -49,44 +52,25 @@ class SellerUpgradeController extends Controller
 
                 DB::commit();
 
-                $company->refresh();
-
-                return $this->apiResponse([
-                    'user' => [
-                        'id'        => $user->id,
-                        'full_name' => $user->full_name,
-                        'email'     => $user->email,
-                        'roles'     => $user->getRoleNames(),
-                    ],
-                    'company' => [
-                        'id'                      => $company->id,
-                        'name'                    => $company->name,
-                        'email'                   => $company->email,
-                        'tax_id'                  => $company->tax_id,
-                        'commercial_registration' => $company->commercial_registration,
-                        'company_phone'           => $company->company_phone,
-                        'address'                 => $company->address,
-                        'website'                 => $company->website,
-                        'description'             => $company->description,
-                        'logo'                    => $company->logo,
-                        'is_email_verified'       => $company->is_email_verified,
-                    ],
-                ], 'Successfully upgraded to seller', 201);
-
+                return $this->apiResponse(
+                    ['user' => new UserResource($user)],
+                    'Successfully upgraded to seller',
+                    201
+                );
             } catch (\Exception $e) {
-                DB::rollback();
+                DB::rollBack();
                 throw $e;
             }
-
         } catch (\Exception $e) {
-            return $this->apiResponse(
-                null,
-                'Failed to upgrade to seller',
-                500
-            );
+            return $this->apiResponse(null, 'Failed to upgrade to seller', 500);
         }
     }
 
+    /**
+     * Get the upgrade status of the user.
+     *
+     * This method checks if the user can upgrade to a seller account and returns the status.
+     */
     public function getUpgradeStatus(): JsonResponse
     {
         try {
@@ -97,52 +81,40 @@ class SellerUpgradeController extends Controller
                 'can_upgrade'            => false,
                 'is_seller'              => $user->isSeller(),
                 'has_company'            => (bool) $user->company,
-                'company_email_verified' => $user->company ? $user->company->is_email_verified : false,
+                'company_email_verified' => $user->company?->is_email_verified ?? false,
                 'missing_seller_data'    => [],
             ];
 
             if ($user->company && ! $user->isSeller()) {
-                $missingData = [];
+                $missing = [];
 
                 if (! $user->company->tax_id) {
-                    $missingData[] = 'tax_id';
+                    $missing[] = 'tax_id';
                 }
 
                 if (! $user->company->commercial_registration) {
-                    $missingData[] = 'commercial_registration';
+                    $missing[] = 'commercial_registration';
                 }
 
-                $status['missing_seller_data'] = $missingData;
-                $status['can_upgrade'] = empty($missingData);
+                $status['missing_seller_data'] = $missing;
+                $status['can_upgrade'] = empty($missing);
             }
 
             if ($user->company) {
-                $status['company'] = [
-                    'id'                      => $user->company->id,
-                    'name'                    => $user->company->name,
-                    'email'                   => $user->company->email,
-                    'tax_id'                  => $user->company->tax_id,
-                    'commercial_registration' => $user->company->commercial_registration,
-                    'company_phone'           => $user->company->company_phone,
-                    'address'                 => $user->company->address,
-                    'website'                 => $user->company->website,
-                    'description'             => $user->company->description,
-                    'logo'                    => $user->company->logo,
-                    'is_email_verified'       => $user->company->is_email_verified,
-                ];
+                $status['company'] = new CompanyResource($user->company);
             }
 
             return $this->apiResponse($status, 'Upgrade status retrieved successfully');
-
         } catch (\Exception $e) {
-            return $this->apiResponse(
-                null,
-                'Failed to get upgrade status',
-                500
-            );
+            return $this->apiResponse(null, 'Failed to get upgrade status', 500);
         }
     }
 
+    /**
+     * Update company information.
+     *
+     * This method allows the authenticated user to update their company profile.
+     */
     public function updateCompany(UpdateCompanyRequest $request): JsonResponse
     {
         try {
@@ -159,42 +131,27 @@ class SellerUpgradeController extends Controller
                 'website'                 => $request->website,
                 'description'             => $request->description,
                 'logo'                    => $request->logo,
-            ], function ($value) {
-                return $value !== null;
-            });
+            ], fn ($value) => ! is_null($value));
 
             if (isset($updateData['email']) && $updateData['email'] !== $company->email) {
                 $updateData['is_email_verified'] = false;
             }
 
             $company->update($updateData);
-            $company->refresh();
 
             return $this->apiResponse([
-                'company' => [
-                    'id'                      => $company->id,
-                    'name'                    => $company->name,
-                    'email'                   => $company->email,
-                    'tax_id'                  => $company->tax_id,
-                    'commercial_registration' => $company->commercial_registration,
-                    'company_phone'           => $company->company_phone,
-                    'address'                 => $company->address,
-                    'website'                 => $company->website,
-                    'description'             => $company->description,
-                    'logo'                    => $company->logo,
-                    'is_email_verified'       => $company->is_email_verified,
-                ],
+                'company' => new CompanyResource($company->refresh()),
             ], 'Company information updated successfully');
-
         } catch (\Exception $e) {
-            return $this->apiResponse(
-                null,
-                'Failed to update company information',
-                500
-            );
+            return $this->apiResponse(null, 'Failed to update company information', 500);
         }
     }
 
+    /**
+     * Get company information.
+     *
+     * This method retrieves the authenticated user's company profile.
+     */
     public function getCompany(): JsonResponse
     {
         try {
@@ -204,32 +161,11 @@ class SellerUpgradeController extends Controller
                 return $this->apiResponse(null, 'User does not have a company profile', 404);
             }
 
-            $company = $user->company;
-
             return $this->apiResponse([
-                'company' => [
-                    'id'                      => $company->id,
-                    'name'                    => $company->name,
-                    'email'                   => $company->email,
-                    'tax_id'                  => $company->tax_id,
-                    'commercial_registration' => $company->commercial_registration,
-                    'company_phone'           => $company->company_phone,
-                    'address'                 => $company->address,
-                    'website'                 => $company->website,
-                    'description'             => $company->description,
-                    'logo'                    => $company->logo,
-                    'is_email_verified'       => $company->is_email_verified,
-                    'created_at'              => $company->created_at,
-                    'updated_at'              => $company->updated_at,
-                ],
+                'company' => new CompanyResource($user->company),
             ], 'Company information retrieved successfully');
-
         } catch (\Exception $e) {
-            return $this->apiResponse(
-                null,
-                'Failed to retrieve company information',
-                500
-            );
+            return $this->apiResponse(null, 'Failed to retrieve company information', 500);
         }
     }
 }
