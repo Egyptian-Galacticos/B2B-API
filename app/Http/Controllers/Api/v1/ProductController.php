@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Traits\ApiResponse;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
@@ -45,9 +46,11 @@ class ProductController extends Controller
         $validated = $request->validated();
 
         // Remove file fields from validated data as they're handled separately
-        $productData = collect($validated)->except(['main_image', 'images', 'documents'])->toArray();
+        $productData = collect($validated)->except(['main_image', 'images', 'documents', 'product_tires'])->toArray();
 
         $product = Product::create($productData);
+
+        $product->tiers()->createMany($validated['product_tires']);
 
         // Handle main image upload
         if ($request->hasFile('main_image')) {
@@ -78,7 +81,7 @@ class ProductController extends Controller
         }
 
         return $this->apiResponse(
-            ProductResource::make($product->load('media')),
+            ProductDetailsResource::make($product->load('media', 'tiers', 'seller.company')),
             'Product created successfully.',
             201
         );
@@ -114,16 +117,25 @@ class ProductController extends Controller
 
     /**
      * Update the specified resource in storage.
+     *
+     * @authenticated
      */
-    public function update(UpdateProductRequest $request, string $id)
+    public function update(UpdateProductRequest $request): JsonResponse
     {
-        $product = Product::findOrFail($id);
+        // Get the product from middleware (ownership already verified)
+        $product = $request->get('product');
         $validated = $request->validated();
 
         // Remove file fields from validated data as they're handled separately
-        $productData = collect($validated)->except(['main_image', 'images', 'documents'])->toArray();
+        $productData = collect($validated)->except(['main_image', 'images', 'documents', 'product_tires'])->toArray();
 
         $product->update($productData);
+
+        // Handle product tiers if provided
+        if (isset($validated['product_tires'])) {
+            $product->tiers()->delete();
+            $product->tiers()->createMany($validated['product_tires']);
+        }
 
         // Handle main image upload (replace existing)
         if ($request->hasFile('main_image')) {
@@ -155,8 +167,8 @@ class ProductController extends Controller
         }
 
         return $this->apiResponse(
-            ProductResource::make($product->load('media')),
-            'Product updated successfully.',
+            new ProductResource($product->fresh()->load(['seller.company', 'media', 'tiers'])),
+            'Product updated successfully',
             200
         );
     }
@@ -164,19 +176,81 @@ class ProductController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @unauthenticated
+     * @authenticated
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request): JsonResponse
     {
-        try {
-            $product = Product::findOrFail($id);
-            $product->delete();
+        // Get the product from middleware (ownership already verified)
+        $product = $request->get('product');
+        $product->delete();
 
-            return response()->json(['message' => 'Product deleted successfully.'], 204);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'Product not found.'], 404);
-        } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+        return $this->apiResponse(
+            null,
+            'Product deleted successfully',
+            200
+        );
+    }
+
+    /**
+     * delete image to product
+     *
+     * @authenticated
+     */
+    public function deleteImage(string $product, int $mediaId): JsonResponse
+    {
+        // Get the product from middleware (ownership already verified)
+        $product = Product::where('slug', $product)->firstOrFail();
+
+        // Find the media item
+        $media = $product->getMedia('product_images')->find($mediaId);
+
+        if (! $media) {
+            return $this->apiResponseErrors(
+                'Image not found.',
+                ['media_id' => $mediaId],
+                404,
+            );
         }
+
+        // Delete the media item
+        $media->delete();
+
+        return $this->apiResponse(
+            null,
+            'Image deleted successfully.',
+            200
+        );
+    }
+
+    /**
+     * delete the product document.
+     *
+     * @param string|int $identifier
+     * @return Product|null
+     */
+    public function deleteDocument(string $product, int $mediaId): JsonResponse
+    {
+        // Get the product from middleware (ownership already verified)
+        $product = Product::where('slug', $product)->firstOrFail();
+
+        // Find the media item
+        $media = $product->getMedia('product_documents')->find($mediaId);
+
+        if (! $media) {
+            return $this->apiResponseErrors(
+                'Document not found.',
+                ['media_id' => $mediaId],
+                404,
+            );
+        }
+
+        // Delete the media item
+        $media->delete();
+
+        return $this->apiResponse(
+            null,
+            'Document deleted successfully.',
+            200
+        );
     }
 }

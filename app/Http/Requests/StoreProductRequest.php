@@ -20,23 +20,25 @@ class StoreProductRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'brand'                  => ['nullable', 'string', 'max:255'],
-            'model_number'           => ['nullable', 'string', 'max:255'],
-            'sku'                    => ['required', 'string', 'max:255'],
-            'name'                   => ['required', 'string', 'max:255'],
-            'description'            => ['nullable', 'string'],
-            'hs_code'                => ['nullable', 'string', 'max:255'],
-            'price'                  => ['required', 'numeric', 'min:0'],
-            'currency'               => ['required', 'string', 'size:3'], // e.g., USD, EUR
-            'minimum_order_quantity' => ['nullable', 'integer', 'min:1'],
-            'lead_time_days'         => ['nullable', 'integer', 'min:0'],
-            'origin'                 => ['nullable', 'string', 'max:255'],
-            'category_id'            => ['required', 'exists:categories,id'],
-            'specifications'         => ['nullable', 'array'],
-            'certifications'         => ['nullable', 'array'],
-            'dimensions'             => ['nullable', 'array'],
-            'sample_available'       => ['boolean'],
-            'sample_price'           => ['nullable', 'numeric', 'min:0'],
+            'brand'                         => ['nullable', 'string', 'max:255'],
+            'model_number'                  => ['nullable', 'string', 'max:255'],
+            'sku'                           => ['required', 'string', 'max:255'],
+            'name'                          => ['required', 'string', 'max:255'],
+            'description'                   => ['nullable', 'string'],
+            'hs_code'                       => ['nullable', 'string', 'max:255'],
+            'price'                         => ['required', 'numeric', 'min:0'],
+            'currency'                      => ['required', 'string', 'size:3'], // e.g., USD, EUR
+            'origin'                        => ['nullable', 'string', 'max:255'],
+            'category_id'                   => ['required', 'exists:categories,id'],
+            'specifications'                => ['nullable', 'array'],
+            'certifications'                => ['nullable', 'array'],
+            'dimensions'                    => ['nullable', 'array'],
+            'sample_available'              => ['boolean'],
+            'sample_price'                  => ['nullable', 'numeric', 'min:0'],
+            'product_tires.*'               => ['required', 'array'],
+            'product_tires.*.from_quantity' => ['required', 'integer', 'min:1'],
+            'product_tires.*.to_quantity'   => ['required', 'integer', 'min:1'],
+            'product_tires.*.price'         => ['required', 'numeric', 'min:0'],
 
             // File validation
             //            'main_image'             => ['nullable', 'image', 'max:10240'], // 10MB max

@@ -23,8 +23,6 @@ return new class extends Migration
             $table->string('hs_code')->nullable();
             $table->decimal('price', 10, 2);
             $table->string('currency', 10);
-            $table->integer('minimum_order_quantity');
-            $table->integer('lead_time_days');
             $table->string('origin');
             $table->json('specifications')->nullable();
             $table->json('dimensions')->nullable();

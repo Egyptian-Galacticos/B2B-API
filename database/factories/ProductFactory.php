@@ -43,18 +43,16 @@ class ProductFactory extends Factory
         $modelNumber = $this->faker->bothify('??-####');
 
         return [
-            'brand'                  => $brand,
-            'model_number'           => $modelNumber,
-            'seller_id'              => User::factory(),
-            'sku'                    => strtoupper($this->faker->bothify('##??####')),
-            'name'                   => $brand.' '.$productType.' '.$modelNumber,
-            'description'            => $this->generateProductDescription($categoryName, $productType, $brand),
-            'hs_code'                => $this->faker->numerify('####.##.##'),
-            'price'                  => $this->generatePrice($categoryName),
-            'currency'               => $this->faker->randomElement(['USD', 'EUR', 'GBP']),
-            'minimum_order_quantity' => $this->faker->numberBetween(1, 100),
-            'lead_time_days'         => $this->faker->numberBetween(7, 90),
-            'origin'                 => $this->faker->randomElement([
+            'brand'        => $brand,
+            'model_number' => $modelNumber,
+            'seller_id'    => User::factory(),
+            'sku'          => strtoupper($this->faker->bothify('##??####')),
+            'name'         => $brand.' '.$productType.' '.$modelNumber,
+            'description'  => $this->generateProductDescription($categoryName, $productType, $brand),
+            'hs_code'      => $this->faker->numerify('####.##.##'),
+            'price'        => $this->generatePrice($categoryName),
+            'currency'     => $this->faker->randomElement(['USD', 'EUR', 'GBP']),
+            'origin'       => $this->faker->randomElement([
                 'United States', 'Germany', 'China', 'Japan', 'South Korea',
                 'Italy', 'France', 'United Kingdom', 'Canada', 'Australia',
             ]),

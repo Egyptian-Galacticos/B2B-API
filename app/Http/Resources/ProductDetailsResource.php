@@ -22,18 +22,17 @@ class ProductDetailsResource extends JsonResource
             'seller'       => $this->whenLoaded('seller', function () {
                 return new UserResource($this->seller);
             }),
-            'sku'                    => $this->sku,
-            'name'                   => $this->name,
-            'slug'                   => $this->slug,
-            'description'            => $this->description,
-            'hs_code'                => $this->hs_code,
-            'price'                  => $this->price,
-            'currency'               => $this->currency,
-            'minimum_order_quantity' => $this->minimum_order_quantity,
-            'lead_time_days'         => $this->lead_time_days,
-            'origin'                 => $this->origin,
-            'category_id'            => $this->category_id,
-            'category'               => $this->whenLoaded('category', function () {
+            'sku'         => $this->sku,
+            'name'        => $this->name,
+            'slug'        => $this->slug,
+            'description' => $this->description,
+            'hs_code'     => $this->hs_code,
+            'price'       => $this->price,
+            'currency'    => $this->currency,
+
+            'origin'      => $this->origin,
+            'category_id' => $this->category_id,
+            'category'    => $this->whenLoaded('category', function () {
                 return [
                     'id'   => $this->category->id,
                     'name' => $this->category->name,
@@ -97,11 +96,9 @@ class ProductDetailsResource extends JsonResource
             'tiers' => $this->whenLoaded('tiers', function () {
                 return $this->tiers->map(function ($tier) {
                     return [
-                        'id'           => $tier->id,
-                        'min_quantity' => $tier->min_quantity,
-                        'max_quantity' => $tier->max_quantity,
-                        'price'        => $tier->price,
-                        'currency'     => $tier->currency,
+                        'from_quantity' => $tier->from_quantity,
+                        'to_quantity'   => $tier->to_quantity,
+                        'price'         => $tier->price,
                     ];
                 });
             }),

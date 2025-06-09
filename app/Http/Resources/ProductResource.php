@@ -15,19 +15,17 @@ class ProductResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'                     => $this->id,
-            'brand'                  => $this->brand,
-            'model_number'           => $this->model_number,
-            'name'                   => $this->name,
-            'slug'                   => $this->slug,
-            'description'            => $this->description,
-            'price'                  => $this->price,
-            'currency'               => $this->currency,
-            'minimum_order_quantity' => $this->minimum_order_quantity,
-            'lead_time_days'         => $this->lead_time_days,
-            'is_featured'            => $this->is_featured,
-            'sample_available'       => $this->sample_available,
-            'sample_price'           => $this->sample_price,
+            'id'               => $this->id,
+            'brand'            => $this->brand,
+            'model_number'     => $this->model_number,
+            'name'             => $this->name,
+            'slug'             => $this->slug,
+            'description'      => $this->description,
+            'price'            => $this->price,
+            'currency'         => $this->currency,
+            'is_featured'      => $this->is_featured,
+            'sample_available' => $this->sample_available,
+            'sample_price'     => $this->sample_price,
 
             // Relationships
             'seller' => $this->whenLoaded('seller', function () {
