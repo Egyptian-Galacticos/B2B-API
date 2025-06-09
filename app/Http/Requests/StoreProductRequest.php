@@ -20,8 +20,9 @@ class StoreProductRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'seller_id'              => ['required', 'exists:users,id'],
-            'sku'                    => ['required', 'string', 'max:255', 'unique:products,sku'],
+            'brand'                  => ['nullable', 'string', 'max:255'],
+            'model_number'           => ['nullable', 'string', 'max:255'],
+            'sku'                    => ['required', 'string', 'max:255'],
             'name'                   => ['required', 'string', 'max:255'],
             'description'            => ['nullable', 'string'],
             'hs_code'                => ['nullable', 'string', 'max:255'],
@@ -34,7 +35,15 @@ class StoreProductRequest extends BaseRequest
             'specifications'         => ['nullable', 'array'],
             'certifications'         => ['nullable', 'array'],
             'dimensions'             => ['nullable', 'array'],
-            'is_active'              => ['boolean'],
+            'sample_available'       => ['boolean'],
+            'sample_price'           => ['nullable', 'numeric', 'min:0'],
+
+            // File validation
+            //            'main_image'             => ['nullable', 'image', 'max:10240'], // 10MB max
+            //            'images'                 => ['nullable', 'array'],
+            //            'images.*'               => ['image', 'max:10240'], // 10MB max per image
+            //            'documents'              => ['nullable', 'array'],
+            //            'documents.*'            => ['file', 'mimes:pdf,doc,docx', 'max:20480'], // 20MB max per document
         ];
     }
 
@@ -46,13 +55,22 @@ class StoreProductRequest extends BaseRequest
     public function messages(): array
     {
         return [
-            'seller_id.required'   => 'The seller ID is required.',
             'sku.required'         => 'The SKU is required.',
+            'sku.unique'           => 'The SKU has already been taken.',
             'name.required'        => 'The product name is required.',
             'price.required'       => 'The price is required.',
             'currency.required'    => 'The currency is required.',
             'category_id.required' => 'The category ID is required.',
             'is_active.boolean'    => 'The active status must be true or false.',
+            'main_image.image'     => 'The main image must be a valid image file.',
+            'main_image.max'       => 'The main image may not be greater than 10MB.',
+            'images.array'         => 'Images must be an array.',
+            'images.*.image'       => 'Each image must be a valid image file.',
+            'images.*.max'         => 'Each image may not be greater than 10MB.',
+            'documents.array'      => 'Documents must be an array.',
+            'documents.*.file'     => 'Each document must be a valid file.',
+            'documents.*.mimes'    => 'Documents must be PDF, DOC, or DOCX files.',
+            'documents.*.max'      => 'Each document may not be greater than 20MB.',
         ];
     }
 }

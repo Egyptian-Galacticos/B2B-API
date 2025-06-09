@@ -2,14 +2,8 @@
 
 namespace App\Http\Requests;
 
-use App\Traits\ApiResponse;
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-
-class UpdateProductRequest extends FormRequest
+class UpdateProductRequest extends BaseRequest
 {
-    use ApiResponse;
-
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -26,12 +20,13 @@ class UpdateProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'seller_id' => ['required', 'exists:users,id'],
-            'sku'       => [
+            'brand'        => ['nullable', 'string', 'max:255'],
+            'model_number' => ['nullable', 'string', 'max:255'],
+            'seller_id'    => ['required', 'exists:users,id'],
+            'sku'          => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('products', 'sku')->ignore($this->product),
             ],
             'name'                   => ['required', 'string', 'max:255'],
             'description'            => ['nullable', 'string'],
@@ -46,6 +41,15 @@ class UpdateProductRequest extends FormRequest
             'certifications'         => ['nullable', 'array'],
             'dimensions'             => ['nullable', 'array'],
             'is_active'              => ['boolean'],
+            'sample_available'       => ['boolean'],
+            'sample_price'           => ['nullable', 'numeric', 'min:0'],
+
+            // File validation
+            //            'main_image'             => ['nullable', 'image', 'max:10240'], // 10MB max
+            //            'images'                 => ['nullable', 'array'],
+            //            'images.*'               => ['image', 'max:10240'], // 10MB max per image
+            //            'documents'              => ['nullable', 'array'],
+            //            'documents.*'            => ['file', 'mimes:pdf,doc,docx', 'max:20480'], // 20MB max per document
         ];
     }
 }
