@@ -29,7 +29,7 @@ Route::prefix('v1')->group(function () {
 
     // Public products endpoint (browsing without auth)
     Route::get('products', [ProductController::class, 'index'])->name('products.public.index');
-    Route::get('products/{product}', [ProductController::class, 'show'])->name('products.public.show');
+    Route::get('products/{slug}', [ProductController::class, 'show'])->name('products.public.show');
 
     // ========================================
     // PROTECTED ROUTES (Authentication Required)
