@@ -37,6 +37,13 @@ return [
             'throw'  => false,
             'report' => false,
         ],
+        'media' => [
+            'driver'     => 'local',
+            'root'       => public_path('media'),
+            'url'        => env('APP_URL').'/media',
+            'visibility' => 'public',
+            'throw'      => false,
+        ],
 
         'public' => [
             'driver'     => 'local',
