@@ -36,15 +36,27 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        $user = User::factory()->create([
-            'first_name' => 'Test',
-            'last_name'  => 'User',
-            'email'      => 'test@example.com',
-        ]);
-        $user->assignRole('admin');
+        // Create or find test user
+        $user = User::firstOrCreate(
+            ['email' => 'anas@gmail.com'],
+            [
+                'first_name'        => 'Test',
+                'last_name'         => 'User',
+                'password'          => bcrypt('StrongPassword123!'),
+                'is_email_verified' => true,
+                'status'            => 'active',
+            ]
+        );
 
-        // Create company for test user
-        Company::factory()->forUser($user)->verified()->create();
+        // Ensure user has admin role
+        if (! $user->hasRole('admin')) {
+            $user->assignRole('admin');
+        }
+
+        // Create company for test user if it doesn't exist
+        if (! $user->company) {
+            Company::factory()->forUser($user)->verified()->create();
+        }
 
         // Create additional users with companies
         User::factory()->count(10)->create()->each(function (User $user) {

@@ -166,6 +166,14 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
+     * Get products owned by this user (when they are a seller).
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class, 'seller_id');
+    }
+
+    /**
      * Scope to get active users only.
      */
     // public function scopeActive($query)
