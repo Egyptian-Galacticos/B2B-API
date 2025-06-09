@@ -64,14 +64,18 @@ Route::prefix('v1')->group(function () {
 
             Route::get('me', [AuthController::class, 'me'])->name('auth.me');
 
-            // Product management (for sellers/admins)
-            Route::resource('products', ProductController::class)
-                ->except(['index', 'show']) // Exclude public endpoints
-                ->names([
-                    'store'   => 'products.store',
-                    'update'  => 'products.update',
-                    'destroy' => 'products.destroy',
-                ]);
+            // Product creation (no ownership check needed)
+            Route::post('products', [ProductController::class, 'store'])->name('products.store');
+
+            // Product management (requires ownership)
+            Route::middleware(['product.owner'])->group(function () {
+                Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update')->whereAlphaNumeric('product');
+                Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy')->whereAlphaNumeric('product');
+
+                // Product media management routes
+                Route::delete('products/{product}/images/{mediaId}', [ProductController::class, 'deleteImage'])->name('products.images.destroy');
+                Route::delete('products/{product}/document/{mediaId}', [ProductController::class, 'deleteDocument'])->name('products.documents.destroy');
+            });
 
             // User management
             Route::prefix('users')->group(function () {
