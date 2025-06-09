@@ -17,6 +17,7 @@ class CompanyFactory extends Factory
     public function definition(): array
     {
         return [
+            'user_id'                 => \App\Models\User::factory(),
             'name'                    => fake()->company(),
             'email'                   => fake()->unique()->companyEmail(),
             'tax_id'                  => fake()->numerify('###-##-####'),
@@ -30,7 +31,7 @@ class CompanyFactory extends Factory
                 'country'     => fake()->country(),
             ],
             'logo'              => fake()->optional()->imageUrl(200, 200, 'business'),
-            'website'           => fake()->url(),
+            'website'           => fake()->optional()->url(),
             'description'       => fake()->paragraph(),
             'is_email_verified' => fake()->boolean(70), // 70% chance of being verified
         ];
@@ -54,5 +55,31 @@ class CompanyFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'is_email_verified' => false,
         ]);
+    }
+
+    /**
+     * Create company for an existing user.
+     */
+    public function forUser(\App\Models\User $user): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_id' => $user->id,
+            'email'   => $user->email, // Use user's email as company email
+        ]);
+    }
+
+    /**
+     * Create company with existing user if available.
+     */
+    public function withExistingUser(): static
+    {
+        return $this->state(function (array $attributes) {
+            $existingUser = \App\Models\User::inRandomOrder()->first();
+
+            return [
+                'user_id' => $existingUser ? $existingUser->id : \App\Models\User::factory(),
+                'email'   => $existingUser ? $existingUser->email : fake()->unique()->companyEmail(),
+            ];
+        });
     }
 }
