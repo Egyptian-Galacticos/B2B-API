@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\API\v1;
+namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -44,9 +44,10 @@ class UserController extends Controller
     }
 
     /**
+     *  remove the specified user from storage.
      * Remove the specified resource from storage.
      */
-    public function destroy(User $user)
+    public function destroy(User $user): \Illuminate\Http\JsonResponse
     {
         try {
             if (! $user) {
@@ -85,7 +86,7 @@ class UserController extends Controller
         }
     }
 
-    public function restore($id)
+    public function restore($id): \Illuminate\Http\JsonResponse
     {
         try {
             if (! auth()->user()->isAdmin()) {
@@ -126,7 +127,7 @@ class UserController extends Controller
         }
     }
 
-    public function forceDelete($id)
+    public function forceDelete($id): \Illuminate\Http\JsonResponse
     {
         try {
             if (! auth()->user()->isAdmin()) {

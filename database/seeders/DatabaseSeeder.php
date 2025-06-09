@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Category;
+use App\Models\Company;
 use App\Models\Contract;
 use App\Models\ContractItem;
 use App\Models\Conversation;
@@ -42,20 +43,35 @@ class DatabaseSeeder extends Seeder
         ]);
         $user->assignRole('admin');
 
+        // Create company for test user
+        Company::factory()->forUser($user)->verified()->create();
+
+        // Create additional users with companies
+        User::factory()->count(10)->create()->each(function (User $user) {
+            // Assign random role
+            $roles = ['buyer', 'seller'];
+            $user->assignRole($roles[array_rand($roles)]);
+
+            // Create company for each user
+            Company::factory()->forUser($user)->create();
+        });
+
         // Create categories with subcategories
         $category = Category::factory()->create();
         $subcategory = Category::factory()->subcategory()->create();
 
         // Create products with relationships
-        $product = Product::factory()->create();
+        Product::factory()->count(5)->withExistingRelationships()->create();
 
         // Create contracts with items
-        $contract = Contract::factory()->active()->create();
-        $contractItem = ContractItem::factory()->create(['contract_id' => $contract->id]);
+        Contract::factory()->count(3)->active()->create()->each(function (Contract $contract) {
+            ContractItem::factory()->count(rand(1, 3))->create(['contract_id' => $contract->id]);
+        });
 
         // Create quotes with items
-        $quote = Quote::factory()->sent()->create();
-        $quoteItem = QuoteItem::factory()->create(['quote_id' => $quote->id]);
+        Quote::factory()->count(3)->sent()->create()->each(function (Quote $quote) {
+            QuoteItem::factory()->count(rand(1, 3))->create(['quote_id' => $quote->id]);
+        });
         Escrow::factory()->count(5)->create();
         Payment::factory()->count(5)->create();
         Conversation::factory()->count(3)->create();
