@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CheckProductOwnership;
 use App\Http\Middleware\IsEmailVerified;
 use App\Http\Middleware\IsSuspended;
 use Illuminate\Foundation\Application;
@@ -17,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'is_email_verified' => IsEmailVerified::class,
             'is_suspended'      => IsSuspended::class,
+            'product.owner'     => CheckProductOwnership::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
