@@ -71,6 +71,7 @@ class Category extends Model implements HasMedia
             ->performOnCollections('images');
     }
 
+    // Relationships
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'parent_id');
@@ -96,6 +97,7 @@ class Category extends Model implements HasMedia
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    // Query Scopes
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
@@ -155,6 +157,7 @@ class Category extends Model implements HasMedia
         return $query->where('path', 'like', '%'.$path.'%');
     }
 
+    // Helper Methods
     public function isActive(): bool
     {
         return $this->status == 'active';
@@ -188,5 +191,164 @@ class Category extends Model implements HasMedia
     public function getThumbnailUrl(): ?string
     {
         return $this->getFirstMediaUrl('images', 'thumb');
+    }
+
+    // Business Logic Methods
+    public function determineStatusByUserRole($user): string
+    {
+        return $this->userIsAdmin($user) ? 'active' : 'pending';
+    }
+
+    /**
+     * Check if user is admin.
+     */
+    public function userIsAdmin($user): bool
+    {
+        if (is_numeric($user)) {
+            $user = User::find($user);
+        }
+        if (! $user || ! ($user instanceof User)) {
+            return false;
+        }
+        if (! $user->relationLoaded('roles')) {
+            $user->load('roles');
+        }
+
+        return $user->hasRole('admin');
+    }
+
+    /**
+     * Handle file uploads for category.
+     */
+    public function handleFileUploads($request): void
+    {
+        if ($request->hasFile('image_file')) {
+            $this->clearMediaCollection('images');
+            $this->addMediaFromRequest('image_file')
+                ->toMediaCollection('images');
+        }
+
+        if ($request->hasFile('icon_file')) {
+            $this->clearMediaCollection('icons');
+            $this->addMediaFromRequest('icon_file')
+                ->toMediaCollection('icons');
+        }
+    }
+
+    /**
+     * Handle file removals for category.
+     */
+    public function handleFileRemovals($request): void
+    {
+        if ($request->boolean('remove_image')) {
+            $this->clearMediaCollection('images');
+        }
+
+        if ($request->boolean('remove_icon_file')) {
+            $this->clearMediaCollection('icons');
+        }
+    }
+
+    /**
+     * Check if setting parent would create circular reference.
+     */
+    public function wouldCreateCircularReference(Category $parent): bool
+    {
+        $currentParent = $parent;
+
+        while ($currentParent) {
+            if ($currentParent->id === $this->id) {
+                return true;
+            }
+            $currentParent = $currentParent->parent;
+        }
+
+        return false;
+    }
+
+    /**
+     * Update paths for all children when parent hierarchy changes.
+     */
+    public function updateChildrenPaths(): void
+    {
+        $children = static::where('parent_id', $this->id)->get();
+
+        foreach ($children as $child) {
+            $newPath = $this->path ? $this->path.'/'.$this->id : (string) $this->id;
+            $child->update([
+                'level' => $this->level + 1,
+                'path'  => $newPath,
+            ]);
+
+            // Recursively update grandchildren
+            $child->updateChildrenPaths();
+        }
+    }
+
+    /**
+     * Calculate level and path based on parent.
+     */
+    public function calculateHierarchyData(?int $parentId = null): array
+    {
+        $level = 0;
+        $path = null;
+
+        if ($parentId) {
+            $parent = static::findOrFail($parentId);
+            $level = $parent->level + 1;
+            $path = $parent->path ? $parent->path.'/'.$parent->id : (string) $parent->id;
+        }
+
+        return compact('level', 'path');
+    }
+
+    /**
+     * Check if category can be deleted (no children or products).
+     */
+    public function canBeDeleted(): bool
+    {
+        return ! $this->hasChildren() && ! $this->products()->exists();
+    }
+
+    /**
+     * Get all ancestors of the category.
+     */
+    public function getAncestors()
+    {
+        $ancestors = collect();
+        $current = $this->parent;
+
+        while ($current) {
+            $ancestors->prepend($current);
+            $current = $current->parent;
+        }
+
+        return $ancestors;
+    }
+
+    /**
+     * Get all descendants of the category.
+     */
+    public function getDescendants()
+    {
+        $descendants = collect();
+
+        foreach ($this->children as $child) {
+            $descendants->push($child);
+            $descendants = $descendants->merge($child->getDescendants());
+        }
+
+        return $descendants;
+    }
+
+    /**
+     * Get the full path names as a string.
+     */
+    public function getFullPathNames(string $separator = ' > '): string
+    {
+        $names = $this->getAncestors()->pluck('name')->toArray();
+        $names[] = $this->name;
+
+        return implode($separator, $names);
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\v1\AuthController;
+use App\Http\Controllers\Api\v1\CategoryController;
 use App\Http\Controllers\Api\v1\EmailVerificationController;
 use App\Http\Controllers\Api\v1\ProductController;
 use App\Http\Controllers\Api\v1\SellerUpgradeController;
@@ -30,6 +31,10 @@ Route::prefix('v1')->group(function () {
     // Public products endpoint (browsing without auth)
     Route::get('products', [ProductController::class, 'index'])->name('products.public.index');
     Route::get('products/{slug}', [ProductController::class, 'show'])->name('products.public.show');
+
+    // Public category endpoints (browsing without auth)
+    Route::get('categories', [CategoryController::class, 'index'])->name('categories.public.index');
+    Route::get('categories/{category}', [CategoryController::class, 'show'])->name('categories.public.show');
 
     // ========================================
     // PROTECTED ROUTES (Authentication Required)
@@ -63,6 +68,16 @@ Route::prefix('v1')->group(function () {
         Route::middleware(['is_email_verified', 'is_suspended'])->group(function () {
 
             Route::get('me', [AuthController::class, 'me'])->name('auth.me');
+
+            // category management (requires ownership)
+            Route::apiResource('categories', CategoryController::class)->except(['index', 'show']);
+
+            // Additional category routes for soft delete management
+            Route::prefix('categories')->group(function () {
+                Route::get('trashed', [CategoryController::class, 'trashed'])->name('categories.trashed');
+                Route::patch('{id}/restore', [CategoryController::class, 'restore'])->name('categories.restore');
+                Route::delete('{id}/force', [CategoryController::class, 'forceDelete'])->name('categories.force-delete');
+            });
 
             // Product creation (no ownership check needed)
             Route::post('products', [ProductController::class, 'store'])->name('products.store');
