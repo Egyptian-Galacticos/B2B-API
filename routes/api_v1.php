@@ -42,19 +42,18 @@ Route::prefix('v1')->group(function () {
         // =====================================
         Route::prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
-        });
+            // Email verification management (requires auth but not verified email)
+            Route::prefix('email')->group(function () {
+                Route::post('send-verification', [EmailVerificationController::class, 'send'])->name('email.send');
+                Route::post('resend-verification', [EmailVerificationController::class, 'resend'])->name('email.resend');
+                Route::get('status', [EmailVerificationController::class, 'status'])->name('email.status');
+            });
 
-        // Email verification management (requires auth but not verified email)
-        Route::prefix('email')->group(function () {
-            Route::post('send-verification', [EmailVerificationController::class, 'send'])->name('email.send');
-            Route::post('resend-verification', [EmailVerificationController::class, 'resend'])->name('email.resend');
-            Route::get('status', [EmailVerificationController::class, 'status'])->name('email.status');
-        });
-
-        // Company email verification management
-        Route::prefix('company-email')->group(function () {
-            Route::post('send-verification', [EmailVerificationController::class, 'sendCompany'])->name('company-email.send');
-            Route::post('resend-verification', [EmailVerificationController::class, 'resendCompany'])->name('company-email.resend');
+            // Company email verification management
+            Route::prefix('company-email')->group(function () {
+                Route::post('send-verification', [EmailVerificationController::class, 'sendCompany'])->name('company-email.send');
+                Route::post('resend-verification', [EmailVerificationController::class, 'resendCompany'])->name('company-email.resend');
+            });
         });
 
         // ====================================================
