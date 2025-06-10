@@ -35,7 +35,7 @@ Route::prefix('v1')->group(function () {
     // PROTECTED ROUTES (Authentication Required)
     // ========================================
 
-    Route::middleware(['auth:api'])->group(function () {
+    Route::middleware(['jwt.auth'])->group(function () {
 
         // =====================================
         // BASIC AUTH ROUTES (Just Authentication)
