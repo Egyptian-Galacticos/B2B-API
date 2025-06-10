@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\v1;
 
+use App\Exports\ProductTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BulkProductActionRequest;
 use App\Http\Requests\StoreProductRequest;
@@ -14,6 +15,9 @@ use App\Traits\BulkProductOwnership;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Exception;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ProductController extends Controller
 {
@@ -335,5 +339,18 @@ class ProductController extends Controller
             "$updatedCount products set to active successfully.",
             200
         );
+    }
+
+    /**
+     * @throws Exception
+     * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
+     *
+     * @unauthenticated
+     */
+    public function downloadTemplate(): BinaryFileResponse
+    {
+        $filename = 'product_import_template_'.now()->format('Y-m-d').'.xlsx';
+
+        return Excel::download(new ProductTemplateExport, $filename);
     }
 }
