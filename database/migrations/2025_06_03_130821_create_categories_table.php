@@ -15,11 +15,21 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
+            $table->string('slug')->unique();
             $table->foreignId('parent_id')->nullable()->constrained('categories')->onDelete('cascade');
             $table->string('path')->nullable();
             $table->integer('level')->default(0);
-            $table->boolean('is_active')->default(true);
+            $table->enum('status', ['active', 'pending', 'inactive'])->default('pending');
+            $table->string('icon')->nullable();
+            $table->json('seo_metadata')->nullable();
+            $table->foreignId('created_by')->nullable()->constrained('users');
+            $table->foreignId('updated_by')->nullable()->constrained('users');
             $table->timestamps();
+            $table->softDeletes();
+
+            $table->index(['status', 'parent_id']);
+            $table->index(['slug']);
+            $table->index(['level']);
         });
 
     }
