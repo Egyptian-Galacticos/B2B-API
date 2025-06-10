@@ -68,5 +68,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 return $jwtHelper->authenticationRequired();
             }
+
+            return null;
         });
     })->create();
