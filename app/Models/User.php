@@ -10,13 +10,16 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable implements JWTSubject
+class User extends Authenticatable implements HasMedia, JWTSubject
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, HasRoles, Notifiable, SoftDeletes;
+    use HasFactory, HasRoles, InteractsWithMedia, Notifiable, SoftDeletes;
     protected $fillable = [
         'email',
         'password',
@@ -49,6 +52,42 @@ class User extends Authenticatable implements JWTSubject
             'status'            => 'string',
             'last_login_at'     => 'datetime',
         ];
+    }
+
+    /**
+     * Register media collections for the user.
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('profile_image')
+            ->singleFile()
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+    }
+
+    /**
+     * Register media conversions for the user.
+     */
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion('thumb')
+            ->width(150)
+            ->height(150)
+            ->sharpen(10)
+            ->performOnCollections('profile_image');
+
+        $this->addMediaConversion('small')
+            ->width(50)
+            ->height(50)
+            ->sharpen(10)
+            ->performOnCollections('profile_image');
+    }
+
+    /**
+     * Should queue media conversions.
+     */
+    public function shouldQueueMediaConversion(?Media $media = null): bool
+    {
+        return true;
     }
 
     /**
