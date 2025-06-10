@@ -67,6 +67,11 @@ Route::prefix('v1')->group(function () {
             // Product creation (no ownership check needed)
             Route::post('products', [ProductController::class, 'store'])->name('products.store');
 
+            // Product Bulk Actions (ownership verified in controller)
+            Route::post('products/bulk-delete', [ProductController::class, 'bulkDelete'])->name('products.bulk.delete');
+            Route::post('products/bulk-active', [ProductController::class, 'bulkActive'])->name('products.bulk.active');
+            Route::post('products/bulk-deactivate', [ProductController::class, 'bulkDeactivate'])->name('products.bulk.deactivate');
+
             // Product management (requires ownership)
             Route::middleware(['product.owner'])->group(function () {
                 Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update')->whereAlphaNumeric('product');
