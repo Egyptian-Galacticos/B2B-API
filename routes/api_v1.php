@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\v1\AuthController;
+use App\Http\Controllers\Api\v1\CompanyController;
 use App\Http\Controllers\Api\v1\EmailVerificationController;
 use App\Http\Controllers\Api\v1\ProductController;
 use App\Http\Controllers\Api\v1\SellerUpgradeController;
@@ -86,6 +87,13 @@ Route::prefix('v1')->group(function () {
                 Route::delete('{user}', [UserController::class, 'destroy'])->name('users.destroy');
                 Route::patch('{user}/restore', [UserController::class, 'restore'])->name('users.restore');
                 Route::delete('{user}/force-delete', [UserController::class, 'forceDelete'])->name('users.force-delete');
+                Route::put('profile', [UserController::class, 'updateProfile'])->name('users.profile.update');
+                Route::put('password', [UserController::class, 'updatePassword'])->name('users.password.update');
+            });
+
+            // Company management
+            Route::prefix('company')->group(function () {
+                Route::put('/', [CompanyController::class, 'update'])->name('company.update');
             });
 
             // Seller-specific routes
