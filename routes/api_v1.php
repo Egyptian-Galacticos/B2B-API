@@ -57,12 +57,12 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        Route::get('me', [AuthController::class, 'me'])->name('auth.me');
+
         // ====================================================
         // VERIFIED & ACTIVE USER ROUTES (Full Restrictions)
         // ====================================================
         Route::middleware(['is_email_verified', 'is_suspended'])->group(function () {
-
-            Route::get('me', [AuthController::class, 'me'])->name('auth.me');
 
             // Product creation (no ownership check needed)
             Route::post('products', [ProductController::class, 'store'])->name('products.store');
