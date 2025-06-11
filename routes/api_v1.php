@@ -58,7 +58,11 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // =====================================================
+        // BASIC USER ROUTES (No Need for Email Verification)
+        // =====================================================
         Route::get('me', [AuthController::class, 'me'])->name('auth.me');
+        Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
         // ====================================================
         // VERIFIED & ACTIVE USER ROUTES (Full Restrictions)
@@ -67,6 +71,7 @@ Route::prefix('v1')->group(function () {
 
             // Product creation (no ownership check needed)
             Route::post('products', [ProductController::class, 'store'])->name('products.store');
+            Route::get('products', [ProductController::class, 'index'])->name('products.index');
 
             // Product Bulk Actions (ownership verified in controller)
             Route::post('products/bulk-delete', [ProductController::class, 'bulkDelete'])->name('products.bulk.delete');
@@ -85,7 +90,6 @@ Route::prefix('v1')->group(function () {
 
             // User management
             Route::prefix('users')->group(function () {
-                Route::delete('{user}', [UserController::class, 'destroy'])->name('users.destroy');
                 Route::patch('{user}/restore', [UserController::class, 'restore'])->name('users.restore');
                 Route::delete('{user}/force-delete', [UserController::class, 'forceDelete'])->name('users.force-delete');
                 Route::put('profile', [UserController::class, 'updateProfile'])->name('users.profile.update');
