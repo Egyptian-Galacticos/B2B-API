@@ -62,7 +62,7 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently \"php artisan serve\" \"php artisan queue:work --queue=default\" \"php artisan queue:work --queue=email\" --names=server,default,email"
+            "npx concurrently \"php artisan serve\" \"php artisan queue:work --queue=default,emails\" --names=server,queue"
         ],
         "test": [
             "@php artisan config:clear --ansi",
