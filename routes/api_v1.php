@@ -35,7 +35,9 @@ Route::prefix('v1')->group(function () {
 
     // Public category endpoints (browsing without auth)
     Route::get('categories', [CategoryController::class, 'index'])->name('categories.public.index');
-    Route::get('categories/{category}', [CategoryController::class, 'show'])->name('categories.public.show');
+    Route::get('categories/{category}', [CategoryController::class, 'show'])
+        ->whereNumber('category')
+        ->name('categories.public.show');
 
     // ========================================
     // PROTECTED ROUTES (Authentication Required)

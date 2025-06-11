@@ -6,13 +6,22 @@ use Illuminate\Http\JsonResponse;
 
 trait ApiResponse
 {
-    public function apiResponse($data = null, $message = '', $status = 200): JsonResponse
+    public function apiResponse($data = null, string $message = '', int $status = 200, ?array $meta = null): JsonResponse
     {
-        return response()->json([
-            'success' => $status < 400 ? true : false,
+        $response = [
+            'success' => $status < 400,
             'message' => $message,
             'data'    => $data,
-        ], $status);
+        ];
+
+        if ((is_array($data) || $data instanceof \Countable) && count($data) > 1) {
+            $response['meta']['count'] = count($data);
+        }
+        if ($meta) {
+            $response['meta'] = $meta;
+        }
+
+        return response()->json($response, $status);
     }
 
     public function apiResponseErrors($message, $errors = [], $status = 422): JsonResponse

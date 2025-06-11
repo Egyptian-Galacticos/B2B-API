@@ -82,6 +82,11 @@ class Category extends Model implements HasMedia
         return $this->hasMany(Category::class, 'parent_id');
     }
 
+    public function recursiveChildren(): HasMany
+    {
+        return $this->children()->with('recursiveChildren');
+    }
+
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
