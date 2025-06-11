@@ -62,6 +62,8 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        Route::get('me', [AuthController::class, 'me'])->name('auth.me');
+
         // ====================================================
         // VERIFIED & ACTIVE USER ROUTES (Full Restrictions)
         // ====================================================
