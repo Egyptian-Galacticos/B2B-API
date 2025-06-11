@@ -29,7 +29,7 @@ class CheckProductOwnership
             $product = Product::where('slug', $productParam)->first();
         }
 
-        // Check if product exists
+        // Check if the product exists
         if (! $product) {
             return $this->apiResponseErrors(
                 'Product not found',

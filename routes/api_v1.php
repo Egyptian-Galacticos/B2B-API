@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\v1\AuthController;
+use App\Http\Controllers\Api\v1\CompanyController;
 use App\Http\Controllers\Api\v1\EmailVerificationController;
 use App\Http\Controllers\Api\v1\ProductController;
 use App\Http\Controllers\Api\v1\SellerUpgradeController;
@@ -30,6 +31,7 @@ Route::prefix('v1')->group(function () {
     // Public products endpoint (browsing without auth)
     Route::get('products', [ProductController::class, 'index'])->name('products.public.index');
     Route::get('products/{slug}', [ProductController::class, 'show'])->name('products.public.show');
+    Route::get('download/product-template', [ProductController::class, 'downloadTemplate'])->name('products.public.download.template');
 
     // ========================================
     // PROTECTED ROUTES (Authentication Required)
@@ -56,15 +58,20 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        Route::get('me', [AuthController::class, 'me'])->name('auth.me');
+
         // ====================================================
         // VERIFIED & ACTIVE USER ROUTES (Full Restrictions)
         // ====================================================
         Route::middleware(['is_email_verified', 'is_suspended'])->group(function () {
 
-            Route::get('me', [AuthController::class, 'me'])->name('auth.me');
-
             // Product creation (no ownership check needed)
             Route::post('products', [ProductController::class, 'store'])->name('products.store');
+
+            // Product Bulk Actions (ownership verified in controller)
+            Route::post('products/bulk-delete', [ProductController::class, 'bulkDelete'])->name('products.bulk.delete');
+            Route::post('products/bulk-active', [ProductController::class, 'bulkActive'])->name('products.bulk.active');
+            Route::post('products/bulk-deactivate', [ProductController::class, 'bulkDeactivate'])->name('products.bulk.deactivate');
 
             // Product management (requires ownership)
             Route::middleware(['product.owner'])->group(function () {
@@ -81,6 +88,13 @@ Route::prefix('v1')->group(function () {
                 Route::delete('{user}', [UserController::class, 'destroy'])->name('users.destroy');
                 Route::patch('{user}/restore', [UserController::class, 'restore'])->name('users.restore');
                 Route::delete('{user}/force-delete', [UserController::class, 'forceDelete'])->name('users.force-delete');
+                Route::put('profile', [UserController::class, 'updateProfile'])->name('users.profile.update');
+                Route::put('password', [UserController::class, 'updatePassword'])->name('users.password.update');
+            });
+
+            // Company management
+            Route::prefix('company')->group(function () {
+                Route::put('/', [CompanyController::class, 'update'])->name('company.update');
             });
 
             // Seller-specific routes
