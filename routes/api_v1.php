@@ -31,6 +31,7 @@ Route::prefix('v1')->group(function () {
     // Public products endpoint (browsing without auth)
     Route::get('products', [ProductController::class, 'index'])->name('products.public.index');
     Route::get('products/{slug}', [ProductController::class, 'show'])->name('products.public.show');
+    Route::get('download/product-template', [ProductController::class, 'downloadTemplate'])->name('products.public.download.template');
 
     // ========================================
     // PROTECTED ROUTES (Authentication Required)
