@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\v1\AuthController;
 use App\Http\Controllers\Api\v1\CategoryController;
+use App\Http\Controllers\Api\v1\CompanyController;
 use App\Http\Controllers\Api\v1\EmailVerificationController;
 use App\Http\Controllers\Api\v1\ProductController;
 use App\Http\Controllers\Api\v1\SellerUpgradeController;
@@ -47,19 +48,18 @@ Route::prefix('v1')->group(function () {
         // =====================================
         Route::prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
-        });
+            // Email verification management (requires auth but not verified email)
+            Route::prefix('email')->group(function () {
+                Route::post('send-verification', [EmailVerificationController::class, 'send'])->name('email.send');
+                Route::post('resend-verification', [EmailVerificationController::class, 'resend'])->name('email.resend');
+                Route::get('status', [EmailVerificationController::class, 'status'])->name('email.status');
+            });
 
-        // Email verification management (requires auth but not verified email)
-        Route::prefix('email')->group(function () {
-            Route::post('send-verification', [EmailVerificationController::class, 'send'])->name('email.send');
-            Route::post('resend-verification', [EmailVerificationController::class, 'resend'])->name('email.resend');
-            Route::get('status', [EmailVerificationController::class, 'status'])->name('email.status');
-        });
-
-        // Company email verification management
-        Route::prefix('company-email')->group(function () {
-            Route::post('send-verification', [EmailVerificationController::class, 'sendCompany'])->name('company-email.send');
-            Route::post('resend-verification', [EmailVerificationController::class, 'resendCompany'])->name('company-email.resend');
+            // Company email verification management
+            Route::prefix('company-email')->group(function () {
+                Route::post('send-verification', [EmailVerificationController::class, 'sendCompany'])->name('company-email.send');
+                Route::post('resend-verification', [EmailVerificationController::class, 'resendCompany'])->name('company-email.resend');
+            });
         });
 
         // ====================================================
@@ -82,6 +82,11 @@ Route::prefix('v1')->group(function () {
             // Product creation (no ownership check needed)
             Route::post('products', [ProductController::class, 'store'])->name('products.store');
 
+            // Product Bulk Actions (ownership verified in controller)
+            Route::post('products/bulk-delete', [ProductController::class, 'bulkDelete'])->name('products.bulk.delete');
+            Route::post('products/bulk-active', [ProductController::class, 'bulkActive'])->name('products.bulk.active');
+            Route::post('products/bulk-deactivate', [ProductController::class, 'bulkDeactivate'])->name('products.bulk.deactivate');
+
             // Product management (requires ownership)
             Route::middleware(['product.owner'])->group(function () {
                 Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update')->whereAlphaNumeric('product');
@@ -97,6 +102,13 @@ Route::prefix('v1')->group(function () {
                 Route::delete('{user}', [UserController::class, 'destroy'])->name('users.destroy');
                 Route::patch('{user}/restore', [UserController::class, 'restore'])->name('users.restore');
                 Route::delete('{user}/force-delete', [UserController::class, 'forceDelete'])->name('users.force-delete');
+                Route::put('profile', [UserController::class, 'updateProfile'])->name('users.profile.update');
+                Route::put('password', [UserController::class, 'updatePassword'])->name('users.password.update');
+            });
+
+            // Company management
+            Route::prefix('company')->group(function () {
+                Route::put('/', [CompanyController::class, 'update'])->name('company.update');
             });
 
             // Seller-specific routes

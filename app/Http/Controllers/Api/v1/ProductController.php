@@ -2,20 +2,26 @@
 
 namespace App\Http\Controllers\Api\v1;
 
+use App\Exports\ProductTemplateExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BulkProductActionRequest;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Http\Resources\ProductDetailsResource;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Traits\ApiResponse;
+use App\Traits\BulkProductOwnership;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Exception;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ProductController extends Controller
 {
-    use ApiResponse;
+    use ApiResponse, BulkProductOwnership;
 
     /**
      * Display a listing of the resource.
@@ -252,5 +258,99 @@ class ProductController extends Controller
             'Document deleted successfully.',
             200
         );
+    }
+
+    /**
+     * Bulk delete products.
+     */
+    public function bulkDelete(BulkProductActionRequest $request): JsonResponse
+    {
+        $productIds = $request->validated()['product_ids'];
+
+        // Verify ownership
+        $ownership = $this->verifyBulkOwnership($productIds, auth()->id());
+
+        if (empty($ownership['authorized'])) {
+            return $this->noProductsFoundResponse($productIds);
+        }
+
+        if ($ownership['has_unauthorized']) {
+            return $this->ownershipErrorResponse('delete', $ownership['unauthorized'], $ownership['authorized']);
+        }
+
+        $deletedCount = Product::whereIn('id', $ownership['authorized'])->delete();
+
+        return $this->apiResponse(
+            null,
+            "$deletedCount products deleted successfully.",
+            200
+        );
+    }
+
+    /**
+     * Bulk deactivate products.
+     */
+    public function bulkDeactivate(BulkProductActionRequest $request): JsonResponse
+    {
+        $productIds = $request->validated()['product_ids'];
+
+        // Verify ownership
+        $ownership = $this->verifyBulkOwnership($productIds, auth()->id());
+
+        if (empty($ownership['authorized'])) {
+            return $this->noProductsFoundResponse($productIds);
+        }
+
+        if ($ownership['has_unauthorized']) {
+            return $this->ownershipErrorResponse('deactivate', $ownership['unauthorized'], $ownership['authorized']);
+        }
+
+        $updatedCount = Product::whereIn('id', $ownership['authorized'])->update(['is_active' => false]);
+
+        return $this->apiResponse(
+            null,
+            "$updatedCount products set to inactive successfully.",
+            200
+        );
+    }
+
+    /**
+     * Bulk activate products.
+     */
+    public function bulkActive(BulkProductActionRequest $request): JsonResponse
+    {
+        $productIds = $request->validated()['product_ids'];
+
+        // Verify ownership
+        $ownership = $this->verifyBulkOwnership($productIds, auth()->id());
+
+        if (empty($ownership['authorized'])) {
+            return $this->noProductsFoundResponse($productIds);
+        }
+
+        if ($ownership['has_unauthorized']) {
+            return $this->ownershipErrorResponse('activate', $ownership['unauthorized'], $ownership['authorized']);
+        }
+
+        $updatedCount = Product::whereIn('id', $ownership['authorized'])->update(['is_active' => true]);
+
+        return $this->apiResponse(
+            null,
+            "$updatedCount products set to active successfully.",
+            200
+        );
+    }
+
+    /**
+     * @throws Exception
+     * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
+     *
+     * @unauthenticated
+     */
+    public function downloadTemplate(): BinaryFileResponse
+    {
+        $filename = 'product_import_template_'.now()->format('Y-m-d').'.xlsx';
+
+        return Excel::download(new ProductTemplateExport, $filename);
     }
 }

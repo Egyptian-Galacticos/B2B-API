@@ -7,10 +7,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class Company extends Model
+class Company extends Model implements HasMedia
 {
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasFactory, InteractsWithMedia, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -156,5 +159,38 @@ class Company extends Model
     public function markAsUnverified(): bool
     {
         return $this->update(['is_verified' => false]);
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('logo')
+            ->singleFile()
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']);
+    }
+
+    /**
+     * Register media conversions for the company.
+     */
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion('thumb')
+            ->width(300)
+            ->height(300)
+            ->sharpen(10)
+            ->performOnCollections('logo');
+
+        $this->addMediaConversion('small')
+            ->width(150)
+            ->height(150)
+            ->sharpen(10)
+            ->performOnCollections('logo');
+    }
+
+    /**
+     * Should queue media conversions.
+     */
+    public function shouldQueueMediaConversion(?Media $media = null): bool
+    {
+        return true;
     }
 }
