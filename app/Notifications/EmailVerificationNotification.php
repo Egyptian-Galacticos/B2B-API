@@ -16,7 +16,7 @@ class EmailVerificationNotification extends Notification implements ShouldQueue
     public function __construct(string $token)
     {
         $this->token = $token;
-        $this->verificationUrl = config('app.frontend_url').'/auth/verify-email?token='.$token;
+        $this->verificationUrl = config('app.frontend_url').'/auth/email-verify?token='.$token;
 
         $this->onQueue('emails');
         $this->delay(now()->addSeconds(5));
