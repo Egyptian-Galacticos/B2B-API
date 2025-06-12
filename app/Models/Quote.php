@@ -4,42 +4,93 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Quote extends Model
 {
     /** @use HasFactory<\Database\Factories\QuoteFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
     protected $fillable = [
-        'quote_number',
-        'buyer_id',
-        'seller_id',
+        'rfq_id',
+        'total_price',
+        'seller_message',
         'status',
-        'total_amount',
-        'currency',
-        'valid_until',
-        'terms',
-        'metadata',
     ];
     protected $casts = [
-        'valid_until'  => 'datetime',
-        'total_amount' => 'decimal:2',
-        'metadata'     => 'array',
+        'total_price' => 'decimal:2',
+        'status'      => 'string',
     ];
 
-    public function buyer(): BelongsTo
+    // releationships
+    public function rfq()
     {
-        return $this->belongsTo(User::class, 'buyer_id');
+        return $this->belongsTo(Rfq::class)->withDefault();
     }
 
-    public function seller(): BelongsTo
+    public function items()
     {
-        return $this->belongsTo(User::class, 'seller_id');
+        // return $this->hasMany(QuoteItem::class);
     }
 
-    public function items(): HasMany
+    public function seller()
     {
-        return $this->hasMany(QuoteItem::class);
+        return $this->rfq->seller();
+    }
+
+    public function buyer()
+    {
+        return $this->rfq->buyer();
+    }
+
+    // scopes
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    public function scopeInProgress($query)
+    {
+        return $query->where('status', 'in_progress');
+    }
+
+    public function scopeSeen($query)
+    {
+        return $query->where('status', 'seen');
+    }
+
+    public function scopeAccepted($query)
+    {
+        return $query->where('status', 'accepted');
+    }
+
+    public function scopeRejected($query)
+    {
+        return $query->where('status', 'rejected');
+    }
+
+    // accessors
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    public function isInProgress(): bool
+    {
+        return $this->status === 'in_progress';
+    }
+
+    public function isSeen(): bool
+    {
+        return $this->status === 'seen';
+    }
+
+    public function isAccepted(): bool
+    {
+        return $this->status === 'accepted';
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status === 'rejected';
     }
 }

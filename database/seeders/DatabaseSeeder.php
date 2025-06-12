@@ -14,6 +14,7 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Quote;
 use App\Models\QuoteItem;
+use App\Models\Rfq;
 use App\Models\User;
 use App\Models\Wishlist;
 use App\Models\WishlistItem;
@@ -177,11 +178,6 @@ class DatabaseSeeder extends Seeder
             ContractItem::factory()->count(rand(1, 3))->create(['contract_id' => $contract->id]);
         });
 
-        // Quotes with items
-        Quote::factory()->count(3)->sent()->create()->each(function (Quote $quote) {
-            QuoteItem::factory()->count(rand(1, 3))->create(['quote_id' => $quote->id]);
-        });
-
         // Others
         Escrow::factory()->count(5)->create();
         Payment::factory()->count(5)->create();
@@ -190,5 +186,15 @@ class DatabaseSeeder extends Seeder
         MessageAttachment::factory()->count(5)->create();
         Wishlist::factory()->count(5)->create();
         WishlistItem::factory()->count(15)->create();
+        Rfq::factory()->count(10)->create();
+        Quote::factory()
+            ->count(20)
+            ->create()
+            ->each(function ($quote) {
+                QuoteItem::factory()
+                    ->count(rand(1, 5))
+                    ->for($quote)
+                    ->create();
+            });
     }
 }

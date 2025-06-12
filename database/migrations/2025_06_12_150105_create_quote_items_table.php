@@ -14,14 +14,17 @@ return new class extends Migration
         Schema::create('quote_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('quote_id')->constrained('quotes')->onDelete('cascade');
-            $table->foreignId('product_id')->constrained('products')->onDelete('restrict');
-            $table->integer('quantity');
+            $table->foreignId('product_id')->constrained('products');
+            $table->integer('quantity')->default(1);
             $table->decimal('unit_price', 15, 2);
-            $table->decimal('total_price', 15, 2);
-            $table->text('specifications')->nullable();
-            $table->timestamp('created_at')->useCurrent();
-        });
+            $table->text('notes')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
 
+            $table->index(['quote_id']);
+            $table->index(['product_id']);
+            $table->index('deleted_at');
+        });
     }
 
     /**
