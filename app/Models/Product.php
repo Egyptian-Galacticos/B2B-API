@@ -119,11 +119,6 @@ class Product extends Model implements HasMedia
         return $this->hasMany(ContractItem::class);
     }
 
-    public function quoteItems(): HasMany
-    {
-        return $this->hasMany(QuoteItem::class);
-    }
-
     public function tiers(): HasMany
     {
         return $this->hasMany(ProductTier::class);

@@ -12,8 +12,6 @@ use App\Models\Message;
 use App\Models\MessageAttachment;
 use App\Models\Payment;
 use App\Models\Product;
-use App\Models\Quote;
-use App\Models\QuoteItem;
 use App\Models\User;
 use App\Models\Wishlist;
 use App\Models\WishlistItem;
@@ -175,11 +173,6 @@ class DatabaseSeeder extends Seeder
         // Contracts with items
         Contract::factory()->count(3)->active()->create()->each(function (Contract $contract) {
             ContractItem::factory()->count(rand(1, 3))->create(['contract_id' => $contract->id]);
-        });
-
-        // Quotes with items
-        Quote::factory()->count(3)->sent()->create()->each(function (Quote $quote) {
-            QuoteItem::factory()->count(rand(1, 3))->create(['quote_id' => $quote->id]);
         });
 
         // Others
