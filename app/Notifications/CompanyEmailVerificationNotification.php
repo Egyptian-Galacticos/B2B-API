@@ -16,7 +16,7 @@ class CompanyEmailVerificationNotification extends Notification implements Shoul
     public function __construct(string $token)
     {
         $this->token = $token;
-        $this->verificationUrl = config('app.frontend_url').'/auth/company-send?token='.$token;
+        $this->verificationUrl = config('app.frontend_url').'/auth/company-verify?token='.$token;
 
         $this->onQueue('emails');
         $this->delay(now()->addSeconds(5));
