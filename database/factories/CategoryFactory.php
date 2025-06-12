@@ -30,16 +30,16 @@ class CategoryFactory extends Factory
             'level'       => 0,
             'status'      => $this->faker->randomElement(['active', 'pending', 'inactive']),
             'icon'        => $this->faker->optional(0.3)->randomElement([
-                'fa-solid fa-laptop',
-                'fa-solid fa-tshirt',
-                'fa-solid fa-home',
-                'fa-solid fa-car',
-                'fa-solid fa-book',
-                'fa-solid fa-gamepad',
-                'fa-solid fa-utensils',
-                'fa-solid fa-heartbeat',
-                'fa-solid fa-dumbbell',
-                'fa-solid fa-palette',
+                'pi pi-desktop',
+                'pi pi-shopping-bag',
+                'pi pi-home',
+                'pi pi-car',
+                'pi pi-book',
+                'pi pi-gamepad',
+                'pi pi-utensils',
+                'pi pi-heart',
+                'pi pi-dumbbell',
+                'pi pi-palette',
             ]),
             'seo_metadata' => $this->faker->optional(0.4)->passthrough([
                 'title'          => $this->faker->sentence(4),
@@ -194,36 +194,36 @@ class CategoryFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'icon' => $this->faker->randomElement([
-                'fa-solid fa-laptop',
-                'fa-solid fa-mobile-alt',
-                'fa-solid fa-tshirt',
-                'fa-solid fa-shoe-prints',
-                'fa-solid fa-home',
-                'fa-solid fa-couch',
-                'fa-solid fa-car',
-                'fa-solid fa-motorcycle',
-                'fa-solid fa-book',
-                'fa-solid fa-graduation-cap',
-                'fa-solid fa-gamepad',
-                'fa-solid fa-headphones',
-                'fa-solid fa-utensils',
-                'fa-solid fa-wine-glass',
-                'fa-solid fa-heartbeat',
-                'fa-solid fa-pills',
-                'fa-solid fa-dumbbell',
-                'fa-solid fa-running',
-                'fa-solid fa-palette',
-                'fa-solid fa-brush',
-                'fa-solid fa-hammer',
-                'fa-solid fa-wrench',
-                'fa-solid fa-seedling',
-                'fa-solid fa-leaf',
-                'fa-solid fa-baby',
-                'fa-solid fa-teddy-bear',
-                'fa-solid fa-gem',
-                'fa-solid fa-ring',
-                'fa-solid fa-camera',
-                'fa-solid fa-music',
+                'pi pi-desktop',
+                'pi pi-mobile',
+                'pi pi-shopping-bag',
+                'pi pi-shoe-prints',
+                'pi pi-home',
+                'pi pi-building',
+                'pi pi-car',
+                'pi pi-bicycle',
+                'pi pi-book',
+                'pi pi-graduation-cap',
+                'pi pi-gamepad',
+                'pi pi-headphones',
+                'pi pi-utensils',
+                'pi pi-wine-glass',
+                'pi pi-heart',
+                'pi pi-pills',
+                'pi pi-dumbbell',
+                'pi pi-run',
+                'pi pi-palette',
+                'pi pi-brush',
+                'pi pi-hammer',
+                'pi pi-wrench',
+                'pi pi-leaf',
+                'pi pi-tree',
+                'pi pi-baby',
+                'pi pi-teddy-bear',
+                'pi pi-gem',
+                'pi pi-gift',
+                'pi pi-camera',
+                'pi pi-music',
             ]),
         ]);
     }
@@ -233,29 +233,35 @@ class CategoryFactory extends Factory
      */
     public function ecommerce(): static
     {
+        $categoryData = [
+            'Electronics & Technology' => 'pi pi-desktop',
+            'Fashion & Apparel'        => 'pi pi-shopping-bag',
+            'Home & Garden'            => 'pi pi-home',
+            'Sports & Outdoors'        => 'pi pi-dumbbell',
+            'Books & Media'            => 'pi pi-book',
+            'Health & Beauty'          => 'pi pi-heart',
+            'Toys & Games'             => 'pi pi-gift',
+            'Automotive & Transport'   => 'pi pi-car',
+            'Food & Beverages'         => 'pi pi-apple',
+            'Jewelry & Accessories'    => 'pi pi-crown',
+            'Tools & Hardware'         => 'pi pi-wrench',
+            'Office & Business'        => 'pi pi-briefcase',
+            'Pet Supplies'             => 'pi pi-heart',
+            'Baby & Kids'              => 'pi pi-baby',
+            'Art & Crafts'             => 'pi pi-palette',
+            'Music & Instruments'      => 'pi pi-music',
+            'Photography & Video'      => 'pi pi-camera',
+            'Travel & Luggage'         => 'pi pi-map',
+            'Furniture & Decor'        => 'pi pi-building',
+            'Kitchen & Appliances'     => 'pi pi-utensils',
+        ];
+
+        $categoryName = $this->faker->randomElement(array_keys($categoryData));
+
         return $this->state(fn (array $attributes) => [
-            'name' => $this->faker->randomElement([
-                'Electronics',
-                'Clothing & Fashion',
-                'Home & Garden',
-                'Sports & Outdoors',
-                'Books & Media',
-                'Health & Beauty',
-                'Toys & Games',
-                'Automotive',
-                'Food & Beverages',
-                'Jewelry & Accessories',
-                'Tools & Hardware',
-                'Office Supplies',
-                'Pet Supplies',
-                'Baby & Kids',
-                'Art & Crafts',
-                'Music & Instruments',
-                'Photography',
-                'Travel & Luggage',
-                'Furniture',
-                'Appliances',
-            ]),
+            'name'        => $categoryName,
+            'icon'        => $categoryData[$categoryName],
+            'description' => "Professional {$categoryName} products for businesses and consumers",
         ]);
     }
 
@@ -266,21 +272,25 @@ class CategoryFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             $categories = [
-                'Electronics' => [
-                    'icon'     => 'fa-solid fa-laptop',
-                    'children' => ['Smartphones', 'Laptops', 'Headphones', 'Cameras'],
+                'Electronics & Technology' => [
+                    'icon'     => 'pi pi-desktop',
+                    'children' => ['Smartphones & Tablets', 'Computers & Laptops', 'Audio & Video', 'Components & Parts'],
                 ],
-                'Clothing' => [
-                    'icon'     => 'fa-solid fa-tshirt',
-                    'children' => ['Men\'s Clothing', 'Women\'s Clothing', 'Shoes', 'Accessories'],
+                'Fashion & Apparel' => [
+                    'icon'     => 'pi pi-shopping-bag',
+                    'children' => ['Professional Wear', 'Casual Clothing', 'Footwear', 'Accessories & Jewelry'],
                 ],
                 'Home & Garden' => [
-                    'icon'     => 'fa-solid fa-home',
-                    'children' => ['Furniture', 'Kitchen', 'Decor', 'Garden Tools'],
+                    'icon'     => 'pi pi-home',
+                    'children' => ['Furniture & Decor', 'Kitchen & Dining', 'Garden & Outdoor', 'Storage & Organization'],
                 ],
-                'Sports' => [
-                    'icon'     => 'fa-solid fa-dumbbell',
-                    'children' => ['Fitness Equipment', 'Outdoor Sports', 'Team Sports', 'Water Sports'],
+                'Business & Office' => [
+                    'icon'     => 'pi pi-briefcase',
+                    'children' => ['Office Supplies', 'Business Equipment', 'Furniture', 'Technology Solutions'],
+                ],
+                'Industrial & Manufacturing' => [
+                    'icon'     => 'pi pi-cog',
+                    'children' => ['Machinery & Equipment', 'Raw Materials', 'Safety Equipment', 'Tools & Hardware'],
                 ],
             ];
 
