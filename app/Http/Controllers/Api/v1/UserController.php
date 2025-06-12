@@ -105,20 +105,8 @@ class UserController extends Controller
 
             // Get validated data and remove file fields as they're handled separately
             $validated = $request->validated();
-            $updateData = collect($validated)->except(['profile_image'])->toArray();
-
-            $user->update($updateData);
-
-            // Handle profile image upload (replace existing)
-            if ($request->hasFile('profile_image')) {
-                $user->clearMediaCollection('profile_image');
-                $user
-                    ->addMedia($request->file('profile_image'))
-                    ->usingName('Profile Image - '.$request->file('profile_image')->getClientOriginalName())
-                    ->toMediaCollection('profile_image');
-            }
-
-            $userData = new UserResource($user->fresh()->load('media'));
+            $user->update($validated);
+            $userData = new UserResource($user->fresh());
 
             return $this->apiResponse($userData, 'Profile updated successfully.', 200);
 

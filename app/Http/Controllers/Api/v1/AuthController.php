@@ -48,7 +48,9 @@ class AuthController extends Controller
         }
 
         $user = JWTAuth::user();
-
+        if ($user->isSuspended()) {
+            return $this->apiResponseErrors('User account is suspended', ['error' => 'Your account is suspended.'], 403);
+        }
         $user->update(['last_login_at' => now()]);
         $refreshToken = RefreshToken::create([
             'user_id' => $user->id,

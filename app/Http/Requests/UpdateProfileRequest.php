@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Validation\Rule;
+
 class UpdateProfileRequest extends BaseRequest
 {
     /**
@@ -19,12 +21,21 @@ class UpdateProfileRequest extends BaseRequest
      */
     public function rules(): array
     {
-        return [
-            'first_name'    => ['sometimes', 'string', 'max:255'],
-            'last_name'     => ['sometimes', 'string', 'max:255'],
-            'phone_number'  => ['sometimes', 'string', 'max:20', 'nullable', 'regex:/^[\+]?[1-9][\d]{0,15}$/'],
-            'profile_image' => ['sometimes', 'file', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048', 'nullable'],
+        $user = auth()->user();
+
+        $rules = [
+            'first_name'   => ['sometimes', 'string', 'max:255'],
+            'last_name'    => ['sometimes', 'string', 'max:255'],
+            'phone_number' => ['sometimes', 'string', 'max:20', 'nullable', 'regex:/^[\+]?[1-9][\d]{0,15}$/'],
         ];
+
+        if (! $user->is_email_verified) {
+            $rules['email'] = ['sometimes', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)];
+        } else {
+            $rules['email'] = ['prohibited'];
+        }
+
+        return $rules;
     }
 
     /**

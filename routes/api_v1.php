@@ -68,7 +68,10 @@ Route::prefix('v1')->group(function () {
         // BASIC USER ROUTES (No Need for Email Verification)
         // =====================================================
         Route::get('me', [AuthController::class, 'me'])->name('auth.me');
-        Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+        Route::prefix('users')->group(function () {
+            Route::delete('{user}', [UserController::class, 'destroy'])->name('users.destroy');
+            Route::put('profile', [UserController::class, 'updateProfile'])->name('users.profile.update');
+        });
 
         // ====================================================
         // VERIFIED & ACTIVE USER ROUTES (Full Restrictions)
@@ -110,7 +113,6 @@ Route::prefix('v1')->group(function () {
             Route::prefix('users')->group(function () {
                 Route::patch('{user}/restore', [UserController::class, 'restore'])->name('users.restore');
                 Route::delete('{user}/force-delete', [UserController::class, 'forceDelete'])->name('users.force-delete');
-                Route::put('profile', [UserController::class, 'updateProfile'])->name('users.profile.update');
                 Route::put('password', [UserController::class, 'updatePassword'])->name('users.password.update');
             });
 
