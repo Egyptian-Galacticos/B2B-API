@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateProductRequest;
 use App\Http\Resources\ProductDetailsResource;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Services\QueryHandler;
 use App\Traits\ApiResponse;
 use App\Traits\BulkProductOwnership;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -31,17 +32,43 @@ class ProductController extends Controller
      *
      * @unauthenticated
      */
-    public function index(): JsonResponse
+    public function index(Request $request)
     {
-        $products = Product::with(['seller.company', 'category'])
-            ->where('is_active', true)
-            ->paginate(10);
+        $queryHandler = new QueryHandler($request);
+        $perPage = (int) $request->get('size', 10);
+
+        $query = $queryHandler
+            ->setBaseQuery(Product::query()->with(['seller.company', 'category'])->where('is_active', true)) // eager load seller relation if needed
+            ->setAllowedSorts([
+                'price', 'created_at', 'name', 'brand', 'currency', 'is_active',
+                'seller.name',
+            ])
+            ->setAllowedFilters([
+                'name', 'brand', 'model_number', 'currency', 'price', 'origin',
+                'is_active', 'is_approved', 'created_at',
+                'seller.name',
+            ])
+            ->apply()
+            ->paginate($perPage)
+            ->withQueryString();
 
         return $this->apiResponse(
-            ProductResource::collection($products),
+            ProductResource::collection($query),
             'Products retrieved successfully.',
-            200
+            200,
+            [
+                'totalPages'     => $query->lastPage(),
+                'limit'          => $query->perPage(),
+                'total'          => $query->total(),
+                'has_more_pages' => $query->hasMorePages(),
+            ]
         );
+        // return response()->json([
+        //     "datdda" => ProductResource::collection($query->paginate($perPage)
+        //     ->withQueryString()),
+        //     "message" => 'Products retrieved successfully.',
+        //     "status"=> 200
+        // ]);
     }
 
     /**
