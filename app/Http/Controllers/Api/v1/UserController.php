@@ -4,9 +4,7 @@ namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdatePasswordRequest;
-use App\Http\Requests\UpdateProfileCompanyRequest;
 use App\Http\Requests\UpdateProfileRequest;
-use App\Http\Resources\CompanyResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Traits\ApiResponse;
@@ -105,20 +103,8 @@ class UserController extends Controller
 
             // Get validated data and remove file fields as they're handled separately
             $validated = $request->validated();
-            $updateData = collect($validated)->except(['profile_image'])->toArray();
-
-            $user->update($updateData);
-
-            // Handle profile image upload (replace existing)
-            if ($request->hasFile('profile_image')) {
-                $user->clearMediaCollection('profile_image');
-                $user
-                    ->addMedia($request->file('profile_image'))
-                    ->usingName('Profile Image - '.$request->file('profile_image')->getClientOriginalName())
-                    ->toMediaCollection('profile_image');
-            }
-
-            $userData = new UserResource($user->fresh()->load('media'));
+            $user->update($validated);
+            $userData = new UserResource($user->fresh());
 
             return $this->apiResponse($userData, 'Profile updated successfully.', 200);
 
@@ -168,46 +154,6 @@ class UserController extends Controller
             return $this->apiResponseErrors(
                 'Server error',
                 ['An unexpected error occurred while updating the password.', $e->getMessage()],
-                500
-            );
-        }
-    }
-
-    /**
-     * Update company information
-     */
-    public function updateCompany(UpdateProfileCompanyRequest $request): \Illuminate\Http\JsonResponse
-    {
-        try {
-            $user = Auth::user();
-
-            // Check if user has a company
-            if (! $user->company) {
-                return $this->apiResponseErrors(
-                    'Company not found',
-                    ['No company found for this user.'],
-                    404
-                );
-            }
-
-            // Get validated data
-            $updateData = $request->validated();
-
-            // If email is being updated, reset email verification
-            if ($request->has('email') && $request->email !== $user->company->email) {
-                $updateData['is_email_verified'] = false;
-            }
-
-            $user->company->update($updateData);
-
-            $companyData = new CompanyResource($user->company->fresh());
-
-            return $this->apiResponse($companyData, 'Company information updated successfully.', 200);
-
-        } catch (\Exception $e) {
-            return $this->apiResponseErrors(
-                'Server error',
-                ['An unexpected error occurred while updating the company information.', $e->getMessage()],
                 500
             );
         }
