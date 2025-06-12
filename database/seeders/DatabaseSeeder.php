@@ -12,6 +12,9 @@ use App\Models\Message;
 use App\Models\MessageAttachment;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\Quote;
+use App\Models\QuoteItem;
+use App\Models\Rfq;
 use App\Models\User;
 use App\Models\Wishlist;
 use App\Models\WishlistItem;
@@ -183,5 +186,15 @@ class DatabaseSeeder extends Seeder
         MessageAttachment::factory()->count(5)->create();
         Wishlist::factory()->count(5)->create();
         WishlistItem::factory()->count(15)->create();
+        Rfq::factory()->count(10)->create();
+        Quote::factory()
+            ->count(20)
+            ->create()
+            ->each(function ($quote) {
+                QuoteItem::factory()
+                    ->count(rand(1, 5))
+                    ->for($quote)
+                    ->create();
+            });
     }
 }
