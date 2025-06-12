@@ -69,7 +69,7 @@ class DatabaseSeeder extends Seeder
         $rootCategories = [
             [
                 'name'        => 'Electronics',
-                'icon'        => 'fa-solid fa-laptop',
+                'icon'        => 'pi pi-desktop',
                 'description' => 'Latest electronics and gadgets',
                 'children'    => [
                     'Smartphones' => ['Flagship Phones', 'Budget Phones', 'Accessories'],
@@ -80,7 +80,7 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'name'        => 'Fashion & Clothing',
-                'icon'        => 'fa-solid fa-tshirt',
+                'icon'        => 'pi pi-shopping-bag',
                 'description' => 'Trendy fashion for everyone',
                 'children'    => [
                     'Men\'s Fashion'   => ['Shirts', 'Pants', 'Suits', 'Casual Wear'],
@@ -91,7 +91,7 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'name'        => 'Home & Living',
-                'icon'        => 'fa-solid fa-home',
+                'icon'        => 'pi pi-home',
                 'description' => 'Everything for your home',
                 'children'    => [
                     'Furniture' => ['Living Room', 'Bedroom', 'Dining Room', 'Office'],
