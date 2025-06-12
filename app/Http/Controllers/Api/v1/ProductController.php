@@ -63,12 +63,6 @@ class ProductController extends Controller
                 'has_more_pages' => $query->hasMorePages(),
             ]
         );
-        // return response()->json([
-        //     "datdda" => ProductResource::collection($query->paginate($perPage)
-        //     ->withQueryString()),
-        //     "message" => 'Products retrieved successfully.',
-        //     "status"=> 200
-        // ]);
     }
 
     /**
