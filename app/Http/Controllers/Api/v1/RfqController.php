@@ -92,9 +92,14 @@ class RfqController extends Controller
      *
      * This method retrieves a specific RFQ by its ID.
      */
-    public function show(Rfq $rfq): JsonResponse
+    public function show(int $id): JsonResponse
     {
         try {
+            $rfq = Rfq::find($id);
+            if (! $rfq) {
+                return $this->apiResponseErrors('RFQ not found', [], 404);
+            }
+
             if ($rfq->buyer_id !== Auth::id() && $rfq->seller_id !== Auth::id()) {
                 return $this->apiResponseErrors('Unauthorized access to this RFQ', [], 403);
             }
@@ -105,7 +110,7 @@ class RfqController extends Controller
                 new RfqResource($rfq),
                 'RFQ retrieved successfully'
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->apiResponseErrors('Failed to retrieve RFQ', [], 500);
         }
     }
@@ -115,9 +120,14 @@ class RfqController extends Controller
      *
      * This method marks an RFQ as in progress when the seller opens it.
      */
-    public function markInProgress(Rfq $rfq): JsonResponse
+    public function markInProgress(int $id): JsonResponse
     {
         try {
+            $rfq = Rfq::find($id);
+            if (! $rfq) {
+                return $this->apiResponseErrors('RFQ not found', [], 404);
+            }
+
             if ($rfq->seller_id !== Auth::id()) {
                 return $this->apiResponseErrors('Unauthorized action', [], 403);
             }
@@ -143,9 +153,14 @@ class RfqController extends Controller
      *
      * This method marks an RFQ as seen when the seller views it.
      */
-    public function markSeen(Rfq $rfq): JsonResponse
+    public function markSeen(int $id): JsonResponse
     {
         try {
+            $rfq = Rfq::find($id);
+            if (! $rfq) {
+                return $this->apiResponseErrors('RFQ not found', [], 404);
+            }
+
             if ($rfq->seller_id !== Auth::id()) {
                 return $this->apiResponseErrors('Unauthorized action', [], 403);
             }
@@ -171,9 +186,14 @@ class RfqController extends Controller
      *
      * This method rejects an RFQ.
      */
-    public function reject(Rfq $rfq): JsonResponse
+    public function reject(int $id): JsonResponse
     {
         try {
+            $rfq = Rfq::find($id);
+            if (! $rfq) {
+                return $this->apiResponseErrors('RFQ not found', [], 404);
+            }
+
             if ($rfq->seller_id !== Auth::id()) {
                 return $this->apiResponseErrors('Unauthorized action', [], 403);
             }
@@ -199,9 +219,14 @@ class RfqController extends Controller
      *
      * This method allows a buyer to accept an RFQ that has been quoted by the seller.
      */
-    public function accept(Rfq $rfq): JsonResponse
+    public function accept(int $id): JsonResponse
     {
         try {
+            $rfq = Rfq::find($id);
+            if (! $rfq) {
+                return $this->apiResponseErrors('RFQ not found', [], 404);
+            }
+
             if ($rfq->buyer_id !== Auth::id()) {
                 return $this->apiResponseErrors('Unauthorized action', [], 403);
             }
@@ -227,9 +252,14 @@ class RfqController extends Controller
      *
      * This method allows a buyer or seller to close an RFQ that has been accepted.
      */
-    public function close(Rfq $rfq): JsonResponse
+    public function close(int $id): JsonResponse
     {
         try {
+            $rfq = Rfq::find($id);
+            if (! $rfq) {
+                return $this->apiResponseErrors('RFQ not found', [], 404);
+            }
+
             if ($rfq->buyer_id !== Auth::id() && $rfq->seller_id !== Auth::id()) {
                 return $this->apiResponseErrors('Unauthorized action', [], 403);
             }
