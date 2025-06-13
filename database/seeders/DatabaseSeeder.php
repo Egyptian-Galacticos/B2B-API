@@ -57,11 +57,6 @@ class DatabaseSeeder extends Seeder
 
         // Create additional users with companies and assign roles
         $users = User::factory()->count(10)->create();
-        $users->each(function (User $user) {
-            $role = ['buyer', 'seller'][array_rand(['buyer', 'seller'])];
-            $user->assignRole($role);
-            Company::factory()->forUser($user)->create();
-        });
 
         // Get a random seller user
         $seller = $users->filter(fn ($u) => $u->hasRole('seller'))->first();
@@ -196,5 +191,10 @@ class DatabaseSeeder extends Seeder
                     ->for($quote)
                     ->create();
             });
+        User::all()->each(function (User $user) {
+            $role = ['buyer', 'seller'][array_rand(['buyer', 'seller'])];
+            $user->assignRole($role);
+            Company::factory()->forUser($user)->create();
+        });
     }
 }
