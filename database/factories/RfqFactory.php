@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Product;
+use App\Models\Rfq;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -26,7 +27,7 @@ class RfqFactory extends Factory
             'shipping_country'   => $this->faker->country(),
             'shipping_address'   => $this->faker->address(),
             'buyer_message'      => $this->faker->optional()->paragraph(),
-            'status'             => $this->faker->randomElement(['pending', 'quoted', 'accepted', 'rejected', 'closed']),
+            'status'             => $this->faker->randomElement(Rfq::VALID_STATUSES),
         ];
     }
 }

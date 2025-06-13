@@ -10,6 +10,20 @@ class Quote extends Model
 {
     /** @use HasFactory<\Database\Factories\QuoteFactory> */
     use HasFactory, SoftDeletes;
+
+    // Status constants
+    const STATUS_DRAFT = 'draft';
+    const STATUS_SENT = 'sent';
+    const STATUS_ACCEPTED = 'accepted';
+    const STATUS_REJECTED = 'rejected';
+
+    // All valid statuses
+    const VALID_STATUSES = [
+        self::STATUS_DRAFT,
+        self::STATUS_SENT,
+        self::STATUS_ACCEPTED,
+        self::STATUS_REJECTED,
+    ];
     protected $fillable = [
         'rfq_id',
         'total_price',
@@ -29,7 +43,7 @@ class Quote extends Model
 
     public function items()
     {
-        // return $this->hasMany(QuoteItem::class);
+        return $this->hasMany(QuoteItem::class);
     }
 
     public function seller()
@@ -43,54 +57,88 @@ class Quote extends Model
     }
 
     // scopes
-    public function scopePending($query)
+    public function scopeDraft($query)
     {
-        return $query->where('status', 'pending');
+        return $query->where('status', self::STATUS_DRAFT);
     }
 
-    public function scopeInProgress($query)
+    public function scopeSent($query)
     {
-        return $query->where('status', 'in_progress');
-    }
-
-    public function scopeSeen($query)
-    {
-        return $query->where('status', 'seen');
+        return $query->where('status', self::STATUS_SENT);
     }
 
     public function scopeAccepted($query)
     {
-        return $query->where('status', 'accepted');
+        return $query->where('status', self::STATUS_ACCEPTED);
     }
 
     public function scopeRejected($query)
     {
-        return $query->where('status', 'rejected');
+        return $query->where('status', self::STATUS_REJECTED);
     }
 
     // accessors
-    public function isPending(): bool
+    public function isDraft(): bool
     {
-        return $this->status === 'pending';
+        return $this->status === self::STATUS_DRAFT;
     }
 
-    public function isInProgress(): bool
+    public function isSent(): bool
     {
-        return $this->status === 'in_progress';
-    }
-
-    public function isSeen(): bool
-    {
-        return $this->status === 'seen';
+        return $this->status === self::STATUS_SENT;
     }
 
     public function isAccepted(): bool
     {
-        return $this->status === 'accepted';
+        return $this->status === self::STATUS_ACCEPTED;
     }
 
     public function isRejected(): bool
     {
-        return $this->status === 'rejected';
+        return $this->status === self::STATUS_REJECTED;
+    }
+
+    // Status transition helpers
+    public function canTransitionTo($newStatus)
+    {
+        if (! in_array($newStatus, self::VALID_STATUSES)) {
+            return false;
+        }
+
+        // Define valid transitions
+        $validTransitions = [
+            self::STATUS_DRAFT    => [self::STATUS_SENT],
+            self::STATUS_SENT     => [self::STATUS_ACCEPTED, self::STATUS_REJECTED],
+            self::STATUS_ACCEPTED => [],
+            self::STATUS_REJECTED => [],
+        ];
+
+        return in_array($newStatus, $validTransitions[$this->status] ?? []);
+    }
+
+    public function transitionTo($newStatus)
+    {
+        if (! $this->canTransitionTo($newStatus)) {
+            throw new \InvalidArgumentException("Cannot transition from {$this->status} to {$newStatus}");
+        }
+
+        // When quote is sent, update RFQ status to 'quoted'
+        if ($newStatus === self::STATUS_SENT && $this->rfq) {
+            $this->rfq->transitionTo(Rfq::STATUS_QUOTED);
+        }
+
+        // When quote is accepted, update RFQ status to 'accepted'
+        if ($newStatus === self::STATUS_ACCEPTED && $this->rfq) {
+            $this->rfq->transitionTo(Rfq::STATUS_ACCEPTED);
+        }
+
+        // When quote is rejected, update RFQ status to 'rejected'
+        if ($newStatus === self::STATUS_REJECTED && $this->rfq) {
+            $this->rfq->transitionTo(Rfq::STATUS_REJECTED);
+        }
+
+        $this->status = $newStatus;
+
+        return $this->save();
     }
 }

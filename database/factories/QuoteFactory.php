@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Quote;
 use App\Models\Rfq;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -23,7 +24,7 @@ class QuoteFactory extends Factory
                 : null,
             'total_price'    => $this->faker->randomFloat(2, 10, 10000),
             'seller_message' => $this->faker->optional()->paragraph(),
-            'status'         => $this->faker->randomElement(['pending', 'in_progress', 'seen', 'accepted', 'rejected']),
+            'status'         => $this->faker->randomElement(Quote::VALID_STATUSES),
         ];
     }
 }
