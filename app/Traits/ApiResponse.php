@@ -14,9 +14,6 @@ trait ApiResponse
             'data'    => $data,
         ];
 
-        if ((is_array($data) || $data instanceof \Countable) && count($data) > 1) {
-            $response['meta']['count'] = count($data);
-        }
         if ($meta) {
             $response['meta'] = $meta;
         }

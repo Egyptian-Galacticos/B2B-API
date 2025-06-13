@@ -19,7 +19,7 @@ return new class extends Migration
                 ->onDelete('cascade');
             $table->decimal('total_price', 15, 2);
             $table->text('seller_message')->nullable();
-            $table->enum('status', ['pending', 'in_progress', 'seen', 'accepted', 'rejected'])->default('pending');
+            $table->enum('status', ['draft', 'sent', 'accepted', 'rejected'])->default('draft');
             $table->timestamps();
             $table->softDeletes();
 
