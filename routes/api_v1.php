@@ -77,9 +77,6 @@ Route::prefix('v1')->group(function () {
         // VERIFIED & ACTIVE USER ROUTES (Full Restrictions)
         // ====================================================
         Route::middleware(['is_email_verified', 'is_suspended'])->group(function () {
-
-            Route::get('me', [AuthController::class, 'me'])->name('auth.me');
-
             // category management (requires ownership)
             Route::apiResource('categories', CategoryController::class)->except(['index', 'show']);
 

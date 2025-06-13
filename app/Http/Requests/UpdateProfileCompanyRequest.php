@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class UpdateProfileCompanyRequest extends BaseRequest
 {
@@ -26,11 +27,10 @@ class UpdateProfileCompanyRequest extends BaseRequest
 
         $rules = [
             'name'             => ['sometimes', 'string', 'max:255'],
-            'email'            => ['sometimes', 'email', 'max:255'],
             'company_phone'    => ['sometimes', 'string', 'max:20', 'nullable'],
             'website'          => ['sometimes', 'url', 'nullable'],
             'description'      => ['sometimes', 'string', 'nullable'],
-            'logo'             => ['sometimes', 'file', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048', 'nullable'],
+            'logo'             => ['sometimes', 'file', 'image', 'mimes:jpeg,png,jpg,svg', 'max:5120', 'nullable'],
             'address'          => ['sometimes', 'array', 'nullable'],
             'address.street'   => ['nullable', 'string', 'max:255'],
             'address.city'     => ['nullable', 'string', 'max:100'],
@@ -38,6 +38,12 @@ class UpdateProfileCompanyRequest extends BaseRequest
             'address.country'  => ['nullable', 'string', 'max:100'],
             'address.zip_code' => ['nullable', 'string', 'max:20'],
         ];
+
+        if (! $user->company->is_email_verified) {
+            $rules['email'] = ['sometimes', 'email', 'max:255', Rule::unique('companies', 'email')->ignore($user->company->id)];
+        } else {
+            $rules['email'] = ['prohibited'];
+        }
 
         if ($isSellerWithActiveStatus) {
             $rules['tax_id'] = ['prohibited'];
@@ -56,10 +62,13 @@ class UpdateProfileCompanyRequest extends BaseRequest
     public function messages(): array
     {
         return [
-            'name.string'                    => 'The company name must be a string.',
-            'name.max'                       => 'The company name may not be greater than 255 characters.',
-            'email.email'                    => 'The company email must be a valid email address.',
-            'email.max'                      => 'The company email may not be greater than 255 characters.',
+            'name.string'       => 'The company name must be a string.',
+            'name.max'          => 'The company name may not be greater than 255 characters.',
+            'email.email'       => 'The company email must be a valid email address.',
+            'email.max'         => 'The company email may not be greater than 255 characters.',
+            'email.prohibited'  => 'The company email is already verified and cannot be changed.',
+            'tax_id.prohibited' => 'The tax ID cannot change for sellers with active status, please contact support.',
+
             'company_phone.string'           => 'The company phone must be a string.',
             'company_phone.max'              => 'The company phone may not be greater than 20 characters.',
             'website.url'                    => 'The website must be a valid URL.',
