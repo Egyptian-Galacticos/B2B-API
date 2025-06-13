@@ -15,8 +15,12 @@ class PaymentFactory extends Factory
         $isCompleted = $this->faker->boolean(70);
         $paymentMethod = 'bank_transfer';
 
+        $contracts = Contract::pluck('id');
+
         return [
-            'contract_id'    => Contract::factory(),
+            'contract_id' => $contracts->isNotEmpty()
+                ? $contracts->random()
+                : Contract::factory(),
             'type'           => $this->faker->randomElement(['direct', 'escrow_release', 'refund']),
             'status'         => $isCompleted ? 'completed' : $this->faker->randomElement(['pending', 'failed']),
             'amount'         => $this->faker->randomFloat(2, 10, 10000),

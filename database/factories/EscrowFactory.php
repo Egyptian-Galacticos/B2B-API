@@ -20,11 +20,15 @@ class EscrowFactory extends Factory
 
     public function definition(): array
     {
+        $contracts = Contract::pluck('id');
+
         return [
-            'contract_id' => Contract::factory(),
-            'status'      => $this->faker->randomElement(['pending', 'released', 'refunded']),
-            'amount'      => $this->faker->randomFloat(2, 100, 50000),
-            'currency'    => 'USD',
+            'contract_id' => $contracts->isNotEmpty()
+                ? $contracts->random()
+                : Contract::factory(),
+            'status'   => $this->faker->randomElement(['pending', 'released', 'refunded']),
+            'amount'   => $this->faker->randomFloat(2, 100, 50000),
+            'currency' => 'USD',
         ];
     }
 }

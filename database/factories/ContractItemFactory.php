@@ -2,10 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\Contract;
+use App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ContractItem>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<ContractItem>
  */
 class ContractItemFactory extends Factory
 {
@@ -20,9 +22,16 @@ class ContractItemFactory extends Factory
         $unitPrice = $this->faker->randomFloat(2, 10, 1000);
         $totalPrice = $quantity * $unitPrice;
 
+        $contracts = Contract::pluck('id');
+        $products = Product::pluck('id');
+
         return [
-            'contract_id'    => \App\Models\Contract::factory(),
-            'product_id'     => \App\Models\Product::factory(),
+            'contract_id' => $contracts->isNotEmpty()
+                ? $contracts->random()
+                : Contract::factory(),
+            'product_id' => $products->isNotEmpty()
+                ? $products->random()
+                : Product::factory(),
             'quantity'       => $quantity,
             'unit_price'     => $unitPrice,
             'total_price'    => $totalPrice,

@@ -30,8 +30,12 @@ class MessageAttachmentFactory extends Factory
         $fileName = $this->faker->word().'.'.$extension;
         $isImage = str_starts_with($fileType, 'image/');
 
+        $messages = Message::pluck('id');
+
         return [
-            'message_id'    => Message::factory(),
+            'message_id' => $messages->isNotEmpty()
+                ? $messages->random()
+                : Message::factory(),
             'file_name'     => $fileName,
             'file_url'      => 'attachments/'.$this->faker->uuid().'.'.$extension,
             'file_type'     => $fileType,

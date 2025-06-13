@@ -19,7 +19,10 @@ class ConversationFactory extends Factory
      */
     public function definition(): array
     {
-        $userIds = User::inRandomOrder()->take(2)->pluck('id')->toArray();
+        $allUsers = User::pluck('id');
+        $userIds = $allUsers->isNotEmpty()
+            ? $allUsers->random(min(2, $allUsers->count()))->toArray()
+            : [User::factory()->create()->id, User::factory()->create()->id];
 
         return [
             'type'             => $this->faker->randomElement(['direct', 'contract']),

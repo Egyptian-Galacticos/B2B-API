@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Contract>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<ContUserract>
  */
 class ContractFactory extends Factory
 {
@@ -19,10 +20,19 @@ class ContractFactory extends Factory
         $contractDate = $this->faker->dateTimeBetween('-6 months', 'now');
         $estimatedDelivery = $this->faker->dateTimeBetween($contractDate, '+3 months');
 
+        // Use existing users instead of creating new ones
+        $buyers = User::role('buyer')->pluck('id');
+        $sellers = User::role('seller')->pluck('id');
+        $allUsers = User::pluck('id');
+
         return [
-            'contract_number'      => 'CON-'.$this->faker->unique()->numerify('######'),
-            'buyer_id'             => \App\Models\User::factory(),
-            'seller_id'            => \App\Models\User::factory(),
+            'contract_number' => 'CON-'.$this->faker->unique()->numerify('######'),
+            'buyer_id'        => $buyers->isNotEmpty()
+                ? $buyers->random()
+                : ($allUsers->isNotEmpty() ? $allUsers->random() : User::factory()),
+            'seller_id' => $sellers->isNotEmpty()
+                ? $sellers->random()
+                : ($allUsers->isNotEmpty() ? $allUsers->random() : User::factory()),
             'status'               => $this->faker->randomElement(['draft', 'active', 'completed', 'cancelled']),
             'total_amount'         => $this->faker->randomFloat(2, 1000, 100000),
             'currency'             => $this->faker->randomElement(['USD', 'EUR', 'GBP']),

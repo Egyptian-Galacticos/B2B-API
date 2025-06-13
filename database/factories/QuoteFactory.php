@@ -18,9 +18,11 @@ class QuoteFactory extends Factory
      */
     public function definition(): array
     {
+        $rfqIds = Rfq::pluck('id');
+
         return [
-            'rfq_id' => fake()->boolean(40) && Rfq::exists()
-                ? Rfq::inRandomOrder()->first()->id
+            'rfq_id' => $rfqIds->isNotEmpty()
+                ? $rfqIds->random()
                 : null,
             'total_price'    => $this->faker->randomFloat(2, 10, 10000),
             'seller_message' => $this->faker->optional()->paragraph(),

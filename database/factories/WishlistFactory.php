@@ -17,8 +17,12 @@ class WishlistFactory extends Factory
      */
     public function definition(): array
     {
+        $users = User::pluck('id');
+
         return [
-            'user_id' => User::factory(),
+            'user_id' => $users->isNotEmpty()
+                ? $users->random()
+                : User::factory(),
         ];
     }
 }

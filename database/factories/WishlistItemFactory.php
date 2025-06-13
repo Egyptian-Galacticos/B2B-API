@@ -18,11 +18,18 @@ class WishlistItemFactory extends Factory
      */
     public function definition(): array
     {
+        $wishlists = Wishlist::pluck('id');
+        $products = Product::pluck('id');
+
         return [
-            'wishlist_id' => Wishlist::factory(),
-            'product_id' => Product::factory(),
+            'wishlist_id' => $wishlists->isNotEmpty()
+                ? $wishlists->random()
+                : Wishlist::factory(),
+            'product_id' => $products->isNotEmpty()
+                ? $products->random()
+                : Product::factory(),
             'added_at' => $this->faker->dateTimeBetween('-2 months', 'now')->format('Y-m-d H:i:s'),
-            'notes' => $this->faker->optional()->sentence(),
+            'notes'    => $this->faker->optional()->sentence(),
         ];
     }
 }

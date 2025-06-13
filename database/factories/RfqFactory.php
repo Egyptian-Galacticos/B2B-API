@@ -19,15 +19,25 @@ class RfqFactory extends Factory
      */
     public function definition(): array
     {
+        $buyers = User::role('buyer')->pluck('id');
+        $sellers = User::role('seller')->pluck('id');
+        $products = Product::pluck('id');
+
         return [
-            'buyer_id'           => User::factory(),
-            'seller_id'          => User::factory(),
-            'initial_product_id' => Product::factory(),
-            'initial_quantity'   => $this->faker->numberBetween(1, 100),
-            'shipping_country'   => $this->faker->country(),
-            'shipping_address'   => $this->faker->address(),
-            'buyer_message'      => $this->faker->optional()->paragraph(),
-            'status'             => $this->faker->randomElement(Rfq::VALID_STATUSES),
+            'buyer_id' => $buyers->isNotEmpty()
+                ? $buyers->random()
+                : User::factory()->create()->assignRole('buyer')->id,
+            'seller_id' => $sellers->isNotEmpty()
+                ? $sellers->random()
+                : User::factory()->create()->assignRole('seller')->id,
+            'initial_product_id' => $products->isNotEmpty()
+                ? $products->random()
+                : Product::factory(),
+            'initial_quantity' => $this->faker->numberBetween(1, 100),
+            'shipping_country' => $this->faker->country(),
+            'shipping_address' => $this->faker->address(),
+            'buyer_message'    => $this->faker->optional()->paragraph(),
+            'status'           => $this->faker->randomElement(Rfq::VALID_STATUSES),
         ];
     }
 }

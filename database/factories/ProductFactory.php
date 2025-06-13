@@ -42,27 +42,34 @@ class ProductFactory extends Factory
         $productType = $this->faker->randomElement($productTypes[$categoryName]);
         $modelNumber = $this->faker->bothify('??-####');
 
+        $sellers = User::role('seller')->pluck('id');
+        $categories = Category::pluck('id');
+
         return [
             'brand'        => $brand,
             'model_number' => $modelNumber,
-            'seller_id'    => User::factory(),
-            'sku'          => strtoupper($this->faker->bothify('##??####')),
-            'name'         => $brand.' '.$productType.' '.$modelNumber,
-            'description'  => $this->generateProductDescription($categoryName, $productType, $brand),
-            'hs_code'      => $this->faker->numerify('####.##.##'),
-            'price'        => $this->generatePrice($categoryName),
-            'currency'     => $this->faker->randomElement(['USD', 'EUR', 'GBP']),
-            'origin'       => $this->faker->randomElement([
+            'seller_id'    => $sellers->isNotEmpty()
+                ? $sellers->random()
+                : User::factory()->create()->assignRole('seller')->id,
+            'sku'         => strtoupper($this->faker->bothify('##??####')),
+            'name'        => $brand.' '.$productType.' '.$modelNumber,
+            'description' => $this->generateProductDescription($categoryName, $productType, $brand),
+            'hs_code'     => $this->faker->numerify('####.##.##'),
+            'price'       => $this->generatePrice($categoryName),
+            'currency'    => $this->faker->randomElement(['USD', 'EUR', 'GBP']),
+            'origin'      => $this->faker->randomElement([
                 'United States', 'Germany', 'China', 'Japan', 'South Korea',
                 'Italy', 'France', 'United Kingdom', 'Canada', 'Australia',
             ]),
-            'category_id'      => Category::factory(),
+            'category_id' => $categories->isNotEmpty()
+                ? $categories->random()
+                : Category::factory(),
             'specifications'   => $this->generateSpecifications($categoryName, $productType),
             'dimensions'       => $this->generateDimensions($categoryName),
-            'is_active'        => $this->faker->boolean(95), // 95% chance of being active
-            'is_approved'      => $this->faker->boolean(85), // 85% chance of being approved
-            'is_featured'      => $this->faker->boolean(15), // 15% chance of being featured
-            'sample_available' => $this->faker->boolean(60), // 60% chance of sample being available
+            'is_active'        => $this->faker->boolean(95),
+            'is_approved'      => $this->faker->boolean(85),
+            'is_featured'      => $this->faker->boolean(15),
+            'sample_available' => $this->faker->boolean(60),
             'sample_price'     => $this->faker->randomFloat(2, 5, 200),
         ];
     }
@@ -191,13 +198,12 @@ class ProductFactory extends Factory
     public function withExistingRelationships(): static
     {
         return $this->state(function (array $attributes) {
-            // Use existing users and categories if available
-            $existingUser = User::inRandomOrder()->first();
-            $existingCategory = Category::inRandomOrder()->first();
+            $sellers = User::role('seller')->pluck('id');
+            $categories = Category::pluck('id');
 
             return [
-                'seller_id'   => $existingUser ? $existingUser->id : User::factory(),
-                'category_id' => $existingCategory ? $existingCategory->id : Category::factory(),
+                'seller_id'   => $sellers->isNotEmpty() ? $sellers->random() : $attributes['seller_id'],
+                'category_id' => $categories->isNotEmpty() ? $categories->random() : $attributes['category_id'],
             ];
         });
     }

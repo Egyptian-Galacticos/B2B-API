@@ -50,28 +50,82 @@ class DatabaseSeeder extends Seeder
             $admin->assignRole('admin');
         }
 
-        // Create company for admin
         if (! $admin->company) {
             Company::factory()->forUser($admin)->verified()->create();
         }
 
-        // Create additional users with companies and assign roles
-        $users = User::factory()->count(10)->create();
+        $buyerUsers = User::factory()->count(3)->create();
+        $sellerUsers = User::factory()->count(3)->create();
 
-        // Get a random seller user
-        $seller = $users->filter(fn ($u) => $u->hasRole('seller'))->first();
+        foreach ($buyerUsers as $user) {
+            $user->assignRole('buyer');
+            if (! $user->company) {
+                Company::factory()->forUser($user)->create();
+            }
+        }
 
-        // Categories
+        foreach ($sellerUsers as $user) {
+            $user->assignRole('seller');
+            if (! $user->company) {
+                Company::factory()->forUser($user)->create();
+            }
+        }
+
+        $edgeCaseUsers = [
+            [
+                'email'          => 'unverified.buyer@test.com',
+                'role'           => 'buyer',
+                'user_states'    => ['is_email_verified' => false, 'status' => 'active'],
+                'company_states' => ['is_email_verified' => true],
+            ],
+            [
+                'email'          => 'suspended.seller@test.com',
+                'role'           => 'seller',
+                'user_states'    => ['is_email_verified' => true, 'status' => 'suspended'],
+                'company_states' => ['is_email_verified' => true],
+            ],
+            [
+                'email'          => 'pending.buyer@test.com',
+                'role'           => 'buyer',
+                'user_states'    => ['is_email_verified' => true, 'status' => 'pending'],
+                'company_states' => ['is_email_verified' => false],
+            ],
+            [
+                'email'          => 'pending.seller@test.com',
+                'role'           => 'seller',
+                'user_states'    => ['is_email_verified' => false, 'status' => 'pending'],
+                'company_states' => ['is_email_verified' => false],
+            ],
+        ];
+
+        foreach ($edgeCaseUsers as $userData) {
+            $user = User::factory()->create(array_merge([
+                'email'      => $userData['email'],
+                'first_name' => 'Test',
+                'last_name'  => 'User',
+                'password'   => bcrypt('StrongPassword123!'),
+            ], $userData['user_states']));
+
+            $user->assignRole($userData['role']);
+
+            Company::factory()->forUser($user)->create($userData['company_states']);
+        }
+
+        $allUsers = User::all();
+        $sellers = User::role('seller')->get();
+        $buyers = User::role('buyer')->get();
+
+        $seller = $sellers->first();
+
         $rootCategories = [
             [
                 'name'        => 'Electronics',
                 'icon'        => 'pi pi-desktop',
                 'description' => 'Latest electronics and gadgets',
                 'children'    => [
-                    'Smartphones' => ['Flagship Phones', 'Budget Phones', 'Accessories'],
-                    'Laptops'     => ['Gaming Laptops', 'Business Laptops', 'Ultrabooks'],
-                    'Audio'       => ['Headphones', 'Speakers', 'Microphones'],
-                    'Cameras'     => ['DSLR', 'Mirrorless', 'Action Cameras'],
+                    'Smartphones' => ['Flagship Phones', 'Budget Phones'],
+                    'Laptops'     => ['Gaming Laptops', 'Business Laptops'],
+                    'Audio'       => ['Headphones', 'Speakers'],
                 ],
             ],
             [
@@ -79,21 +133,9 @@ class DatabaseSeeder extends Seeder
                 'icon'        => 'pi pi-shopping-bag',
                 'description' => 'Trendy fashion for everyone',
                 'children'    => [
-                    'Men\'s Fashion'   => ['Shirts', 'Pants', 'Suits', 'Casual Wear'],
-                    'Women\'s Fashion' => ['Dresses', 'Tops', 'Skirts', 'Formal Wear'],
-                    'Footwear'         => ['Sneakers', 'Formal Shoes', 'Boots', 'Sandals'],
-                    'Accessories'      => ['Bags', 'Watches', 'Jewelry', 'Sunglasses'],
-                ],
-            ],
-            [
-                'name'        => 'Home & Living',
-                'icon'        => 'pi pi-home',
-                'description' => 'Everything for your home',
-                'children'    => [
-                    'Furniture' => ['Living Room', 'Bedroom', 'Dining Room', 'Office'],
-                    'Kitchen'   => ['Appliances', 'Cookware', 'Utensils', 'Storage'],
-                    'Decor'     => ['Wall Art', 'Lighting', 'Textiles', 'Plants'],
-                    'Tools'     => ['Hand Tools', 'Power Tools', 'Garden Tools', 'Safety'],
+                    'Men\'s Fashion'   => ['Shirts', 'Pants'],
+                    'Women\'s Fashion' => ['Dresses', 'Tops'],
+                    'Footwear'         => ['Sneakers', 'Formal Shoes'],
                 ],
             ],
         ];
@@ -133,68 +175,122 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // Seller-created pending categories
         if ($seller) {
             Category::factory()
-                ->count(5)
+                ->count(2)
                 ->pending()
                 ->create([
                     'created_by' => $seller->id,
                     'status'     => 'pending',
                 ]);
+        }
 
-            $randomParent = Category::active()->inRandomOrder()->first();
-            if ($randomParent) {
-                Category::factory()
-                    ->count(3)
-                    ->pending()
-                    ->subcategory($randomParent)
-                    ->create([
-                        'created_by' => $seller->id,
-                        'status'     => 'pending',
+        Product::factory()->count(6)->withExistingRelationships()->create();
+
+        $testQuotes = Quote::where('status', Quote::STATUS_ACCEPTED)->limit(2)->get();
+        if ($testQuotes->count() > 0) {
+            foreach ($testQuotes as $quote) {
+                $contract = Contract::factory()->active()->create([
+                    'buyer_id'  => $quote->rfq->buyer_id,
+                    'seller_id' => $quote->rfq->seller_id,
+                    'quote_id'  => $quote->id,
+                ]);
+
+                $quote->items->each(function ($quoteItem) use ($contract) {
+                    ContractItem::factory()->create([
+                        'contract_id' => $contract->id,
+                        'product_id'  => $quoteItem->product_id,
+                        'quantity'    => $quoteItem->quantity,
+                        'unit_price'  => $quoteItem->unit_price,
                     ]);
+                });
             }
         }
 
-        // Inactive categories by admin
-        Category::factory()
-            ->count(2)
-            ->inactive()
-            ->create([
-                'created_by' => $admin->id,
-                'status'     => 'inactive',
-            ]);
-
-        // Products
-        Product::factory()->count(5)->withExistingRelationships()->create();
-
-        // Contracts with items
-        Contract::factory()->count(3)->active()->create()->each(function (Contract $contract) {
-            ContractItem::factory()->count(rand(1, 3))->create(['contract_id' => $contract->id]);
+        Contract::factory()->count(1)->create()->each(function (Contract $contract) {
+            ContractItem::factory()->count(rand(1, 2))->create(['contract_id' => $contract->id]);
         });
 
-        // Others
-        Escrow::factory()->count(5)->create();
-        Payment::factory()->count(5)->create();
-        Conversation::factory()->count(3)->create();
-        Message::factory()->count(10)->create();
-        MessageAttachment::factory()->count(5)->create();
-        Wishlist::factory()->count(5)->create();
-        WishlistItem::factory()->count(15)->create();
-        Rfq::factory()->count(10)->create();
+        $testBuyer = $buyers->first();
+        $testSeller = $sellers->first();
+        $testProduct = Product::first();
+
+        if ($testBuyer && $testSeller && $testProduct) {
+            $rfqStatuses = [
+                Rfq::STATUS_PENDING,
+                Rfq::STATUS_SEEN,
+                Rfq::STATUS_IN_PROGRESS,
+                Rfq::STATUS_QUOTED,
+                Rfq::STATUS_ACCEPTED,
+                Rfq::STATUS_REJECTED,
+                Rfq::STATUS_CLOSED,
+            ];
+
+            foreach ($rfqStatuses as $status) {
+                Rfq::factory()->create([
+                    'buyer_id'           => $testBuyer->id,
+                    'seller_id'          => $testSeller->id,
+                    'initial_product_id' => $testProduct->id,
+                    'status'             => $status,
+                ]);
+            }
+        }
+
+        Rfq::factory()->count(3)->create();
+
+        $testRfqs = Rfq::limit(4)->get();
+
+        if ($testRfqs->count() >= 4) {
+            $quoteStatuses = [
+                Quote::STATUS_DRAFT,
+                Quote::STATUS_SENT,
+                Quote::STATUS_ACCEPTED,
+                Quote::STATUS_REJECTED,
+            ];
+
+            foreach ($quoteStatuses as $index => $status) {
+                $quote = Quote::factory()->create([
+                    'rfq_id' => $testRfqs[$index]->id,
+                    'status' => $status,
+                ]);
+
+                QuoteItem::factory()
+                    ->count(rand(1, 2))
+                    ->for($quote)
+                    ->create();
+            }
+        }
+
         Quote::factory()
-            ->count(20)
+            ->count(3)
             ->create()
             ->each(function ($quote) {
                 QuoteItem::factory()
-                    ->count(rand(1, 5))
+                    ->count(rand(1, 2))
                     ->for($quote)
                     ->create();
             });
-        User::all()->each(function (User $user) {
-            $role = ['buyer', 'seller'][array_rand(['buyer', 'seller'])];
-            $user->assignRole($role);
-            Company::factory()->forUser($user)->create();
-        });
+
+        Escrow::factory()->count(2)->create();
+        Payment::factory()->count(2)->create();
+        Conversation::factory()->count(2)->create();
+        Message::factory()->count(4)->create();
+        MessageAttachment::factory()->count(2)->create();
+        Wishlist::factory()->count(2)->create();
+
+        $wishlists = Wishlist::all();
+        $products = Product::all();
+
+        if ($wishlists->count() > 0 && $products->count() > 0) {
+            foreach ($wishlists as $wishlist) {
+                $availableProducts = $products->shuffle()->take(2);
+                foreach ($availableProducts as $product) {
+                    WishlistItem::factory()->create([
+                        'wishlist_id' => $wishlist->id,
+                        'product_id'  => $product->id,
+                    ]);
+                }
+            }
+        }
     }
 }

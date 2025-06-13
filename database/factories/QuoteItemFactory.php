@@ -16,9 +16,16 @@ class QuoteItemFactory extends Factory
         $quantity = $this->faker->numberBetween(1, 50);
         $unitPrice = $this->faker->randomFloat(2, 1, 500);
 
+        $quotes = Quote::pluck('id');
+        $products = Product::pluck('id');
+
         return [
-            'quote_id'   => Quote::factory(),
-            'product_id' => Product::factory(),
+            'quote_id' => $quotes->isNotEmpty()
+                ? $quotes->random()
+                : Quote::factory(),
+            'product_id' => $products->isNotEmpty()
+                ? $products->random()
+                : Product::factory(),
             'quantity'   => $quantity,
             'unit_price' => $unitPrice,
             'notes'      => $this->faker->optional()->sentence(),
