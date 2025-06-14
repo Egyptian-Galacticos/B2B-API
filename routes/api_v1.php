@@ -95,6 +95,7 @@ Route::prefix('v1')->group(function () {
 
             // Product creation (no ownership check needed)
             Route::post('products', [ProductController::class, 'store'])->name('products.store');
+            Route::post('products/bulk-import', [ProductController::class, 'bulkImport'])->name('products.bulk.import');
 
             // Product Bulk Actions (ownership verified in controller)
             Route::post('products/bulk-delete', [ProductController::class, 'bulkDelete'])->name('products.bulk.delete');
@@ -103,8 +104,8 @@ Route::prefix('v1')->group(function () {
 
             // Product management (requires ownership)
             Route::middleware(['product.owner'])->group(function () {
-                Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update')->whereAlphaNumeric('product');
-                Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy')->whereAlphaNumeric('product');
+                Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update');
+                Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
 
                 // Product media management routes
                 Route::delete('products/{product}/images/{mediaId}', [ProductController::class, 'deleteImage'])->name('products.images.destroy');

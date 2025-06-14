@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api\v1;
 use App\Exports\ProductTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BulkProductActionRequest;
+use App\Http\Requests\BulkProductImportRequest;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Http\Resources\ProductDetailsResource;
 use App\Http\Resources\ProductResource;
+use App\Models\Category;
 use App\Models\Product;
 use App\Services\QueryHandler;
 use App\Traits\ApiResponse;
@@ -16,6 +18,7 @@ use App\Traits\BulkProductOwnership;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Exception;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -32,13 +35,13 @@ class ProductController extends Controller
      *
      * @unauthenticated
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $queryHandler = new QueryHandler($request);
         $perPage = (int) $request->get('size', 10);
 
         $query = $queryHandler
-            ->setBaseQuery(Product::query()->with(['seller.company', 'category'])->where('is_active', true)) // eager load seller relation if needed
+            ->setBaseQuery(Product::query()->with(['seller.company', 'category', 'tags'])->where('is_active', true)) // eager load seller relation if needed
             ->setAllowedSorts([
                 'price', 'created_at', 'name', 'brand', 'currency', 'is_active',
                 'seller.name',
@@ -66,18 +69,19 @@ class ProductController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * create a new product.
      */
-    public function store(StoreProductRequest $request)
+    public function store(StoreProductRequest $request): JsonResponse
     {
         $validated = $request->validated();
 
         // Remove file fields from validated data as they're handled separately
-        $productData = collect($validated)->except(['main_image', 'images', 'documents', 'product_tires'])->toArray();
+        $productData = collect($validated)->except(['main_image', 'images', 'documents', 'product_tires', 'product_tags'])->toArray();
 
         $product = Product::create($productData);
 
         $product->tiers()->createMany($validated['product_tires']);
+        $product->syncTags($validated['product_tags'] ?? []);
 
         // Handle main image upload
         if ($request->hasFile('main_image')) {
@@ -122,7 +126,7 @@ class ProductController extends Controller
     public function show(string $slug): JsonResponse
     {
         try {
-            $product = Product::with(['seller.company', 'category', 'tiers', 'media'])
+            $product = Product::with(['seller.company', 'category', 'tiers', 'media', 'tags'])
                 ->where('slug', $slug)
                 ->firstOrFail();
 
@@ -162,6 +166,11 @@ class ProductController extends Controller
         if (isset($validated['product_tires'])) {
             $product->tiers()->delete();
             $product->tiers()->createMany($validated['product_tires']);
+        }
+        // Handle Tags if provided
+        if (isset($validated['product_tags'])) {
+            $product->tags()->detach(); // Detach existing tags
+            $product->syncTags($validated['product_tags']);
         }
 
         // Handle main image upload (replace existing)
@@ -360,6 +369,104 @@ class ProductController extends Controller
             "$updatedCount products set to active successfully.",
             200
         );
+    }
+
+    public function bulkImport(BulkProductImportRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        $products = $validated['products'] ?? []; // Assuming products come in as an array
+
+        $savedProducts = [];
+        DB::beginTransaction();
+
+        try {
+            foreach ($products as $product) {
+                // Handle category ID lookup if category name is provided
+                try {
+                    if (isset($product['category'])) {
+                        $category = Category::byName($product['category'])->firstOrFail();
+                        $product['category_id'] = $category->id ?? null;
+                        unset($product['category']);
+                    }
+                } catch (ModelNotFoundException $e) {
+                    DB::rollBack();
+
+                    return $this->apiResponseErrors(
+                        'Category not found.',
+                        [
+                            'category' => $product['category'] ?? null,
+                            'product'  => $product,
+                        ],
+
+                        404
+                    );
+                }
+
+                // Create product from validated data
+                $productModel = Product::create($product);
+
+                // Handle product tiers if provided
+                if (isset($product['product_tires'])) {
+                    $productModel->tiers()->createMany($product['product_tires']);
+                }
+
+                // Handle product tags if provided
+                if (isset($product['product_tags'])) {
+                    $productModel->syncTags($product['product_tags']);
+                }
+
+                // Handle main image upload
+                if (isset($product['main_image']) && filter_var($product['main_image'], FILTER_VALIDATE_URL)) {
+                    $productModel
+                        ->addMediaFromUrl($product['main_image'])
+                        ->usingName('Main Product Image - '.basename($product['main_image']))
+                        ->toMediaCollection('main_image');
+                }
+
+                // Handle multiple images upload
+                if (isset($product['images']) && is_array($product['images'])) {
+                    foreach ($product['images'] as $imageUrl) {
+                        if (filter_var($imageUrl, FILTER_VALIDATE_URL)) {
+                            $productModel
+                                ->addMediaFromUrl($imageUrl)
+                                ->usingName('Product Image - '.basename($imageUrl))
+                                ->toMediaCollection('product_images');
+                        }
+                    }
+                }
+
+                // Handle documents upload
+                if (isset($product['documents']) && is_array($product['documents'])) {
+                    foreach ($product['documents'] as $documentUrl) {
+                        if (filter_var($documentUrl, FILTER_VALIDATE_URL)) {
+                            $productModel
+                                ->addMediaFromUrl($documentUrl)
+                                ->usingName('Product Document - '.basename($documentUrl))
+                                ->toMediaCollection('product_documents');
+                        }
+                    }
+                }
+
+                $savedProducts[] = $productModel->fresh()->load('media', 'tiers', 'seller.company');
+            }
+
+            DB::commit();
+
+            return $this->apiResponse(
+                ProductDetailsResource::collection($savedProducts),
+                'Products imported successfully.',
+                201
+            );
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return $this->apiResponseErrors(
+                'An error occurred while importing products.',
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
     }
 
     /**

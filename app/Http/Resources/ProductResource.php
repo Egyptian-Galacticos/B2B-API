@@ -26,6 +26,14 @@ class ProductResource extends JsonResource
             'is_featured'      => $this->is_featured,
             'sample_available' => $this->sample_available,
             'sample_price'     => $this->sample_price,
+            'category'         => $this->whenLoaded('category', function () {
+                return [
+                    'name' => $this->category->name,
+                ];
+            }),
+            'tags' => $this->whenLoaded('tags', function () {
+                return $this->tags->pluck('name');
+            }),
 
             // Relationships
             'seller' => $this->whenLoaded('seller', function () {

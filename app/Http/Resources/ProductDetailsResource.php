@@ -39,6 +39,9 @@ class ProductDetailsResource extends JsonResource
                     'slug' => $this->category->slug,
                 ];
             }),
+            'tags' => $this->whenLoaded('tags', function () {
+                return $this->tags->pluck('name');
+            }),
             'specifications'   => $this->specifications,
             'certifications'   => $this->certifications,
             'dimensions'       => $this->dimensions,

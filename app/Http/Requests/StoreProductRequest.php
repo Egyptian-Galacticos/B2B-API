@@ -39,6 +39,8 @@ class StoreProductRequest extends BaseRequest
             'product_tires.*.from_quantity' => ['required', 'integer', 'min:1'],
             'product_tires.*.to_quantity'   => ['required', 'integer', 'min:1'],
             'product_tires.*.price'         => ['required', 'numeric', 'min:0'],
+            // tags
+            'product_tags' => ['required', 'array'],
 
             // File validation
             //            'main_image'             => ['nullable', 'image', 'max:10240'], // 10MB max

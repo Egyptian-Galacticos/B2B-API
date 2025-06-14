@@ -11,12 +11,14 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Spatie\Tags\HasTags;
 
 class Product extends Model implements HasMedia
 {
     /** @use HasFactory<\Database\Factories\ProductFactory> */
     use HasFactory;
     use HasSlug;
+    use HasTags;
     use InteractsWithMedia;
     protected $fillable = [
         'brand',
