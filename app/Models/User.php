@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Notifications\CustomResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -162,6 +163,15 @@ class User extends Authenticatable implements HasMedia, JWTSubject
     public function kycDocuments(): HasMany
     {
         return $this->hasMany(KycDocument::class);
+    }
+
+    /**
+     * Get the user's wishlist products (many-to-many pivot table).
+     */
+    public function wishlist(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'wishlist')
+            ->withTimestamps();
     }
 
     /**

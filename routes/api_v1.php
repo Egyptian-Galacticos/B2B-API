@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\v1\EmailVerificationController;
 use App\Http\Controllers\Api\v1\ProductController;
 use App\Http\Controllers\Api\v1\SellerUpgradeController;
 use App\Http\Controllers\Api\v1\UserController;
+use App\Http\Controllers\Api\v1\WishlistController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -56,6 +57,13 @@ Route::prefix('v1')->group(function () {
                 Route::post('resend-verification', [EmailVerificationController::class, 'resend'])->name('email.resend');
                 Route::get('status', [EmailVerificationController::class, 'status'])->name('email.status');
             });
+
+            Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
+            Route::post('/wishlist', [WishlistController::class, 'store'])->name('wishlist.store');
+            Route::delete('/wishlist', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
+            Route::post('/wishlist/check', [WishlistController::class, 'check'])->name('wishlist.check');
+            Route::post('/wishlist/clear', [WishlistController::class, 'clear'])->name('wishlist.clear');
+            Route::get('/wishlist/summary', [WishlistController::class, 'summary'])->name('wishlist.summary');
 
             // Company email verification management
             Route::prefix('company-email')->group(function () {

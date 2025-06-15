@@ -17,7 +17,6 @@ use App\Models\QuoteItem;
 use App\Models\Rfq;
 use App\Models\User;
 use App\Models\Wishlist;
-use App\Models\WishlistItem;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 
@@ -36,7 +35,7 @@ class DatabaseSeeder extends Seeder
 
         // Create or find test admin user
         $admin = User::firstOrCreate(
-            ['email' => 'admin@gmail.com'],
+            ['email' => 'anas@gmail.com'],
             [
                 'first_name'        => 'Test',
                 'last_name'         => 'User',
@@ -295,19 +294,22 @@ class DatabaseSeeder extends Seeder
         Conversation::factory()->count(2)->create();
         Message::factory()->count(4)->create();
         MessageAttachment::factory()->count(2)->create();
-        Wishlist::factory()->count(2)->create();
 
-        $wishlists = Wishlist::all();
+        // Add some products to wishlists using the pivot table
+        $allUsers = User::all();
         $products = Product::all();
 
-        if ($wishlists->count() > 0 && $products->count() > 0) {
-            foreach ($wishlists as $wishlist) {
-                $availableProducts = $products->shuffle()->take(2);
-                foreach ($availableProducts as $product) {
-                    WishlistItem::factory()->create([
-                        'wishlist_id' => $wishlist->id,
-                        'product_id'  => $product->id,
-                    ]);
+        if ($allUsers->count() > 0 && $products->count() > 0) {
+            // Add 2-3 products to each user's wishlist
+            foreach ($allUsers->take(5) as $user) {
+                $randomProducts = $products->shuffle()->take(rand(2, 3));
+                foreach ($randomProducts as $product) {
+                    // Insert directly into wishlist pivot table
+                    try {
+                        $user->wishlist()->attach($product->id);
+                    } catch (\Exception $e) {
+                        // Skip if already exists (duplicate constraint)
+                    }
                 }
             }
         }
