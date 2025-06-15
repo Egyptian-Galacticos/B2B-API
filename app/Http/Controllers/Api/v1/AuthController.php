@@ -126,6 +126,7 @@ class AuthController extends Controller
 
             // Send email verification notification
             app(EmailVerificationService::class)->sendVerification($user);
+            $user->last_login_at = now();
 
             DB::commit();
 
