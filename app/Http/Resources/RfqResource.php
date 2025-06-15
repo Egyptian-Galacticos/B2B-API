@@ -15,18 +15,18 @@ class RfqResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'                 => $this->id,
-            'buyer_id'           => $this->buyer_id,
-            'seller_id'          => $this->seller_id,
-            'initial_product_id' => $this->initial_product_id,
-            'initial_quantity'   => $this->initial_quantity,
-            'shipping_country'   => $this->shipping_country,
-            'shipping_address'   => $this->shipping_address,
-            'buyer_message'      => $this->buyer_message,
-            'status'             => $this->status,
-            'created_at'         => $this->created_at,
-            'updated_at'         => $this->updated_at,
-            'quotes'             => $this->whenLoaded('quotes', function () {
+            'id'               => $this->id,
+            'buyer'            => UserResource::make($this->whenLoaded('buyer')),
+            'seller'           => UserResource::make($this->whenLoaded('seller')),
+            'initial_product'  => $this->initialProduct,
+            'initial_quantity' => $this->initial_quantity,
+            'shipping_country' => $this->shipping_country,
+            'shipping_address' => $this->shipping_address,
+            'buyer_message'    => $this->buyer_message,
+            'status'           => $this->status,
+            'date'             => $this->created_at,
+            'updated_at'       => $this->updated_at,
+            'quotes'           => $this->whenLoaded('quotes', function () {
                 return $this->quotes->map(function ($quote) {
                     return [
                         'id'     => $quote->id,
