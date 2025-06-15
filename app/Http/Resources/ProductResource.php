@@ -29,6 +29,7 @@ class ProductResource extends JsonResource
             'category'         => $this->whenLoaded('category', function () {
                 return [
                     'name' => $this->category->name,
+                    'id'   => $this->category->id,
                 ];
             }),
             'tags' => $this->whenLoaded('tags', function () {
