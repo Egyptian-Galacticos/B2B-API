@@ -242,7 +242,7 @@ class DatabaseSeeder extends Seeder
 
         if ($testRfqs->count() >= 4) {
             $quoteStatuses = [
-                Quote::STATUS_DRAFT,
+                Quote::STATUS_PENDING,
                 Quote::STATUS_SENT,
                 Quote::STATUS_ACCEPTED,
                 Quote::STATUS_REJECTED,
