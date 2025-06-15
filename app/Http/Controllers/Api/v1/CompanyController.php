@@ -67,7 +67,10 @@ class CompanyController extends Controller
             }
 
             $user->company->update($updateData);
-
+            if ($request->remove_logo) {
+                // Handle logo removal
+                $user->company->clearMediaCollection('logo');
+            }
             // Handle logo upload (replace existing)
             if ($request->hasFile('logo')) {
                 $user->company->clearMediaCollection('logo');
