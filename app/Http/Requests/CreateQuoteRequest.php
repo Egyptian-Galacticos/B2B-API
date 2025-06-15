@@ -2,11 +2,16 @@
 
 namespace App\Http\Requests;
 
+use App\Traits\ApiResponse;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Auth;
 
 class CreateQuoteRequest extends FormRequest
 {
+    use ApiResponse;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -24,7 +29,6 @@ class CreateQuoteRequest extends FormRequest
     {
         return [
             'rfq_id'             => 'nullable|exists:rfqs,id',
-            'total_price'        => 'required|numeric|min:0',
             'seller_message'     => 'nullable|string|max:1000',
             'items'              => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
@@ -49,5 +53,19 @@ class CreateQuoteRequest extends FormRequest
             'items.*.unit_price.required' => 'Unit price is required for each item',
             'items.*.unit_price.min'      => 'Unit price must be at least 0',
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            $this->apiResponseErrors(
+                'Validation failed',
+                $validator->errors()->toArray(),
+                422
+            )
+        );
     }
 }

@@ -10,8 +10,6 @@ class Rfq extends Model
 {
     /** @use HasFactory<\Database\Factories\RfqFactory> */
     use HasFactory, SoftDeletes;
-
-    // Status constants
     const STATUS_PENDING = 'pending';
     const STATUS_SEEN = 'seen';
     const STATUS_IN_PROGRESS = 'in_progress';
@@ -19,8 +17,6 @@ class Rfq extends Model
     const STATUS_ACCEPTED = 'accepted';
     const STATUS_REJECTED = 'rejected';
     const STATUS_CLOSED = 'closed';
-
-    // All valid statuses
     const VALID_STATUSES = [
         self::STATUS_PENDING,
         self::STATUS_SEEN,
@@ -148,18 +144,16 @@ class Rfq extends Model
         return $this->status === self::STATUS_CLOSED;
     }
 
-    // Status transition helpers
     public function canTransitionTo($newStatus)
     {
         if (! in_array($newStatus, self::VALID_STATUSES)) {
             return false;
         }
 
-        // Define valid transitions based on business logic
         $validTransitions = [
-            self::STATUS_PENDING     => [self::STATUS_SEEN, self::STATUS_REJECTED, self::STATUS_IN_PROGRESS],
-            self::STATUS_SEEN        => [self::STATUS_IN_PROGRESS, self::STATUS_REJECTED],
-            self::STATUS_IN_PROGRESS => [self::STATUS_QUOTED, self::STATUS_REJECTED],
+            self::STATUS_PENDING     => [self::STATUS_SEEN, self::STATUS_REJECTED, self::STATUS_IN_PROGRESS, self::STATUS_QUOTED],
+            self::STATUS_SEEN        => [self::STATUS_IN_PROGRESS, self::STATUS_REJECTED, self::STATUS_QUOTED, self::STATUS_ACCEPTED],
+            self::STATUS_IN_PROGRESS => [self::STATUS_QUOTED, self::STATUS_REJECTED, self::STATUS_ACCEPTED], // Can accept/reject directly from in_progress
             self::STATUS_QUOTED      => [self::STATUS_ACCEPTED, self::STATUS_REJECTED],
             self::STATUS_ACCEPTED    => [self::STATUS_CLOSED],
             self::STATUS_REJECTED    => [],
@@ -176,6 +170,14 @@ class Rfq extends Model
         }
 
         $this->status = $newStatus;
+
+        if ($newStatus === self::STATUS_ACCEPTED) {
+            $this->quotes()->where('status', 'sent')->update(['status' => 'accepted']);
+        }
+
+        if ($newStatus === self::STATUS_REJECTED) {
+            $this->quotes()->where('status', 'sent')->update(['status' => 'rejected']);
+        }
 
         return $this->save();
     }

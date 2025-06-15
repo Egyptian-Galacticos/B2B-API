@@ -22,13 +22,29 @@ class QuoteResource extends JsonResource
             'status'         => $this->status,
             'created_at'     => $this->created_at,
             'updated_at'     => $this->updated_at,
-            'rfq'            => new RfqResource($this->whenLoaded('rfq')),
-            'items'          => QuoteItemResource::collection($this->whenLoaded('items')),
-            'is_pending'     => $this->isPending(),
-            'is_in_progress' => $this->isInProgress(),
-            'is_seen'        => $this->isSeen(),
-            'is_accepted'    => $this->isAccepted(),
-            'is_rejected'    => $this->isRejected(),
+
+            'rfq' => $this->whenLoaded('rfq', [
+                'initial_quantity' => $this->rfq?->initial_quantity,
+                'shipping_country' => $this->rfq?->shipping_country,
+                'buyer_message'    => $this->rfq?->buyer_message,
+                'status'           => $this->rfq?->status,
+            ]),
+
+            'items' => $this->whenLoaded('items', function () {
+                return $this->items->map(function ($item) {
+                    return [
+                        'id'            => $item->id,
+                        'product_id'    => $item->product_id,
+                        'product_name'  => $item->product?->name,
+                        'product_brand' => $item->product?->brand,
+                        'quantity'      => $item->quantity,
+                        'unit_price'    => $item->unit_price,
+                        'total_price'   => $item->quantity * $item->unit_price,
+                        'notes'         => $item->notes,
+                    ];
+                });
+            }),
+
         ];
     }
 }
