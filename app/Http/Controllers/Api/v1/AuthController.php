@@ -163,7 +163,7 @@ class AuthController extends Controller
                 return $this->apiResponse(null, 'User not found', 404);
             }
 
-            return $this->apiResponse(new UserResource($user), 'User retrieved successfully', 200);
+            return $this->apiResponse(UserResource::make($user->load('company')), 'User retrieved successfully', 200);
         } catch (TokenExpiredException $e) {
             return $this->apiResponseErrors('Token has expired', ['token_error' => $e->getMessage()], 401);
         } catch (TokenInvalidException $e) {
