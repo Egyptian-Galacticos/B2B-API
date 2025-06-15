@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -124,6 +125,12 @@ class Product extends Model implements HasMedia
     public function tiers(): HasMany
     {
         return $this->hasMany(PriceTier::class);
+    }
+
+    public function wishlistedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'wishlist')
+            ->withTimestamps();
     }
 
     public function scopeActive($query)
