@@ -24,11 +24,14 @@ class ProductResource extends JsonResource
             'price'            => $this->price,
             'currency'         => $this->currency,
             'is_featured'      => $this->is_featured,
+            'is_active'        => $this->is_active,
+            'is_approved'      => $this->is_approved,
             'sample_available' => $this->sample_available,
             'sample_price'     => $this->sample_price,
             'category'         => $this->whenLoaded('category', function () {
                 return [
                     'name' => $this->category->name,
+                    'id'   => $this->category->id,
                 ];
             }),
             'tags' => $this->whenLoaded('tags', function () {

@@ -12,6 +12,7 @@ use App\Http\Resources\ProductDetailsResource;
 use App\Http\Resources\ProductResource;
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\CategoryService;
 use App\Services\QueryHandler;
 use App\Traits\ApiResponse;
 use App\Traits\BulkProductOwnership;
@@ -26,6 +27,12 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class ProductController extends Controller
 {
     use ApiResponse, BulkProductOwnership;
+    protected $categoryService;
+
+    public function __construct(CategoryService $categoryService)
+    {
+        $this->categoryService = $categoryService;
+    }
 
     /**
      * Display a listing of the resource.
@@ -41,15 +48,29 @@ class ProductController extends Controller
         $perPage = (int) $request->get('size', 10);
 
         $query = $queryHandler
-            ->setBaseQuery(Product::query()->with(['seller.company', 'category', 'tags'])->where('is_active', true)) // eager load seller relation if needed
+            ->setBaseQuery(Product::query()->with(['seller.company', 'category', 'tags'])->where('is_active', true)->where('is_approved', true))
             ->setAllowedSorts([
-                'price', 'created_at', 'name', 'brand', 'currency', 'is_active',
+                'price',
+                'created_at',
+                'name',
+                'brand',
+                'currency',
+                'is_active',
                 'seller.name',
             ])
             ->setAllowedFilters([
-                'name', 'brand', 'model_number', 'currency', 'price', 'origin',
-                'is_active', 'is_approved', 'created_at',
+                'name',
+                'brand',
+                'model_number',
+                'currency',
+                'price',
+                'origin',
+                'is_active',
+                'is_approved',
+                'created_at',
                 'seller.name',
+                'seller_id',
+                'seller.id',
             ])
             ->apply()
             ->paginate($perPage)
@@ -68,51 +89,36 @@ class ProductController extends Controller
         );
     }
 
-    /**
-     * create a new product.
-     */
-    public function store(StoreProductRequest $request): JsonResponse
+    public function store(StoreProductRequest $request)
     {
         $validated = $request->validated();
 
-        // Remove file fields from validated data as they're handled separately
-        $productData = collect($validated)->except(['main_image', 'images', 'documents', 'product_tires', 'product_tags'])->toArray();
+        // Process category
+        $categoryId = $this->categoryService->resolveCategoryId(
+            $validated['category_id'],
+            $validated['category'] ?? null
+        );
 
-        $product = Product::create($productData);
+        // Remove category_id and price_tiers from validated data
+        $productData = collect($validated)
+            ->except(['category_id', 'category', 'price_tiers'])
+            ->merge(['category_id' => $categoryId])
+            ->toArray();
 
-        $product->tiers()->createMany($validated['product_tires']);
-        $product->syncTags($validated['product_tags'] ?? []);
+        $product = DB::transaction(function () use ($productData, $validated, &$product) {
+            $product = Product::create($productData);
 
-        // Handle main image upload
-        if ($request->hasFile('main_image')) {
-            $product
-                ->addMedia($request->file('main_image'))
-                ->usingName('Main Product Image - '.$request->file('main_image')->getClientOriginalName())
-                ->toMediaCollection('main_image');
-        }
-
-        // Handle multiple images upload
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $product
-                    ->addMedia($image)
-                    ->usingName('Product Image - '.$image->getClientOriginalName())
-                    ->toMediaCollection('product_images');
+            // Create product tiers
+            if (isset($validated['price_tiers'])) {
+                $product->tiers()->createMany($validated['price_tiers']);
             }
-        }
+            $product->syncTags($validated['product_tags'] ?? []);
 
-        // Handle documents upload
-        if ($request->hasFile('documents')) {
-            foreach ($request->file('documents') as $document) {
-                $product
-                    ->addMedia($document)
-                    ->usingName('Product Document - '.$document->getClientOriginalName())
-                    ->toMediaCollection('product_documents');
-            }
-        }
+            return $product;
+        });
 
         return $this->apiResponse(
-            ProductDetailsResource::make($product->load('media', 'tiers', 'seller.company')),
+            ProductDetailsResource::make($product->load('tiers', 'seller.company')),
             'Product created successfully.',
             201
         );
@@ -129,7 +135,6 @@ class ProductController extends Controller
             $product = Product::with(['seller.company', 'category', 'tiers', 'media', 'tags'])
                 ->where('slug', $slug)
                 ->firstOrFail();
-
         } catch (ModelNotFoundException $e) {
             return $this->apiResponseErrors(
                 'Product not found.',
@@ -143,7 +148,6 @@ class ProductController extends Controller
             'Product retrieved successfully.',
             200
         );
-
     }
 
     /**
@@ -158,14 +162,14 @@ class ProductController extends Controller
         $validated = $request->validated();
 
         // Remove file fields from validated data as they're handled separately
-        $productData = collect($validated)->except(['main_image', 'images', 'documents', 'product_tires'])->toArray();
+        $productData = collect($validated)->except(['main_image', 'images', 'documents', 'price_tiers'])->toArray();
 
         $product->update($productData);
 
         // Handle product tiers if provided
-        if (isset($validated['product_tires'])) {
+        if (isset($validated['price_tiers'])) {
             $product->tiers()->delete();
-            $product->tiers()->createMany($validated['product_tires']);
+            $product->tiers()->createMany($validated['price_tiers']);
         }
         // Handle Tags if provided
         if (isset($validated['product_tags'])) {
@@ -406,8 +410,8 @@ class ProductController extends Controller
                 $productModel = Product::create($product);
 
                 // Handle product tiers if provided
-                if (isset($product['product_tires'])) {
-                    $productModel->tiers()->createMany($product['product_tires']);
+                if (isset($product['tiers'])) {
+                    $productModel->tiers()->createMany($product['price_tiers']);
                 }
 
                 // Handle product tags if provided
@@ -457,7 +461,6 @@ class ProductController extends Controller
                 'Products imported successfully.',
                 201
             );
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -480,5 +483,62 @@ class ProductController extends Controller
         $filename = 'product_import_template_'.now()->format('Y-m-d').'.xlsx';
 
         return Excel::download(new ProductTemplateExport, $filename);
+    }
+
+    /**
+     * Display products for seller.
+     *
+     * this method retrieves products associated with the authenticated seller
+     * and applies query handling for sorting and filtering.
+     *
+     * @authenticated
+     */
+    public function sellerProducts(Request $request): JsonResponse
+    {
+        $queryHandler = new QueryHandler($request);
+        $perPage = (int) $request->get('size', 10);
+        $user = auth()->user();
+
+        $query = $queryHandler
+            ->setBaseQuery(
+                Product::query()
+                    ->with(['seller.company', 'category', 'tags', 'media'])
+                    ->where('seller_id', $user->id)
+            )
+            ->setAllowedSorts([
+                'price',
+                'created_at',
+                'name',
+                'brand',
+                'currency',
+                'is_active',
+                'is_approved',
+            ])
+            ->setAllowedFilters([
+                'name',
+                'brand',
+                'model_number',
+                'currency',
+                'price',
+                'origin',
+                'is_active',
+                'is_approved',
+                'created_at',
+            ])
+            ->apply()
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return $this->apiResponse(
+            ProductResource::collection($query),
+            'Seller products retrieved successfully.',
+            200,
+            [
+                'page'       => $query->currentPage(),
+                'limit'      => $query->perPage(),
+                'total'      => $query->total(),
+                'totalPages' => $query->lastPage(),
+            ]
+        );
     }
 }

@@ -123,7 +123,7 @@ class Product extends Model implements HasMedia
 
     public function tiers(): HasMany
     {
-        return $this->hasMany(ProductTier::class);
+        return $this->hasMany(PriceTier::class);
     }
 
     public function scopeActive($query)
