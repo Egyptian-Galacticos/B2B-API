@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateRfqRequest;
+use App\Http\Requests\UpdateRfqRequest;
 use App\Http\Resources\RfqResource;
 use App\Models\Rfq;
 use App\Traits\ApiResponse;
@@ -92,14 +93,9 @@ class RfqController extends Controller
      *
      * This method retrieves a specific RFQ by its ID.
      */
-    public function show(int $id): JsonResponse
+    public function show(Rfq $rfq): JsonResponse
     {
         try {
-            $rfq = Rfq::find($id);
-            if (! $rfq) {
-                return $this->apiResponseErrors('RFQ not found', [], 404);
-            }
-
             if ($rfq->buyer_id !== Auth::id() && $rfq->seller_id !== Auth::id()) {
                 return $this->apiResponseErrors('Unauthorized access to this RFQ', [], 403);
             }
@@ -116,134 +112,88 @@ class RfqController extends Controller
     }
 
     /**
-     * Mark RFQ as in progress
+     * Update RFQ status
      *
-     * This method marks an RFQ as in progress when the seller starts opens chat option.
+     * This method handles seller-initiated status transitions for an RFQ.
+     * Only sellers can update RFQ status
      */
-    public function markInProgress(int $id): JsonResponse
+    public function update(UpdateRfqRequest $request, int $id): JsonResponse
     {
         try {
             $rfq = Rfq::find($id);
             if (! $rfq) {
                 return $this->apiResponseErrors('RFQ not found', [], 404);
             }
+            $newStatus = $request->status;
+            $currentUser = Auth::user();
 
-            if ($rfq->seller_id !== Auth::id()) {
-                return $this->apiResponseErrors('Unauthorized action', [], 403);
+            switch ($newStatus) {
+                case Rfq::STATUS_SEEN:
+                    if ($rfq->seller_id !== $currentUser->id) {
+                        return $this->apiResponseErrors('Only seller can mark RFQ as seen', [], 403);
+                    }
+                    if (! $rfq->isPending()) {
+                        return $this->apiResponseErrors('RFQ is not in pending status', [], 400);
+                    }
+                    break;
+
+                case Rfq::STATUS_IN_PROGRESS:
+                    if ($rfq->seller_id !== $currentUser->id) {
+                        return $this->apiResponseErrors('Only seller can mark RFQ as in progress', [], 403);
+                    }
+                    if (! in_array($rfq->status, [Rfq::STATUS_PENDING, Rfq::STATUS_SEEN])) {
+                        return $this->apiResponseErrors('RFQ must be in pending or seen status to mark as in progress', [], 400);
+                    }
+                    break;
+
+                case Rfq::STATUS_QUOTED:
+                    if ($rfq->seller_id !== $currentUser->id) {
+                        return $this->apiResponseErrors('Only seller can mark RFQ as quoted', [], 403);
+                    }
+                    if (! $rfq->canTransitionTo(Rfq::STATUS_QUOTED)) {
+                        return $this->apiResponseErrors('Cannot mark RFQ as quoted from current status', [], 400);
+                    }
+                    break;
+
+                case Rfq::STATUS_REJECTED:
+                    if ($rfq->seller_id !== $currentUser->id) {
+                        return $this->apiResponseErrors('Only seller can reject RFQ', [], 403);
+                    }
+                    if (! $rfq->canTransitionTo(Rfq::STATUS_REJECTED)) {
+                        return $this->apiResponseErrors('Cannot reject RFQ in current status', [], 400);
+                    }
+                    break;
+
+                case Rfq::STATUS_CLOSED:
+                    if ($rfq->buyer_id !== $currentUser->id && $rfq->seller_id !== $currentUser->id) {
+                        return $this->apiResponseErrors('Unauthorized access to this RFQ', [], 403);
+                    }
+                    if (! $rfq->isAccepted()) {
+                        return $this->apiResponseErrors('Only accepted RFQs can be closed', [], 400);
+                    }
+                    break;
+
+                default:
+                    return $this->apiResponseErrors('Invalid status transition', [], 400);
             }
 
-            if (! in_array($rfq->status, [Rfq::STATUS_PENDING, Rfq::STATUS_SEEN])) {
-                return $this->apiResponseErrors('RFQ must be in pending or seen status to mark as in progress', [], 400);
-            }
-
-            $rfq->transitionTo(Rfq::STATUS_IN_PROGRESS);
-            $rfq->load(['buyer', 'seller', 'initialProduct']);
-
-            return $this->apiResponse(
-                new RfqResource($rfq),
-                'RFQ marked as in progress'
-            );
-        } catch (Exception $e) {
-            return $this->apiResponseErrors('Failed to update RFQ status', [$e->getMessage()], 500);
-        }
-    }
-
-    /**
-     * Mark RFQ as seen (when seller views it)
-     *
-     * This method marks an RFQ as seen when the seller clicks on the "Mark as seen" button.
-     */
-    public function markSeen(int $id): JsonResponse
-    {
-        try {
-            $rfq = Rfq::find($id);
-            if (! $rfq) {
-                return $this->apiResponseErrors('RFQ not found', [], 404);
-            }
-
-            if ($rfq->seller_id !== Auth::id()) {
-                return $this->apiResponseErrors('Unauthorized action', [], 403);
-            }
-
-            if (! $rfq->isPending()) {
-                return $this->apiResponseErrors('RFQ is not in pending status', [], 400);
-            }
-
-            $rfq->transitionTo(Rfq::STATUS_SEEN);
-            $rfq->load(['buyer', 'seller', 'initialProduct']);
-
-            return $this->apiResponse(
-                new RfqResource($rfq),
-                'RFQ marked as seen'
-            );
-        } catch (Exception $e) {
-            return $this->apiResponseErrors('Failed to update RFQ status', [$e->getMessage()], 500);
-        }
-    }
-
-    /**
-     * Reject an RFQ
-     *
-     * This method rejects an RFQ.
-     */
-    public function reject(int $id): JsonResponse
-    {
-        try {
-            $rfq = Rfq::find($id);
-            if (! $rfq) {
-                return $this->apiResponseErrors('RFQ not found', [], 404);
-            }
-
-            if ($rfq->seller_id !== Auth::id()) {
-                return $this->apiResponseErrors('Unauthorized action', [], 403);
-            }
-
-            if (! $rfq->canTransitionTo(Rfq::STATUS_REJECTED)) {
-                return $this->apiResponseErrors('Cannot reject RFQ in current status', [], 400);
-            }
-
-            $rfq->transitionTo(Rfq::STATUS_REJECTED);
-            $rfq->load(['buyer', 'seller', 'initialProduct']);
-
-            return $this->apiResponse(
-                new RfqResource($rfq),
-                'RFQ rejected successfully'
-            );
-        } catch (Exception $e) {
-            return $this->apiResponseErrors('Failed to reject RFQ', [$e->getMessage()], 500);
-        }
-    }
-
-    /**
-     * Close an RFQ (after completion)
-     *
-     * This method allows a buyer or seller to close an RFQ once there is a contract.
-     */
-    public function close(int $id): JsonResponse
-    {
-        try {
-            $rfq = Rfq::find($id);
-            if (! $rfq) {
-                return $this->apiResponseErrors('RFQ not found', [], 404);
-            }
-
-            if ($rfq->buyer_id !== Auth::id() && $rfq->seller_id !== Auth::id()) {
-                return $this->apiResponseErrors('Unauthorized action', [], 403);
-            }
-
-            if (! $rfq->isAccepted()) {
-                return $this->apiResponseErrors('Only accepted RFQs can be closed', [], 400);
-            }
-
-            $rfq->transitionTo(Rfq::STATUS_CLOSED);
+            $rfq->update(['status' => $newStatus]);
             $rfq->load(['buyer', 'seller', 'initialProduct', 'quotes']);
 
+            $statusMessages = [
+                Rfq::STATUS_SEEN        => 'RFQ marked as seen',
+                Rfq::STATUS_IN_PROGRESS => 'RFQ marked as in progress',
+                Rfq::STATUS_QUOTED      => 'RFQ marked as quoted',
+                Rfq::STATUS_REJECTED    => 'RFQ rejected successfully',
+                Rfq::STATUS_CLOSED      => 'RFQ closed successfully',
+            ];
+
             return $this->apiResponse(
                 new RfqResource($rfq),
-                'RFQ closed successfully'
+                $statusMessages[$newStatus] ?? 'RFQ updated successfully'
             );
         } catch (Exception $e) {
-            return $this->apiResponseErrors('Failed to close RFQ', [$e->getMessage()], 500);
+            return $this->apiResponseErrors('Failed to update RFQ', ['error' => $e->getMessage()], 500);
         }
     }
 }

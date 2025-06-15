@@ -152,7 +152,7 @@ class Rfq extends Model
 
         $validTransitions = [
             self::STATUS_PENDING     => [self::STATUS_SEEN, self::STATUS_REJECTED, self::STATUS_IN_PROGRESS, self::STATUS_QUOTED],
-            self::STATUS_SEEN        => [self::STATUS_IN_PROGRESS, self::STATUS_REJECTED, self::STATUS_QUOTED, self::STATUS_ACCEPTED],
+            self::STATUS_SEEN        => [self::STATUS_IN_PROGRESS, self::STATUS_REJECTED, self::STATUS_QUOTED],
             self::STATUS_IN_PROGRESS => [self::STATUS_QUOTED, self::STATUS_REJECTED, self::STATUS_ACCEPTED], // Can accept/reject directly from in_progress
             self::STATUS_QUOTED      => [self::STATUS_ACCEPTED, self::STATUS_REJECTED],
             self::STATUS_ACCEPTED    => [self::STATUS_CLOSED],
