@@ -31,28 +31,8 @@ class UserResource extends JsonResource
             'status'            => $this->status,
             'last_login_at'     => $this->last_login_at,
             'roles'             => $roles,
-            'company'           => $this->when($this->company, function () {
-                return [
-                    'id'                      => $this->company->id,
-                    'name'                    => $this->company->name,
-                    'email'                   => $this->company->email,
-                    'tax_id'                  => $this->company->tax_id,
-                    'company_phone'           => $this->company->company_phone,
-                    'commercial_registration' => $this->company->commercial_registration,
-                    'website'                 => $this->company->website,
-                    'description'             => $this->company->description,
-                    'logo'                    => $this->getFirstMedia('logo') ? [
-                        'id'            => $this->getFirstMedia('logo')->id,
-                        'name'          => $this->getFirstMedia('logo')->name,
-                        'file_name'     => $this->getFirstMedia('logo')->file_name,
-                        'url'           => $this->getFirstMedia('logo')->getUrl(),
-                        'thumbnail_url' => $this->getFirstMedia('logo')->getUrl('thumb'),
-                        'size'          => $this->getFirstMedia('logo')->size,
-                        'mime_type'     => $this->getFirstMedia('logo')->mime_type,
-                    ] : null,
-                    'address'           => $this->company->address,
-                    'is_email_verified' => $this->company->is_email_verified,
-                ];
+            'company'           => $this->whenLoaded('company', function () {
+                return CompanyResource::make($this->company);
             }),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
