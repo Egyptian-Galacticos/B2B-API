@@ -10,16 +10,12 @@ class Quote extends Model
 {
     /** @use HasFactory<\Database\Factories\QuoteFactory> */
     use HasFactory, SoftDeletes;
-
-    // Status constants
-    const STATUS_DRAFT = 'draft';
+    const STATUS_PENDING = 'pending';
     const STATUS_SENT = 'sent';
     const STATUS_ACCEPTED = 'accepted';
     const STATUS_REJECTED = 'rejected';
-
-    // All valid statuses
     const VALID_STATUSES = [
-        self::STATUS_DRAFT,
+        self::STATUS_PENDING,
         self::STATUS_SENT,
         self::STATUS_ACCEPTED,
         self::STATUS_REJECTED,
@@ -57,9 +53,9 @@ class Quote extends Model
     }
 
     // scopes
-    public function scopeDraft($query)
+    public function scopePending($query)
     {
-        return $query->where('status', self::STATUS_DRAFT);
+        return $query->where('status', self::STATUS_PENDING);
     }
 
     public function scopeSent($query)
@@ -78,9 +74,9 @@ class Quote extends Model
     }
 
     // accessors
-    public function isDraft(): bool
+    public function isPending(): bool
     {
-        return $this->status === self::STATUS_DRAFT;
+        return $this->status === self::STATUS_PENDING;
     }
 
     public function isSent(): bool
@@ -105,9 +101,8 @@ class Quote extends Model
             return false;
         }
 
-        // Define valid transitions
         $validTransitions = [
-            self::STATUS_DRAFT    => [self::STATUS_SENT],
+            self::STATUS_PENDING  => [self::STATUS_SENT],
             self::STATUS_SENT     => [self::STATUS_ACCEPTED, self::STATUS_REJECTED],
             self::STATUS_ACCEPTED => [],
             self::STATUS_REJECTED => [],
@@ -122,19 +117,13 @@ class Quote extends Model
             throw new \InvalidArgumentException("Cannot transition from {$this->status} to {$newStatus}");
         }
 
-        // When quote is sent, update RFQ status to 'quoted'
-        if ($newStatus === self::STATUS_SENT && $this->rfq) {
+        if ($newStatus === self::STATUS_SENT && $this->rfq && $this->rfq->status !== Rfq::STATUS_QUOTED) {
             $this->rfq->transitionTo(Rfq::STATUS_QUOTED);
         }
 
-        // When quote is accepted, update RFQ status to 'accepted'
-        if ($newStatus === self::STATUS_ACCEPTED && $this->rfq) {
+        // When a quote is accepted, also accept the RFQ
+        if ($newStatus === self::STATUS_ACCEPTED && $this->rfq && $this->rfq->canTransitionTo(Rfq::STATUS_ACCEPTED)) {
             $this->rfq->transitionTo(Rfq::STATUS_ACCEPTED);
-        }
-
-        // When quote is rejected, update RFQ status to 'rejected'
-        if ($newStatus === self::STATUS_REJECTED && $this->rfq) {
-            $this->rfq->transitionTo(Rfq::STATUS_REJECTED);
         }
 
         $this->status = $newStatus;

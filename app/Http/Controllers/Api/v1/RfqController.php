@@ -38,7 +38,7 @@ class RfqController extends Controller
             ];
 
             return $this->apiResponse(
-                RfqResource::collection($rfqs->items()),
+                RfqResource::collection($rfqs),
                 'RFQs retrieved successfully',
                 200,
                 $meta
@@ -116,9 +116,9 @@ class RfqController extends Controller
     }
 
     /**
-     * Mark RFQ as in progress (when seller opens it)
+     * Mark RFQ as in progress
      *
-     * This method marks an RFQ as in progress when the seller opens it.
+     * This method marks an RFQ as in progress when the seller starts opens chat option.
      */
     public function markInProgress(int $id): JsonResponse
     {
@@ -132,8 +132,8 @@ class RfqController extends Controller
                 return $this->apiResponseErrors('Unauthorized action', [], 403);
             }
 
-            if (! $rfq->isPending()) {
-                return $this->apiResponseErrors('RFQ is not in pending status', [], 400);
+            if (! in_array($rfq->status, [Rfq::STATUS_PENDING, Rfq::STATUS_SEEN])) {
+                return $this->apiResponseErrors('RFQ must be in pending or seen status to mark as in progress', [], 400);
             }
 
             $rfq->transitionTo(Rfq::STATUS_IN_PROGRESS);
@@ -151,7 +151,7 @@ class RfqController extends Controller
     /**
      * Mark RFQ as seen (when seller views it)
      *
-     * This method marks an RFQ as seen when the seller views it.
+     * This method marks an RFQ as seen when the seller clicks on the "Mark as seen" button.
      */
     public function markSeen(int $id): JsonResponse
     {
@@ -215,42 +215,9 @@ class RfqController extends Controller
     }
 
     /**
-     * Accept an RFQ (buyer action)
-     *
-     * This method allows a buyer to accept an RFQ that has been quoted by the seller.
-     */
-    public function accept(int $id): JsonResponse
-    {
-        try {
-            $rfq = Rfq::find($id);
-            if (! $rfq) {
-                return $this->apiResponseErrors('RFQ not found', [], 404);
-            }
-
-            if ($rfq->buyer_id !== Auth::id()) {
-                return $this->apiResponseErrors('Unauthorized action', [], 403);
-            }
-
-            if (! $rfq->isQuoted()) {
-                return $this->apiResponseErrors('RFQ must be quoted to accept', [], 400);
-            }
-
-            $rfq->transitionTo(Rfq::STATUS_ACCEPTED);
-            $rfq->load(['buyer', 'seller', 'initialProduct', 'quotes']);
-
-            return $this->apiResponse(
-                new RfqResource($rfq),
-                'RFQ accepted successfully'
-            );
-        } catch (Exception $e) {
-            return $this->apiResponseErrors('Failed to accept RFQ', [$e->getMessage()], 500);
-        }
-    }
-
-    /**
      * Close an RFQ (after completion)
      *
-     * This method allows a buyer or seller to close an RFQ that has been accepted.
+     * This method allows a buyer or seller to close an RFQ once there is a contract.
      */
     public function close(int $id): JsonResponse
     {

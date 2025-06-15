@@ -26,10 +26,14 @@ class RfqResource extends JsonResource
             'status'             => $this->status,
             'created_at'         => $this->created_at,
             'updated_at'         => $this->updated_at,
-            'quotes'             => $this->whenLoaded('quotes', fn () => [
-                'id'     => $this->id,
-                'status' => $this->status,
-            ]),
+            'quotes'             => $this->whenLoaded('quotes', function () {
+                return $this->quotes->map(function ($quote) {
+                    return [
+                        'id'     => $quote->id,
+                        'status' => $quote->status,
+                    ];
+                });
+            }),
         ];
     }
 }
