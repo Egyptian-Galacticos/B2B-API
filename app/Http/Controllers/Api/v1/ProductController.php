@@ -50,13 +50,27 @@ class ProductController extends Controller
         $query = $queryHandler
             ->setBaseQuery(Product::query()->with(['seller.company', 'category', 'tags'])->where('is_active', true)->where('is_approved', true))
             ->setAllowedSorts([
-                'price', 'created_at', 'name', 'brand', 'currency', 'is_active',
+                'price',
+                'created_at',
+                'name',
+                'brand',
+                'currency',
+                'is_active',
                 'seller.name',
             ])
             ->setAllowedFilters([
-                'name', 'brand', 'model_number', 'currency', 'price', 'origin',
-                'is_active', 'is_approved', 'created_at',
-                'seller.name', 'seller_id', 'seller.id',
+                'name',
+                'brand',
+                'model_number',
+                'currency',
+                'price',
+                'origin',
+                'is_active',
+                'is_approved',
+                'created_at',
+                'seller.name',
+                'seller_id',
+                'seller.id',
             ])
             ->apply()
             ->paginate($perPage)
@@ -121,7 +135,6 @@ class ProductController extends Controller
             $product = Product::with(['seller.company', 'category', 'tiers', 'media', 'tags'])
                 ->where('slug', $slug)
                 ->firstOrFail();
-
         } catch (ModelNotFoundException $e) {
             return $this->apiResponseErrors(
                 'Product not found.',
@@ -135,7 +148,6 @@ class ProductController extends Controller
             'Product retrieved successfully.',
             200
         );
-
     }
 
     /**
@@ -449,7 +461,6 @@ class ProductController extends Controller
                 'Products imported successfully.',
                 201
             );
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -472,5 +483,62 @@ class ProductController extends Controller
         $filename = 'product_import_template_'.now()->format('Y-m-d').'.xlsx';
 
         return Excel::download(new ProductTemplateExport, $filename);
+    }
+
+    /**
+     * Display products for seller.
+     *
+     * this method retrieves products associated with the authenticated seller
+     * and applies query handling for sorting and filtering.
+     *
+     * @authenticated
+     */
+    public function sellerProducts(Request $request): JsonResponse
+    {
+        $queryHandler = new QueryHandler($request);
+        $perPage = (int) $request->get('size', 10);
+        $user = auth()->user();
+
+        $query = $queryHandler
+            ->setBaseQuery(
+                Product::query()
+                    ->with(['seller.company', 'category', 'tags', 'media'])
+                    ->where('seller_id', $user->id)
+            )
+            ->setAllowedSorts([
+                'price',
+                'created_at',
+                'name',
+                'brand',
+                'currency',
+                'is_active',
+                'is_approved',
+            ])
+            ->setAllowedFilters([
+                'name',
+                'brand',
+                'model_number',
+                'currency',
+                'price',
+                'origin',
+                'is_active',
+                'is_approved',
+                'created_at',
+            ])
+            ->apply()
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return $this->apiResponse(
+            ProductResource::collection($query),
+            'Seller products retrieved successfully.',
+            200,
+            [
+                'page'       => $query->currentPage(),
+                'limit'      => $query->perPage(),
+                'total'      => $query->total(),
+                'totalPages' => $query->lastPage(),
+            ]
+        );
     }
 }

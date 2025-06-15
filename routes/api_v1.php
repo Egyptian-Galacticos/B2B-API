@@ -96,7 +96,7 @@ Route::prefix('v1')->group(function () {
             // Product creation (no ownership check needed)
             Route::post('products', [ProductController::class, 'store'])->name('products.store');
             Route::post('products/bulk-import', [ProductController::class, 'bulkImport'])->name('products.bulk.import');
-
+            Route::get('seller/products', [ProductController::class, 'sellerProducts'])->name('products.seller.index');
             // Product Bulk Actions (ownership verified in controller)
             Route::post('products/bulk-delete', [ProductController::class, 'bulkDelete'])->name('products.bulk.delete');
             Route::post('products/bulk-active', [ProductController::class, 'bulkActive'])->name('products.bulk.active');
