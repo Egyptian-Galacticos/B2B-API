@@ -30,7 +30,6 @@ class CompanyFactory extends Factory
                 'postal_code' => fake()->postcode(),
                 'country'     => fake()->country(),
             ],
-            'logo'              => fake()->optional()->imageUrl(200, 200, 'business'),
             'website'           => fake()->optional()->url(),
             'description'       => fake()->paragraph(),
             'is_email_verified' => fake()->boolean(70), // 70% chance of being verified

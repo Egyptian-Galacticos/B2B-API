@@ -185,7 +185,26 @@ class DatabaseSeeder extends Seeder
                 ]);
         }
 
-        Product::factory()->count(6)->withExistingRelationships()->create();
+        Product::factory()->count(60)->withExistingRelationships()->create()->each(function ($product) {
+
+            $product->addMediaFromUrl('https://picsum.photos/1000')
+                ->toMediaCollection('main_image');
+            $product->tiers()->create([
+                'from_quantity' => 1,
+                'to_quantity'   => 10,
+                'price'         => $product->price,
+            ]);
+            $product->tiers()->create([
+                'from_quantity' => 11,
+                'to_quantity'   => 50,
+                'price'         => $product->price * 0.9, // 10% discount
+            ]);
+            $product->tiers()->create([
+                'from_quantity' => 51,
+                'to_quantity'   => 100,
+                'price'         => $product->price * 0.8, // 20% discount
+            ]);
+        });
 
         $testQuotes = Quote::where('status', Quote::STATUS_ACCEPTED)->limit(2)->get();
         if ($testQuotes->count() > 0) {

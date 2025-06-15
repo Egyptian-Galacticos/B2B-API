@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('company_phone')->nullable();
             $table->string('commercial_registration')->nullable();
             $table->json('address');
-            $table->string('logo')->nullable();
             $table->string('website')->nullable();
             $table->text('description')->nullable();
             $table->string('email');
