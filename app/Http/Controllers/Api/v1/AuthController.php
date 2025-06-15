@@ -115,7 +115,6 @@ class AuthController extends Controller
                 'commercial_registration' => $validated['company']['commercial_registration'] ?? null,
                 'website'                 => $validated['company']['website'] ?? null,
                 'description'             => $validated['company']['description'] ?? null,
-                'logo'                    => $validated['company']['logo'] ?? null,
                 'address'                 => $validated['company']['address'],
             ]);
 
