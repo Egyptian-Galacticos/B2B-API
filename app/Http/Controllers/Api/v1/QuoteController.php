@@ -40,18 +40,11 @@ class QuoteController extends Controller
 
         $quotes = $query->paginate(15);
 
-        $meta = [
-            'page'       => $quotes->currentPage(),
-            'limit'      => $quotes->perPage(),
-            'total'      => $quotes->total(),
-            'totalPages' => $quotes->lastPage(),
-        ];
-
         return $this->apiResponse(
             QuoteResource::collection($quotes),
             'Quotes retrieved successfully',
             200,
-            $meta
+            $this->getPaginationMeta($quotes)
         );
     }
 

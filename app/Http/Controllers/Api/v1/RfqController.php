@@ -31,18 +31,12 @@ class RfqController extends Controller
                 ->latest();
 
             $rfqs = $query->paginate(15);
-            $meta = [
-                'page'       => $rfqs->currentPage(),
-                'limit'      => $rfqs->perPage(),
-                'total'      => $rfqs->total(),
-                'totalPages' => $rfqs->lastPage(),
-            ];
 
             return $this->apiResponse(
                 RfqResource::collection($rfqs),
                 'RFQs retrieved successfully',
                 200,
-                $meta
+                $this->getPaginationMeta($rfqs)
             );
         } catch (Exception $e) {
             return $this->apiResponseErrors('Failed to retrieve RFQs', ['error' => $e->getMessage()], 500);

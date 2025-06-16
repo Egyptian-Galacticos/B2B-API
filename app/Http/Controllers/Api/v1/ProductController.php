@@ -12,6 +12,7 @@ use App\Http\Resources\ProductDetailsResource;
 use App\Http\Resources\ProductResource;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\User;
 use App\Services\CategoryService;
 use App\Services\QueryHandler;
 use App\Traits\ApiResponse;
@@ -486,10 +487,10 @@ class ProductController extends Controller
     }
 
     /**
-     * Display products for seller.
+     * Display products for seller or admin.
      *
-     * this method retrieves products associated with the authenticated seller
-     * and applies query handling for sorting and filtering.
+     * This method retrieves products associated with the authenticated seller
+     * or allows admins to view products for a specific seller via seller_id parameter.
      *
      * @authenticated
      */
@@ -499,31 +500,49 @@ class ProductController extends Controller
         $perPage = (int) $request->get('size', 10);
         $user = auth()->user();
 
+        $sellerId = null;
+        if ($user->hasRole('admin')) {
+            $sellerId = $request->get('seller_id');
+            if (! $sellerId) {
+                return $this->apiResponse(
+                    [],
+                    'Admin must provide seller_id parameter to view seller products.',
+                    400
+                );
+            }
+
+            $sellerExists = User::where('id', $sellerId)
+                ->whereHas('roles', function ($query) {
+                    $query->where('name', 'seller');
+                })
+                ->exists();
+
+            if (! $sellerExists) {
+                return $this->apiResponse(
+                    [],
+                    'Seller not found.',
+                    404
+                );
+            }
+        } elseif ($user->hasRole('seller')) {
+            $sellerId = $user->id;
+        } else {
+            return $this->apiResponse(
+                [],
+                'Unauthorized. Only sellers and admins can access seller products.',
+                403
+            );
+        }
+
         $query = $queryHandler
             ->setBaseQuery(
                 Product::query()
                     ->with(['seller.company', 'category', 'tags', 'media'])
-                    ->where('seller_id', $user->id)
+                    ->where('seller_id', $sellerId)
             )
-            ->setAllowedSorts([
-                'price',
-                'created_at',
-                'name',
-                'brand',
-                'currency',
-                'is_active',
-                'is_approved',
+            ->setAllowedSorts(['price', 'created_at', 'name', 'brand', 'currency', 'is_active', 'is_approved',
             ])
-            ->setAllowedFilters([
-                'name',
-                'brand',
-                'model_number',
-                'currency',
-                'price',
-                'origin',
-                'is_active',
-                'is_approved',
-                'created_at',
+            ->setAllowedFilters(['name', 'brand', 'model_number', 'currency', 'price', 'origin', 'is_active', 'is_approved', 'created_at',
             ])
             ->apply()
             ->paginate($perPage)
@@ -533,12 +552,7 @@ class ProductController extends Controller
             ProductResource::collection($query),
             'Seller products retrieved successfully.',
             200,
-            [
-                'page'       => $query->currentPage(),
-                'limit'      => $query->perPage(),
-                'total'      => $query->total(),
-                'totalPages' => $query->lastPage(),
-            ]
+            $this->getPaginationMeta($query)
         );
     }
 }
