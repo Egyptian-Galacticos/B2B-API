@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('shipping_country')->nullable();
             $table->string('shipping_address')->nullable();
             $table->text('buyer_message')->nullable();
-            $table->enum('status', ['pending', 'seen', 'in_progress', 'quoted', 'accepted', 'rejected', 'closed'])->default('pending');
+            $table->enum('status', ['pending', 'seen', 'In Progress', 'Quoted'])->default('pending');
             $table->timestamps();
             $table->softDeletes();
 

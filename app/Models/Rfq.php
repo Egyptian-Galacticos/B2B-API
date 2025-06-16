@@ -12,19 +12,13 @@ class Rfq extends Model
     use HasFactory, SoftDeletes;
     const STATUS_PENDING = 'pending';
     const STATUS_SEEN = 'seen';
-    const STATUS_IN_PROGRESS = 'in_progress';
-    const STATUS_QUOTED = 'quoted';
-    const STATUS_ACCEPTED = 'accepted';
-    const STATUS_REJECTED = 'rejected';
-    const STATUS_CLOSED = 'closed';
+    const STATUS_IN_PROGRESS = 'In Progress';
+    const STATUS_QUOTED = 'Quoted';
     const VALID_STATUSES = [
         self::STATUS_PENDING,
         self::STATUS_SEEN,
         self::STATUS_IN_PROGRESS,
         self::STATUS_QUOTED,
-        self::STATUS_ACCEPTED,
-        self::STATUS_REJECTED,
-        self::STATUS_CLOSED,
     ];
     protected $fillable = [
         'buyer_id',
@@ -83,21 +77,6 @@ class Rfq extends Model
         return $query->where('status', self::STATUS_QUOTED);
     }
 
-    public function scopeAccepted($query)
-    {
-        return $query->where('status', self::STATUS_ACCEPTED);
-    }
-
-    public function scopeRejected($query)
-    {
-        return $query->where('status', self::STATUS_REJECTED);
-    }
-
-    public function scopeClosed($query)
-    {
-        return $query->where('status', self::STATUS_CLOSED);
-    }
-
     public function scopeForBuyer($query, $buyerId)
     {
         return $query->where('buyer_id', $buyerId);
@@ -129,21 +108,6 @@ class Rfq extends Model
         return $this->status === self::STATUS_QUOTED;
     }
 
-    public function isAccepted()
-    {
-        return $this->status === self::STATUS_ACCEPTED;
-    }
-
-    public function isRejected()
-    {
-        return $this->status === self::STATUS_REJECTED;
-    }
-
-    public function isClosed()
-    {
-        return $this->status === self::STATUS_CLOSED;
-    }
-
     public function canTransitionTo($newStatus)
     {
         if (! in_array($newStatus, self::VALID_STATUSES)) {
@@ -151,13 +115,10 @@ class Rfq extends Model
         }
 
         $validTransitions = [
-            self::STATUS_PENDING     => [self::STATUS_SEEN, self::STATUS_REJECTED, self::STATUS_IN_PROGRESS, self::STATUS_QUOTED],
-            self::STATUS_SEEN        => [self::STATUS_IN_PROGRESS, self::STATUS_REJECTED, self::STATUS_QUOTED],
-            self::STATUS_IN_PROGRESS => [self::STATUS_QUOTED, self::STATUS_REJECTED, self::STATUS_ACCEPTED], // Can accept/reject directly from in_progress
-            self::STATUS_QUOTED      => [self::STATUS_ACCEPTED, self::STATUS_REJECTED],
-            self::STATUS_ACCEPTED    => [self::STATUS_CLOSED],
-            self::STATUS_REJECTED    => [],
-            self::STATUS_CLOSED      => [],
+            self::STATUS_PENDING     => [self::STATUS_SEEN, self::STATUS_IN_PROGRESS, self::STATUS_QUOTED],
+            self::STATUS_SEEN        => [self::STATUS_IN_PROGRESS, self::STATUS_QUOTED],
+            self::STATUS_IN_PROGRESS => [self::STATUS_QUOTED],
+            self::STATUS_QUOTED      => [], // Final status - no transitions out
         ];
 
         return in_array($newStatus, $validTransitions[$this->status] ?? []);
@@ -170,14 +131,6 @@ class Rfq extends Model
         }
 
         $this->status = $newStatus;
-
-        if ($newStatus === self::STATUS_ACCEPTED) {
-            $this->quotes()->where('status', 'sent')->update(['status' => 'accepted']);
-        }
-
-        if ($newStatus === self::STATUS_REJECTED) {
-            $this->quotes()->where('status', 'sent')->update(['status' => 'rejected']);
-        }
 
         return $this->save();
     }

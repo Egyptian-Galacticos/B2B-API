@@ -121,10 +121,7 @@ class Quote extends Model
             $this->rfq->transitionTo(Rfq::STATUS_QUOTED);
         }
 
-        // When a quote is accepted, also accept the RFQ
-        if ($newStatus === self::STATUS_ACCEPTED && $this->rfq && $this->rfq->canTransitionTo(Rfq::STATUS_ACCEPTED)) {
-            $this->rfq->transitionTo(Rfq::STATUS_ACCEPTED);
-        }
+        // Note: RFQ remains in 'Quoted' status as it's the final status in the new workflow
 
         $this->status = $newStatus;
 
