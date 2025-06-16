@@ -21,13 +21,13 @@ class LoginRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            // @example anas@gmail.com
+            // @example admin@gmail.com
             'email' => [
                 'required',
-                'email:rfc,dns',
+                // 'email:rfc,dns',
                 'max:255',
             ],
-            // @example StrongPassword123!
+            // @example password
             'password' => [
                 'required',
                 'string',

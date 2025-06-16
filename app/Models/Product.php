@@ -94,16 +94,14 @@ class Product extends Model implements HasMedia
     {
         parent::boot();
         static::creating(function ($product) {
-            $product->is_approved = false;
-            $product->is_active = true;
-            $product->is_featured = false;
-            $product->seller_id = $product->seller_id ?? auth()->id();
+            $product->is_approved = $product->is_approved ?? false;
+            $product->is_active = $product->is_active ?? true;
+            $product->is_featured = $product->is_featured ?? false;
         });
         static::updating(function ($product) {
             $product->is_approved = $product->is_approved ?? false;
             $product->is_active = $product->is_active ?? true;
             $product->is_featured = $product->is_featured ?? false;
-            $product->seller_id = $product->seller_id ?? auth()->id();
         });
     }
 
