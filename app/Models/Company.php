@@ -94,6 +94,12 @@ class Company extends Model implements HasMedia
         return $this->morphMany(EmailVerificationToken::class, 'verifiable');
     }
 
+    public function setUnverifiedEmail()
+    {
+        $this->is_email_verified = false;
+        $this->save();
+    }
+
     /**
      * Get company type display name.
      */

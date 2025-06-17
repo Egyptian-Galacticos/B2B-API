@@ -7,6 +7,7 @@ use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\EmailVerificationService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -105,6 +106,9 @@ class UserController extends Controller
             $validated = $request->validated();
             $user->update($validated);
             $userData = new UserResource($user->fresh());
+            if ($user->wasChanged('email')) {
+                app(EmailVerificationService::class)->sendVerification($user);
+            }
 
             return $this->apiResponse($userData, 'Profile updated successfully.', 200);
 

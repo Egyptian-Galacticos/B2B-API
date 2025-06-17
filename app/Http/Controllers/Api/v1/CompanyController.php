@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateProfileCompanyRequest;
 use App\Http\Resources\CompanyResource;
 use App\Models\Company;
+use App\Services\EmailVerificationService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -60,15 +61,14 @@ class CompanyController extends Controller
             // Get validated data and remove file fields as they're handled separately
             $validated = $request->validated();
             $updateData = collect($validated)->except(['logo'])->toArray();
+            $user->company->update($updateData);
 
-            // If email is being updated, reset email verification
-            if ($request->has('email') && $request->email !== $user->company->email) {
-                $updateData['is_email_verified'] = false;
+            if ($user->company->wasChanged('email')) {
+                $user->company->setUnverifiedEmail();
+                app(EmailVerificationService::class)->sendCompanyVerification($user->company);
             }
 
-            $user->company->update($updateData);
             if ($request->remove_logo) {
-                // Handle logo removal
                 $user->company->clearMediaCollection('logo');
             }
             // Handle logo upload (replace existing)
