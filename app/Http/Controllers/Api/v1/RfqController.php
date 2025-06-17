@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CreateRfqRequest;
-use App\Http\Requests\UpdateRfqRequest;
+use App\Http\Requests\Rfq\CreateRfqRequest;
+use App\Http\Requests\Rfq\UpdateRfqRequest;
 use App\Http\Resources\RfqResource;
 use App\Services\RfqService;
 use App\Traits\ApiResponse;
