@@ -15,13 +15,16 @@ class QuoteResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'             => $this->id,
-            'rfq_id'         => $this->rfq_id,
-            'total_price'    => $this->total_price,
-            'seller_message' => $this->seller_message,
-            'status'         => $this->status,
-            'created_at'     => $this->created_at,
-            'updated_at'     => $this->updated_at,
+            'id'              => $this->id,
+            'rfq_id'          => $this->rfq_id,
+            'total_price'     => $this->total_price,
+            'seller_message'  => $this->seller_message,
+            'conversation_id' => $this->conversation_id,
+            'seller_id'       => $this->seller_id,
+            'buyer_id'        => $this->buyer_id,
+            'status'          => $this->status,
+            'created_at'      => $this->created_at,
+            'updated_at'      => $this->updated_at,
 
             'rfq' => $this->when($this->rfq_id && $this->relationLoaded('rfq'), [
                 'initial_quantity' => $this->rfq?->initial_quantity,
@@ -40,7 +43,7 @@ class QuoteResource extends JsonResource
                         'quantity'      => $item->quantity,
                         'unit_price'    => $item->unit_price,
                         'total_price'   => $item->quantity * $item->unit_price,
-                        'notes'         => $item->notes,
+                        'notes'         => $item->notes ?? '', // Ensure it's not null
                     ];
                 });
             }),
