@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Product;
 use App\Models\Rfq;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
 class RfqSeeder extends Seeder
@@ -43,8 +44,9 @@ class RfqSeeder extends Seeder
 
                     $status = $this->getWeightedRandomStatus($statusDistribution);
                     $quantity = rand(1, 100);
-                    $createdAt = fake()->dateTimeBetween('-3 months', 'now');
-                    $updatedAt = fake()->dateTimeBetween($createdAt, 'now');
+
+                    $createdAt = Carbon::now()->subDays(rand(1, 90))->subHours(rand(0, 23))->subMinutes(rand(0, 59));
+                    $updatedAt = $createdAt->copy()->addDays(rand(0, 30))->addHours(rand(0, 23));
 
                     Rfq::create([
                         'buyer_id'           => $buyer->id,
@@ -68,8 +70,8 @@ class RfqSeeder extends Seeder
             $product = $activeProducts->random();
             $status = $this->getWeightedRandomStatus($statusDistribution);
 
-            $createdAt = fake()->dateTimeBetween('-6 months', 'now');
-            $updatedAt = fake()->dateTimeBetween($createdAt, 'now');
+            $createdAt = Carbon::now()->subDays(rand(1, 180))->subHours(rand(0, 23))->subMinutes(rand(0, 59));
+            $updatedAt = $createdAt->copy()->addDays(rand(0, 60))->addHours(rand(0, 23));
 
             Rfq::create([
                 'buyer_id'           => $buyer->id,
