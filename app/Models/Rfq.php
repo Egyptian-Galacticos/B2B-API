@@ -10,8 +10,8 @@ class Rfq extends Model
 {
     /** @use HasFactory<\Database\Factories\RfqFactory> */
     use HasFactory, SoftDeletes;
-    const STATUS_PENDING = 'pending';
-    const STATUS_SEEN = 'seen';
+    const STATUS_PENDING = 'Pending';
+    const STATUS_SEEN = 'Seen';
     const STATUS_IN_PROGRESS = 'In Progress';
     const STATUS_QUOTED = 'Quoted';
     const VALID_STATUSES = [
