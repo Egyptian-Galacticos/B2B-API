@@ -6,443 +6,156 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateQuoteRequest;
 use App\Http\Requests\UpdateQuoteRequest;
 use App\Http\Resources\QuoteResource;
-use App\Models\Conversation;
-use App\Models\Quote;
-use App\Models\QuoteItem;
-use App\Models\Rfq;
+use App\Services\QuoteService;
 use App\Traits\ApiResponse;
 use Exception;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class QuoteController extends Controller
 {
     use ApiResponse;
 
+    public function __construct(
+        private readonly QuoteService $quoteService
+    ) {}
+
     /**
      * List quotes with pagination
      *
-     * This method retrieves a list of quotes available for the authenticated user.
+     * This method retrieves all quotes for the authenticated user
      */
     public function index(Request $request): JsonResponse
     {
-        $user = Auth::user();
+        try {
+            $quotes = $this->quoteService->getForUser(Auth::id());
 
-        $query = Quote::with([
-            'rfq:id,initial_quantity,shipping_country,buyer_message,status',
-            'conversation:id,participant_ids',
-            'items:id,quote_id,product_id,quantity,unit_price,notes',
-            'items.product:id,name,brand',
-        ])
-            ->where(function ($q) use ($user) {
-                $q->whereHas('rfq', function ($subQuery) use ($user) {
-                    $subQuery->where('seller_id', $user->id)->orWhere('buyer_id', $user->id);
-                })
-                    ->orWhere(function ($subQuery) use ($user) {
-                        $subQuery->whereNull('rfq_id')
-                            ->where(function ($innerQuery) use ($user) {
-                                $innerQuery->where('seller_id', $user->id)
-                                    ->orWhere('buyer_id', $user->id);
-                            });
-                    });
-            });
-
-        $quotes = $query->paginate(15);
-
-        return $this->apiResponse(
-            QuoteResource::collection($quotes),
-            'Quotes retrieved successfully',
-            200,
-            $this->getPaginationMeta($quotes)
-        );
+            return $this->apiResponse(
+                QuoteResource::collection($quotes),
+                'Quotes retrieved successfully',
+                200,
+                $this->getPaginationMeta($quotes)
+            );
+        } catch (Exception $e) {
+            return $this->apiResponseErrors('Failed to retrieve quotes', ['error' => $e->getMessage()], 500);
+        }
     }
 
     /**
-     * Store a newly created quote.
+     * Store a newly created quote
      *
-     * This method creates a new quote either from an RFQ or a conversation.
+     * This method allows sellers to create a quote in response to an RFQ or conversation.
      */
     public function store(CreateQuoteRequest $request): JsonResponse
     {
-        $user = Auth::user();
-
-        $rfq = null;
-        $conversation = null;
-
-        if ($request->rfq_id) {
-            $rfq = Rfq::with('initialProduct')->find($request->rfq_id);
-
-            if (! $rfq) {
-                return $this->apiResponseErrors(
-                    'RFQ not found',
-                    ['rfq_id' => 'The selected RFQ does not exist'],
-                    404
-                );
-            }
-
-            if ($rfq->seller_id !== $user->id) {
-                return $this->apiResponseErrors(
-                    'Access denied',
-                    ['error' => 'You can only create quotes for RFQs assigned to you'],
-                    403
-                );
-            }
-        } elseif ($request->conversation_id) {
-            $conversation = Conversation::find($request->conversation_id);
-
-            if (! $conversation) {
-                return $this->apiResponseErrors(
-                    'Conversation not found',
-                    ['conversation_id' => 'The selected conversation does not exist'],
-                    404
-                );
-            }
-
-            if (! in_array($user->id, $conversation->participant_ids)) {
-                return $this->apiResponseErrors(
-                    'Access denied',
-                    ['error' => 'You are not a participant in this conversation'],
-                    403
-                );
-            }
-
-            $otherParticipantId = collect($conversation->participant_ids)
-                ->reject(fn ($id) => $id === $user->id)
-                ->first();
-        } else {
-            return $this->apiResponseErrors(
-                'Invalid request',
-                ['error' => 'Either rfq_id or conversation_id must be provided'],
-                400
-            );
-        }
-
-        DB::beginTransaction();
-
         try {
-            $totalPrice = 0;
-
-            foreach ($request->items as $item) {
-                $subtotal = $item['unit_price'] * $item['quantity'];
-                $totalPrice += $subtotal;
-            }
-
-            $defaultMessage = $rfq
-                ? "Quote for RFQ #{$rfq->id}"
-                : ($conversation ? 'Quote from conversation' : 'Quote');
-
-            $quote = Quote::create([
+            $quote = $this->quoteService->create([
                 'rfq_id'          => $request->rfq_id,
                 'conversation_id' => $request->conversation_id,
-                'seller_id'       => $rfq ? null : $user->id, // Set seller_id for conversation quotes
-                'buyer_id'        => $rfq ? null : ($conversation ? $otherParticipantId : null),
-                'total_price'     => $totalPrice,
-                'seller_message'  => $request->seller_message ?? $defaultMessage,
-                'status'          => Quote::STATUS_SENT,
-            ]);
+                'seller_message'  => $request->seller_message,
+                'items'           => $request->items,
+            ], Auth::id());
 
-            foreach ($request->items as $item) {
-                $quote->items()->create([
-                    'product_id' => $item['product_id'],
-                    'quantity'   => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
-                    'notes'      => $item['notes'] ?? '',
-                ]);
-            }
-
-            if ($rfq) {
-                $rfq->transitionTo(Rfq::STATUS_QUOTED);
-                $quote->load(['rfq.buyer', 'rfq.seller', 'items.product']);
-                $message = 'Quote created and sent successfully, RFQ marked as quoted';
-            } else {
-                $quote->load(['items.product', 'conversation']);
-                $message = 'Quote created from conversation successfully';
-            }
-
-            DB::commit();
+            $message = $quote->rfq
+                ? 'Quote created and sent successfully, RFQ marked as quoted'
+                : 'Quote created from conversation successfully';
 
             return $this->apiResponse(
                 new QuoteResource($quote),
                 $message,
                 201
             );
+        } catch (InvalidArgumentException $e) {
+            return $this->apiResponseErrors($e->getMessage(), [], 400);
+        } catch (AuthorizationException $e) {
+            return $this->apiResponseErrors($e->getMessage(), [], 403);
+        } catch (ModelNotFoundException $e) {
+            return $this->apiResponseErrors('Resource not found', [], 404);
         } catch (Exception $e) {
-            DB::rollBack();
-
-            return $this->apiResponseErrors(
-                'Failed to create quote',
-                ['error' => 'An error occurred while creating the quote', 'details' => $e->getMessage()],
-                500
-            );
+            return $this->apiResponseErrors('Failed to create quote', ['error' => $e->getMessage()], 500);
         }
     }
 
     /**
-     * Display the specified quote.
-     *
-     * This method retrieves a specific quote by its ID and checks access permissions.
+     * Display the specified quote
      */
-    public function show(string $id): JsonResponse
+    public function show(int $id): JsonResponse
     {
-        $quote = Quote::with(['rfq.buyer', 'rfq.seller', 'rfq.initialProduct', 'conversation', 'items.product'])
-            ->find($id);
+        try {
+            $quote = $this->quoteService->findWithAccess($id, Auth::id());
 
-        if (! $quote) {
-            return $this->apiResponseErrors(
-                'Quote not found',
-                ['error' => 'The requested quote does not exist'],
-                404
+            return $this->apiResponse(
+                new QuoteResource($quote),
+                'Quote retrieved successfully'
             );
+        } catch (AuthorizationException $e) {
+            return $this->apiResponseErrors($e->getMessage(), [], 403);
+        } catch (ModelNotFoundException $e) {
+            return $this->apiResponseErrors('Quote not found', [], 404);
+        } catch (Exception $e) {
+            return $this->apiResponseErrors('Failed to retrieve quote', ['error' => $e->getMessage()], 500);
         }
-
-        $user = Auth::user();
-
-        $hasAccess = false;
-
-        if ($quote->rfq && ($quote->rfq->seller_id === $user->id || $quote->rfq->buyer_id === $user->id)) {
-            $hasAccess = true;
-        } elseif ($quote->conversation_id && $quote->conversation) {
-            if (in_array($user->id, $quote->conversation->participant_ids)) {
-                $hasAccess = true;
-            }
-        } elseif ($quote->seller_id === $user->id || $quote->buyer_id === $user->id) {
-            $hasAccess = true;
-        }
-
-        if (! $hasAccess) {
-            return $this->apiResponseErrors(
-                'Access denied',
-                ['error' => 'You do not have permission to view this quote'],
-                403
-            );
-        }
-
-        return $this->apiResponse(
-            new QuoteResource($quote),
-            'Quote retrieved successfully'
-        );
     }
 
     /**
-     * Update an existing quote.
+     * Update an existing quote
      *
-     * This method updates a quote with new items and pricing information.
-     * It handles role-based access control for sellers and buyers.
-     * Sellers can update their own quotes, while buyers can only accept/reject quotes.
+     * This method allows sellers to update the status and items of a quote
      */
     public function update(UpdateQuoteRequest $request, int $id): JsonResponse
     {
-        $user = Auth::user();
-
-        $quote = Quote::with(['rfq.initialProduct', 'items'])->find($id);
-
-        if (! $quote) {
-            return $this->apiResponseErrors(
-                'Quote not found',
-                ['error' => 'The requested quote does not exist'],
-                404
-            );
-        }
-
-        $isSeller = $user->hasRole('seller');
-        $isBuyer = $user->hasRole('buyer');
-        $isAdmin = $user->hasRole('admin');
-
-        if ($isSeller && (! $quote->rfq || $quote->rfq->seller_id !== $user->id)) {
-            return $this->apiResponseErrors(
-                'Access denied',
-                ['error' => 'You can only update quotes for RFQs assigned to you'],
-                403
-            );
-        }
-
-        if ($isBuyer && (! $quote->rfq || $quote->rfq->buyer_id !== $user->id)) {
-            return $this->apiResponseErrors(
-                'Access denied',
-                ['error' => 'You can only accept/reject quotes for your own RFQs'],
-                403
-            );
-        }
-
-        if (! $isAdmin && ! $isSeller && ! $isBuyer) {
-            return $this->apiResponseErrors(
-                'Access denied',
-                ['error' => 'You do not have permission to update quotes'],
-                403
-            );
-        }
-
-        DB::beginTransaction();
-
         try {
-            $newStatus = $quote->status;
-            $totalPrice = $quote->total_price;
+            $userRoles = Auth::user()->roles->pluck('name')->toArray();
 
-            if ($request->has('status')) {
-                $requestedStatus = $request->status;
+            $quote = $this->quoteService->update($id, [
+                'status'         => $request->status,
+                'items'          => $request->items,
+                'seller_message' => $request->seller_message,
+            ], Auth::id(), $userRoles);
 
-                if (! $quote->canTransitionTo($requestedStatus)) {
-                    return $this->apiResponseErrors(
-                        'Invalid status transition',
-                        ['error' => "Quote cannot transition from '{$quote->status}' to '{$requestedStatus}'"],
-                        422
-                    );
-                }
-
-                if ($requestedStatus === Quote::STATUS_ACCEPTED || $requestedStatus === Quote::STATUS_REJECTED) {
-                    if (! $isBuyer && ! $isAdmin) {
-                        return $this->apiResponseErrors(
-                            'Access denied',
-                            ['error' => 'Only buyers can accept or reject quotes'],
-                            403
-                        );
-                    }
-                }
-
-                if ($requestedStatus === Quote::STATUS_SENT) {
-                    if (! $isSeller && ! $isAdmin) {
-                        return $this->apiResponseErrors(
-                            'Access denied',
-                            ['error' => 'Only sellers can send quotes'],
-                            403
-                        );
-                    }
-                }
-
-                $newStatus = $requestedStatus;
-            }
-
-            if ($request->has('items') && ($isSeller || $isAdmin)) {
-                $totalPrice = 0;
-
-                foreach ($request->items as $itemData) {
-                    if (isset($itemData['id'])) {
-                        $quoteItem = QuoteItem::find($itemData['id']);
-
-                        if (! $quoteItem || $quoteItem->quote_id !== $quote->id) {
-                            throw new Exception('Invalid quote item ID');
-                        }
-
-                        $quoteItem->update([
-                            'quantity'   => $itemData['quantity'],
-                            'unit_price' => $itemData['unit_price'],
-                            'notes'      => $itemData['notes'] ?? $quoteItem->notes,
-                        ]);
-                    } else {
-                        $quoteItem = QuoteItem::create([
-                            'quote_id'   => $quote->id,
-                            'product_id' => $itemData['product_id'],
-                            'quantity'   => $itemData['quantity'],
-                            'unit_price' => $itemData['unit_price'],
-                            'notes'      => $itemData['notes'] ?? null,
-                        ]);
-                    }
-
-                    $totalPrice += $itemData['quantity'] * $itemData['unit_price'];
-                }
-            }
-
-            $updateData = [];
-
-            if ($isSeller || $isAdmin) {
-                $updateData['total_price'] = $totalPrice;
-                if ($request->has('seller_message')) {
-                    $updateData['seller_message'] = $request->seller_message;
-                }
-            }
-
-            if ($newStatus !== $quote->status) {
-                $updateData['status'] = $newStatus;
-            }
-
-            if (! empty($updateData)) {
-                $quote->update($updateData);
-            }
-
-            if ($newStatus === Quote::STATUS_ACCEPTED && $quote->status !== Quote::STATUS_ACCEPTED) {
-                $quote->transitionTo(Quote::STATUS_ACCEPTED);
-            } elseif ($newStatus === Quote::STATUS_REJECTED && $quote->status !== Quote::STATUS_REJECTED) {
-                $quote->transitionTo(Quote::STATUS_REJECTED);
-            } elseif ($newStatus === Quote::STATUS_SENT && $quote->status !== Quote::STATUS_SENT) {
-                $quote->transitionTo(Quote::STATUS_SENT);
-            }
-
-            $quote->load(['rfq.buyer', 'rfq.seller', 'items.product']);
-
-            DB::commit();
-
-            $message = match ($newStatus) {
-                Quote::STATUS_ACCEPTED => 'Quote accepted successfully. RFQ has also been accepted.',
-                Quote::STATUS_REJECTED => 'Quote rejected successfully.',
-                Quote::STATUS_SENT     => 'Quote updated and sent successfully. RFQ marked as quoted.',
-                default                => 'Quote updated successfully'
-            };
+            $message = $this->quoteService->getStatusMessage($request->status ?? $quote->status);
 
             return $this->apiResponse(
                 new QuoteResource($quote),
                 $message
             );
+        } catch (InvalidArgumentException $e) {
+            return $this->apiResponseErrors($e->getMessage(), [], 400);
+        } catch (AuthorizationException $e) {
+            return $this->apiResponseErrors($e->getMessage(), [], 403);
+        } catch (ModelNotFoundException $e) {
+            return $this->apiResponseErrors('Quote not found', [], 404);
         } catch (Exception $e) {
-            DB::rollBack();
-
-            return $this->apiResponseErrors(
-                'Failed to update quote',
-                ['error' => 'An error occurred while updating the quote', 'details' => $e->getMessage()],
-                500
-            );
+            return $this->apiResponseErrors('Failed to update quote', ['error' => $e->getMessage()], 500);
         }
     }
 
     /**
-     * Remove the specified quote from storage.
+     * Remove the specified quote from storage
      *
-     * Only sellers can delete their own quotes and only if status is 'pending'
+     * This method allows sellers to delete a quote they created.
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(int $id): JsonResponse
     {
-        $quote = Quote::find($id);
-
-        if (! $quote) {
-            return $this->apiResponseErrors(
-                'Quote not found',
-                ['error' => 'The requested quote does not exist'],
-                404
-            );
-        }
-
-        $user = Auth::user();
-
-        if (! $quote->rfq || $quote->rfq->seller_id !== $user->id) {
-            return $this->apiResponseErrors(
-                'Access denied',
-                ['error' => 'You can only delete your own quotes'],
-                403
-            );
-        }
-
-        if ($quote->status !== Quote::STATUS_PENDING) {
-            return $this->apiResponseErrors(
-                'Cannot delete quote',
-                ['error' => 'Can only delete quotes with status: pending'],
-                422
-            );
-        }
-
         try {
-            $quote->delete();
+            $this->quoteService->delete($id, Auth::id());
 
             return $this->apiResponse(
                 null,
                 'Quote deleted successfully'
             );
+        } catch (AuthorizationException $e) {
+            return $this->apiResponseErrors($e->getMessage(), [], 403);
+        } catch (InvalidArgumentException $e) {
+            return $this->apiResponseErrors($e->getMessage(), [], 422);
+        } catch (ModelNotFoundException $e) {
+            return $this->apiResponseErrors('Quote not found', [], 404);
         } catch (Exception $e) {
-            return $this->apiResponseErrors(
-                'Failed to delete quote',
-                ['error' => 'An error occurred while deleting the quote'],
-                500
-            );
+            return $this->apiResponseErrors('Failed to delete quote', ['error' => $e->getMessage()], 500);
         }
     }
 }

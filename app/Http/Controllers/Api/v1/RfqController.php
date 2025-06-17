@@ -3,34 +3,36 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CreateRfqRequest;
-use App\Http\Requests\UpdateRfqRequest;
+use App\Http\Requests\Rfq\CreateRfqRequest;
+use App\Http\Requests\Rfq\UpdateRfqRequest;
 use App\Http\Resources\RfqResource;
-use App\Models\Rfq;
+use App\Services\RfqService;
 use App\Traits\ApiResponse;
 use Exception;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use InvalidArgumentException;
 
 class RfqController extends Controller
 {
     use ApiResponse;
 
+    public function __construct(
+        private readonly RfqService $rfqService
+    ) {}
+
     /**
      * List RFQs for sellers
      *
-     * This method retrieves a list of RFQs (Request for Quotations) available for sellers.
+     * This method retrieves all RFQs that the authenticated seller has access to.
      */
     public function index(Request $request): JsonResponse
     {
         try {
-            $currentUser = Auth::user();
-            $query = Rfq::forSeller($currentUser->id)
-                ->with(['buyer', 'seller', 'initialProduct', 'quotes'])
-                ->latest();
-
-            $rfqs = $query->paginate(15);
+            $rfqs = $this->rfqService->getForSeller(Auth::id());
 
             return $this->apiResponse(
                 RfqResource::collection($rfqs),
@@ -46,20 +48,12 @@ class RfqController extends Controller
     /**
      * Create a new RFQ (for buyers)
      *
-     * This method allows a buyer to create a new Request for Quotation (RFQ).
+     * This method allows buyers to create a new RFQ by specifying the seller, product, quantity, and shipping details.
      */
-    // shouldn't be able to create rfq from my self
     public function store(CreateRfqRequest $request): JsonResponse
     {
         try {
-            if ($request->seller_id == Auth::id()) {
-                return $this->apiResponseErrors(
-                    'Cannot create RFQ to yourself',
-                    [],
-                    400
-                );
-            }
-            $rfq = Rfq::create([
+            $rfq = $this->rfqService->create([
                 'buyer_id'           => Auth::id(),
                 'seller_id'          => $request->seller_id,
                 'initial_product_id' => $request->initial_product_id,
@@ -67,16 +61,15 @@ class RfqController extends Controller
                 'shipping_country'   => $request->shipping_country,
                 'shipping_address'   => $request->shipping_address,
                 'buyer_message'      => $request->buyer_message,
-                'status'             => Rfq::STATUS_PENDING,
             ]);
-
-            $rfq->load(['buyer', 'seller', 'initialProduct']);
 
             return $this->apiResponse(
                 new RfqResource($rfq),
                 'RFQ created successfully',
                 201
             );
+        } catch (InvalidArgumentException $e) {
+            return $this->apiResponseErrors($e->getMessage(), [], 400);
         } catch (Exception $e) {
             return $this->apiResponseErrors('Failed to create RFQ', ['error' => $e->getMessage()], 500);
         }
@@ -85,71 +78,47 @@ class RfqController extends Controller
     /**
      * Show specific RFQ
      *
-     * This method retrieves a specific RFQ by its ID.
+     * This method retrieves a specific RFQ by its ID, ensuring the authenticated user has access to it.
      */
-    public function show(Rfq $rfq): JsonResponse
+    public function show(int $id): JsonResponse
     {
         try {
-            if ($rfq->buyer_id !== Auth::id() && $rfq->seller_id !== Auth::id()) {
-                return $this->apiResponseErrors('Unauthorized access to this RFQ', [], 403);
-            }
-
-            $rfq->load(['buyer', 'seller', 'initialProduct', 'quotes.items.product']);
+            $rfq = $this->rfqService->findWithAccess($id, Auth::id());
 
             return $this->apiResponse(
                 new RfqResource($rfq),
                 'RFQ retrieved successfully'
             );
+        } catch (AuthorizationException $e) {
+            return $this->apiResponseErrors($e->getMessage(), [], 403);
+        } catch (ModelNotFoundException $e) {
+            return $this->apiResponseErrors('RFQ not found', [], 404);
         } catch (Exception $e) {
-            return $this->apiResponseErrors('Failed to retrieve RFQ', [], 500);
+            return $this->apiResponseErrors('Failed to retrieve RFQ', ['error' => $e->getMessage()], 500);
         }
     }
 
     /**
      * Update RFQ status
      *
-     * This method handles seller-initiated status transitions for an RFQ.
-     * Only sellers can update RFQ status
+     * this method allows sellers to update the status of an RFQ.
      */
     public function update(UpdateRfqRequest $request, int $id): JsonResponse
     {
         try {
-            $rfq = Rfq::find($id);
-            if (! $rfq) {
-                return $this->apiResponseErrors('RFQ not found', [], 404);
-            }
-            $newStatus = $request->status;
-            $currentUser = Auth::user();
-
-            switch ($newStatus) {
-                case Rfq::STATUS_SEEN:
-                case Rfq::STATUS_IN_PROGRESS:
-                case Rfq::STATUS_QUOTED:
-                    if ($rfq->seller_id !== $currentUser->id) {
-                        return $this->apiResponseErrors('Only seller can update RFQ status', [], 403);
-                    }
-                    if (! $rfq->canTransitionTo($newStatus)) {
-                        return $this->apiResponseErrors("Cannot transition to {$newStatus} from current status", [], 400);
-                    }
-                    break;
-
-                default:
-                    return $this->apiResponseErrors('Invalid status transition', [], 400);
-            }
-
-            $rfq->update(['status' => $newStatus]);
-            $rfq->load(['buyer', 'seller', 'initialProduct', 'quotes']);
-
-            $statusMessages = [
-                Rfq::STATUS_SEEN        => 'RFQ marked as seen',
-                Rfq::STATUS_IN_PROGRESS => 'RFQ marked as in progress',
-                Rfq::STATUS_QUOTED      => 'RFQ marked as quoted',
-            ];
+            $rfq = $this->rfqService->updateStatus($id, $request->status, Auth::id());
+            $message = $this->rfqService->getStatusMessage($request->status);
 
             return $this->apiResponse(
                 new RfqResource($rfq),
-                $statusMessages[$newStatus] ?? 'RFQ updated successfully'
+                $message
             );
+        } catch (AuthorizationException $e) {
+            return $this->apiResponseErrors($e->getMessage(), [], 403);
+        } catch (InvalidArgumentException $e) {
+            return $this->apiResponseErrors($e->getMessage(), [], 400);
+        } catch (ModelNotFoundException $e) {
+            return $this->apiResponseErrors('RFQ not found', [], 404);
         } catch (Exception $e) {
             return $this->apiResponseErrors('Failed to update RFQ', ['error' => $e->getMessage()], 500);
         }

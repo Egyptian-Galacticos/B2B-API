@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Rfq;
 
 use App\Models\Rfq;
 use Illuminate\Foundation\Http\FormRequest;
@@ -10,7 +10,7 @@ class UpdateRfqRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // Authorization handled in controller
+        return true;
     }
 
     public function rules(): array
