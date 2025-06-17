@@ -51,7 +51,7 @@ class SellerUpgradeController extends Controller
                 DB::commit();
 
                 return $this->apiResponse(
-                    ['user' => new UserResource($user)],
+                    new UserResource($user->fresh()),
                     'Successfully upgraded to seller',
                     201
                 );
