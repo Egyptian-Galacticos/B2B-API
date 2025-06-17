@@ -39,6 +39,10 @@ class Product extends Model implements HasMedia
         'category_id',
         'sample_available',
         'sample_price',
+        'is_active',
+        'is_approved',
+        'is_featured',
+        'seller_id',
     ];
     protected $casts = [
         'specifications'   => 'array',
