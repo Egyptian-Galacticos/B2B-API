@@ -70,6 +70,18 @@ class CategoryController extends Controller
 
         try {
             $user = Auth::user();
+
+            if (is_null($request->parent_id)) {
+                $category = new Category;
+                if (! $category->userIsAdmin($user)) {
+                    return $this->apiResponseErrors(
+                        null,
+                        'Only administrators can create root categories',
+                        403
+                    );
+                }
+            }
+
             $category = new Category;
 
             $hierarchyData = $category->calculateHierarchyData($request->parent_id);
@@ -155,6 +167,17 @@ class CategoryController extends Controller
             }
 
             $user = Auth::user();
+
+            // Check if user is trying to make this a root category (parent_id is null)
+            if (is_null($request->parent_id) && ! is_null($category->parent_id)) {
+                if (! $category->userIsAdmin($user)) {
+                    return $this->apiResponseErrors(
+                        null,
+                        'Only administrators can convert categories to root categories',
+                        403
+                    );
+                }
+            }
 
             $updateData = [
                 'name'         => $request->name,
