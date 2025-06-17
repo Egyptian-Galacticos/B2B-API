@@ -23,7 +23,7 @@ class QuoteResource extends JsonResource
             'created_at'     => $this->created_at,
             'updated_at'     => $this->updated_at,
 
-            'rfq' => $this->whenLoaded('rfq', [
+            'rfq' => $this->when($this->rfq_id && $this->relationLoaded('rfq'), [
                 'initial_quantity' => $this->rfq?->initial_quantity,
                 'shipping_country' => $this->rfq?->shipping_country,
                 'buyer_message'    => $this->rfq?->buyer_message,
