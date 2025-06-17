@@ -6,12 +6,15 @@ use App\Exports\ProductTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BulkProductActionRequest;
 use App\Http\Requests\BulkProductImportRequest;
+use App\Http\Requests\ProductUpdateStatusRequest;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Http\Resources\ProductDetailsResource;
 use App\Http\Resources\ProductResource;
+use App\Http\Resources\TagResource;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\User;
 use App\Services\CategoryService;
 use App\Services\QueryHandler;
 use App\Traits\ApiResponse;
@@ -19,9 +22,11 @@ use App\Traits\BulkProductOwnership;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Exception;
+use Spatie\Tags\Tag;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ProductController extends Controller
@@ -57,6 +62,9 @@ class ProductController extends Controller
                 'currency',
                 'is_active',
                 'seller.name',
+                'is_approved',
+                'is_featured',
+                'created_at',
             ])
             ->setAllowedFilters([
                 'name',
@@ -70,7 +78,8 @@ class ProductController extends Controller
                 'created_at',
                 'seller.name',
                 'seller_id',
-                'seller.id',
+                'is_featured',
+
             ])
             ->apply()
             ->paginate($perPage)
@@ -92,11 +101,21 @@ class ProductController extends Controller
     public function store(StoreProductRequest $request)
     {
         $validated = $request->validated();
+        $validated['dimensions'] = json_decode($validated['dimensions'], true);
+        $validated['price_tiers'] = json_decode($validated['price_tiers'], true);
+        $validated['product_tags'] = json_decode($validated['product_tags'], true);
 
+        $categoryData = $validated['category'] ?? null;
+        if (is_string($categoryData)) {
+            $categoryData = json_decode($categoryData, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception('Invalid JSON format for category data.');
+            }
+        }
         // Process category
         $categoryId = $this->categoryService->resolveCategoryId(
             $validated['category_id'],
-            $validated['category'] ?? null
+            $categoryData ?? null
         );
 
         // Remove category_id and price_tiers from validated data
@@ -104,8 +123,8 @@ class ProductController extends Controller
             ->except(['category_id', 'category', 'price_tiers'])
             ->merge(['category_id' => $categoryId])
             ->toArray();
-
-        $product = DB::transaction(function () use ($productData, $validated, &$product) {
+        $productData['seller_id'] = Auth::user()->id;
+        $product = DB::transaction(function () use ($productData, $validated) {
             $product = Product::create($productData);
 
             // Create product tiers
@@ -117,8 +136,45 @@ class ProductController extends Controller
             return $product;
         });
 
+        // Handle main image upload
+        if ($request->hasFile('main_image')) {
+            $product
+                ->addMedia($request->file('main_image'))
+                ->usingName('Main Product Image - '.$request->file('main_image')->getClientOriginalName())
+                ->toMediaCollection('main_image');
+        }
+
+        // Handle multiple images upload
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $product
+                    ->addMedia($image)
+                    ->usingName('Product Image - '.$image->getClientOriginalName())
+                    ->toMediaCollection('product_images');
+            }
+        }
+
+        // Handle documents upload
+        if ($request->hasFile('documents')) {
+            foreach ($request->file('documents') as $document) {
+                $product
+                    ->addMedia($document)
+                    ->usingName('Product Document - '.$document->getClientOriginalName())
+                    ->toMediaCollection('product_documents');
+            }
+        }
+
+        if ($request->hasFile('specifications')) {
+            foreach ($request->file('specifications') as $document) {
+                $product
+                    ->addMedia($document)
+                    ->usingName('Product Specification - '.$document->getClientOriginalName())
+                    ->toMediaCollection('product_specifications');
+            }
+        }
+
         return $this->apiResponse(
-            ProductDetailsResource::make($product->load('tiers', 'seller.company')),
+            ProductDetailsResource::make($product->load('tiers', 'seller.company', 'tags')),
             'Product created successfully.',
             201
         );
@@ -209,6 +265,29 @@ class ProductController extends Controller
         return $this->apiResponse(
             new ProductResource($product->fresh()->load(['seller.company', 'media', 'tiers'])),
             'Product updated successfully',
+            200
+        );
+    }
+
+    /**
+     * Update status of the specified resource in storage
+     *
+     * @authenticated
+     */
+    public function updateStatus(ProductUpdateStatusRequest $request, int $id): JsonResponse
+    {
+        // Get the product (ownership already verified in middleware or double-checking here)
+        $product = Product::findOrFail($id);
+
+        if ($product->seller_id !== Auth::id()) {
+            return $this->apiResponseErrors('Only the product owner can update the status', [], 403);
+        }
+        $data = $request->validated();
+        $product->update($data);
+
+        return $this->apiResponse(
+            $product->fresh(),
+            'Product status updated successfully',
             200
         );
     }
@@ -486,10 +565,10 @@ class ProductController extends Controller
     }
 
     /**
-     * Display products for seller.
+     * Display products for seller or admin.
      *
-     * this method retrieves products associated with the authenticated seller
-     * and applies query handling for sorting and filtering.
+     * This method retrieves products associated with the authenticated seller
+     * or allows admins to view products for a specific seller via seller_id parameter.
      *
      * @authenticated
      */
@@ -499,11 +578,45 @@ class ProductController extends Controller
         $perPage = (int) $request->get('size', 10);
         $user = auth()->user();
 
+        $sellerId = null;
+        if ($user->hasRole('admin')) {
+            $sellerId = $request->get('seller_id');
+            if (! $sellerId) {
+                return $this->apiResponse(
+                    [],
+                    'Admin must provide seller_id parameter to view seller products.',
+                    400
+                );
+            }
+
+            $sellerExists = User::where('id', $sellerId)
+                ->whereHas('roles', function ($query) {
+                    $query->where('name', 'seller');
+                })
+                ->exists();
+
+            if (! $sellerExists) {
+                return $this->apiResponse(
+                    [],
+                    'Seller not found.',
+                    404
+                );
+            }
+        } elseif ($user->hasRole('seller')) {
+            $sellerId = $user->id;
+        } else {
+            return $this->apiResponse(
+                [],
+                'Unauthorized. Only sellers and admins can access seller products.',
+                403
+            );
+        }
+
         $query = $queryHandler
             ->setBaseQuery(
                 Product::query()
                     ->with(['seller.company', 'category', 'tags', 'media'])
-                    ->where('seller_id', $user->id)
+                    ->where('seller_id', $sellerId)
             )
             ->setAllowedSorts([
                 'price',
@@ -512,7 +625,9 @@ class ProductController extends Controller
                 'brand',
                 'currency',
                 'is_active',
+                'is_featured',
                 'is_approved',
+                'category.name',
             ])
             ->setAllowedFilters([
                 'name',
@@ -523,6 +638,7 @@ class ProductController extends Controller
                 'origin',
                 'is_active',
                 'is_approved',
+                'is_featured',
                 'created_at',
             ])
             ->apply()
@@ -533,12 +649,18 @@ class ProductController extends Controller
             ProductResource::collection($query),
             'Seller products retrieved successfully.',
             200,
-            [
-                'page'       => $query->currentPage(),
-                'limit'      => $query->perPage(),
-                'total'      => $query->total(),
-                'totalPages' => $query->lastPage(),
-            ]
+            $this->getPaginationMeta($query)
+        );
+    }
+
+    public function getTags(Request $request): JsonResponse
+    {
+        $tags = Tag::all();
+
+        return $this->apiResponse(
+            TagResource::collection($tags),
+            'Tags retrieved successfully.',
+            200
         );
     }
 }

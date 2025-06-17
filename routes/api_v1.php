@@ -81,7 +81,6 @@ Route::prefix('v1')->group(function () {
             Route::put('profile', [UserController::class, 'updateProfile'])->name('users.profile.update');
             Route::put('password', [UserController::class, 'updatePassword'])->name('users.password.update');
             Route::put('company', [CompanyController::class, 'update'])->name('company.update');
-
         });
 
         // Company management
@@ -109,11 +108,12 @@ Route::prefix('v1')->group(function () {
             Route::post('products/bulk-delete', [ProductController::class, 'bulkDelete'])->name('products.bulk.delete');
             Route::post('products/bulk-active', [ProductController::class, 'bulkActive'])->name('products.bulk.active');
             Route::post('products/bulk-deactivate', [ProductController::class, 'bulkDeactivate'])->name('products.bulk.deactivate');
-
+            Route::get('tags', [ProductController::class, 'getTags'])->name('products.tags');
             // Product management (requires ownership)
             Route::middleware(['product.owner'])->group(function () {
                 Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update');
                 Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+                Route::patch('products/{product}', [ProductController::class, 'updateStatus'])->name('products.status');
 
                 // Product media management routes
                 Route::delete('products/{product}/images/{mediaId}', [ProductController::class, 'deleteImage'])->name('products.images.destroy');
@@ -151,5 +151,4 @@ Route::prefix('v1')->group(function () {
         });
     });
     require __DIR__.'/rfq.php';
-
 });

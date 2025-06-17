@@ -22,6 +22,9 @@ class Quote extends Model
     ];
     protected $fillable = [
         'rfq_id',
+        'conversation_id',
+        'seller_id',
+        'buyer_id',
         'total_price',
         'seller_message',
         'status',
@@ -37,19 +40,38 @@ class Quote extends Model
         return $this->belongsTo(Rfq::class)->withDefault();
     }
 
+    public function conversation()
+    {
+        return $this->belongsTo(Conversation::class);
+    }
+
     public function items()
     {
         return $this->hasMany(QuoteItem::class);
     }
 
+    // Direct seller relationship (for chat-based quotes)
+    public function directSeller()
+    {
+        return $this->belongsTo(User::class, 'seller_id');
+    }
+
+    // Direct buyer relationship (for chat-based quotes)
+    public function directBuyer()
+    {
+        return $this->belongsTo(User::class, 'buyer_id');
+    }
+
     public function seller()
     {
-        return $this->rfq->seller();
+        // Return direct seller if exists, otherwise get from RFQ
+        return $this->seller_id ? $this->directSeller : ($this->rfq ? $this->rfq->seller() : null);
     }
 
     public function buyer()
     {
-        return $this->rfq->buyer();
+        // Return direct buyer if exists, otherwise get from RFQ
+        return $this->buyer_id ? $this->directBuyer : ($this->rfq ? $this->rfq->buyer() : null);
     }
 
     // scopes
@@ -117,14 +139,12 @@ class Quote extends Model
             throw new \InvalidArgumentException("Cannot transition from {$this->status} to {$newStatus}");
         }
 
+        // Only update RFQ status if there's an RFQ
         if ($newStatus === self::STATUS_SENT && $this->rfq && $this->rfq->status !== Rfq::STATUS_QUOTED) {
             $this->rfq->transitionTo(Rfq::STATUS_QUOTED);
         }
 
-        // When a quote is accepted, also accept the RFQ
-        if ($newStatus === self::STATUS_ACCEPTED && $this->rfq && $this->rfq->canTransitionTo(Rfq::STATUS_ACCEPTED)) {
-            $this->rfq->transitionTo(Rfq::STATUS_ACCEPTED);
-        }
+        // Note: RFQ remains in 'Quoted' status as it's the final status in the new workflow
 
         $this->status = $newStatus;
 

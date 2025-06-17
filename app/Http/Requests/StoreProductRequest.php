@@ -29,18 +29,19 @@ class StoreProductRequest extends BaseRequest
             'price'                       => ['required', 'numeric', 'min:0'],
             'currency'                    => ['required', 'string', 'size:3'], // e.g., USD, EUR
             'origin'                      => ['nullable', 'string', 'max:255'],
-            'category_id'                 => ['required', 'exists:categories,id|| -1'],
+            'category_id'                 => ['required'],
             'category'                    => ['sometimes'],
-            'specifications'              => ['nullable', 'array'],
-            'certifications'              => ['nullable', 'array'],
-            'dimensions'                  => ['nullable', 'array'],
+            'specifications'              => ['nullable'],
+            'certifications'              => ['nullable'],
+            'dimensions'                  => ['nullable'],
             'sample_available'            => ['boolean'],
             'sample_price'                => ['nullable', 'numeric', 'min:0'],
+            'price_tiers'                 => ['required'],
             'price_tiers.*'               => ['required', 'array'],
             'price_tiers.*.from_quantity' => ['required', 'integer', 'min:1'],
             'price_tiers.*.to_quantity'   => ['required', 'integer', 'min:1'],
             'price_tiers.*.price'         => ['required', 'numeric', 'min:0'],
-            'product_tags'                => ['required', 'array'],
+            'product_tags'                => ['required'],
 
             // File validation
             //            'main_image'             => ['nullable', 'image', 'max:10240'], // 10MB max

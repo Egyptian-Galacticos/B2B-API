@@ -136,6 +136,11 @@ class User extends Authenticatable implements HasMedia, JWTSubject
         return $this->hasRole('seller');
     }
 
+    public function isBuyer(): bool
+    {
+        return $this->hasRole('buyer');
+    }
+
     /**
      * Check if email is verified.
      */

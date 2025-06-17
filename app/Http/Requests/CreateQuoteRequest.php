@@ -29,6 +29,7 @@ class CreateQuoteRequest extends FormRequest
     {
         return [
             'rfq_id'             => 'nullable|exists:rfqs,id',
+            'conversation_id'    => 'nullable|exists:conversations,id', // For quotes created from chat
             'seller_message'     => 'nullable|string|max:1000',
             'items'              => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
