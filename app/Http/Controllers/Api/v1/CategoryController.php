@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateCategoryRequest;
 use App\Http\Resources\CategoryCollection;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
+use App\Services\QueryHandler;
 use App\Traits\ApiResponse;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -20,26 +21,39 @@ class CategoryController extends Controller
     use ApiResponse;
 
     /**
-     * Display a listing of categories.
+     * Display a listing of categories
      *
-     * display all categories with their parent, creator, updater and product count
+     * This method retrieves a list of categories with optional children and recursive children.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, QueryHandler $queryHandler): JsonResponse
     {
         try {
-            $categories = Category::with(['parent', 'children', 'recursiveChildren', 'creator', 'updater'])
-                ->withCount('products')
-                ->get();
+            $query = Category::with(['parent', 'creator', 'updater'])
+                ->withCount('products');
+
+            if ($request->boolean('include_children', true)) {
+                $query->with(['children', 'recursiveChildren']);
+            }
+
+            $query = $queryHandler
+                ->setBaseQuery($query)
+                ->setAllowedSorts(['id', 'name', 'slug', 'description', 'status', 'level', 'sort_order', 'created_at', 'updated_at', 'products_count', 'parent.name',              'creator.name',
+                ])
+                ->setAllowedFilters(['id', 'name', 'slug', 'description', 'status', 'level', 'parent_id', 'created_by', 'sort_order', 'created_at', 'updated_at', 'parent.name', 'parent.slug', 'creator.name', 'creator.email',
+                ])
+                ->apply();
+
+            $categories = $query->get();
 
             return $this->apiResponse(
-                new Categorycollection($categories),
+                new CategoryCollection($categories),
                 'Categories retrieved successfully',
-                200,
+                200
             );
         } catch (Exception $e) {
             return $this->apiResponse(
                 null,
-                $e->getMessage(),
+                'Error retrieving categories: '.$e->getMessage(),
                 500
             );
         }
