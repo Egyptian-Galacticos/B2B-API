@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateQuoteRequest;
 use App\Http\Requests\UpdateQuoteRequest;
 use App\Http\Resources\QuoteResource;
+use App\Models\Conversation;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Rfq;
@@ -31,11 +32,21 @@ class QuoteController extends Controller
 
         $query = Quote::with([
             'rfq:id,initial_quantity,shipping_country,buyer_message,status',
+            'conversation:id,participant_ids',
             'items:id,quote_id,product_id,quantity,unit_price,notes',
             'items.product:id,name,brand',
         ])
-            ->whereHas('rfq', function ($q) use ($user) {
-                $q->where('seller_id', $user->id)->orWhere('buyer_id', $user->id);
+            ->where(function ($q) use ($user) {
+                $q->whereHas('rfq', function ($subQuery) use ($user) {
+                    $subQuery->where('seller_id', $user->id)->orWhere('buyer_id', $user->id);
+                })
+                    ->orWhere(function ($subQuery) use ($user) {
+                        $subQuery->whereNull('rfq_id')
+                            ->where(function ($innerQuery) use ($user) {
+                                $innerQuery->where('seller_id', $user->id)
+                                    ->orWhere('buyer_id', $user->id);
+                            });
+                    });
             });
 
         $quotes = $query->paginate(15);
@@ -49,29 +60,62 @@ class QuoteController extends Controller
     }
 
     /**
-     * Store a newly created quote from RFQ.
+     * Store a newly created quote.
      *
-     * This method creates a new quote based on RFQ requirements.
+     * This method creates a new quote either from an RFQ or a conversation.
      */
     public function store(CreateQuoteRequest $request): JsonResponse
     {
         $user = Auth::user();
 
-        $rfq = Rfq::with('initialProduct')->find($request->rfq_id);
+        $rfq = null;
+        $conversation = null;
 
-        if (! $rfq) {
-            return $this->apiResponseErrors(
-                'RFQ not found',
-                ['rfq_id' => 'The selected RFQ does not exist'],
-                404
-            );
-        }
+        if ($request->rfq_id) {
+            $rfq = Rfq::with('initialProduct')->find($request->rfq_id);
 
-        if ($rfq->seller_id !== $user->id) {
+            if (! $rfq) {
+                return $this->apiResponseErrors(
+                    'RFQ not found',
+                    ['rfq_id' => 'The selected RFQ does not exist'],
+                    404
+                );
+            }
+
+            if ($rfq->seller_id !== $user->id) {
+                return $this->apiResponseErrors(
+                    'Access denied',
+                    ['error' => 'You can only create quotes for RFQs assigned to you'],
+                    403
+                );
+            }
+        } elseif ($request->conversation_id) {
+            $conversation = Conversation::find($request->conversation_id);
+
+            if (! $conversation) {
+                return $this->apiResponseErrors(
+                    'Conversation not found',
+                    ['conversation_id' => 'The selected conversation does not exist'],
+                    404
+                );
+            }
+
+            if (! in_array($user->id, $conversation->participant_ids)) {
+                return $this->apiResponseErrors(
+                    'Access denied',
+                    ['error' => 'You are not a participant in this conversation'],
+                    403
+                );
+            }
+
+            $otherParticipantId = collect($conversation->participant_ids)
+                ->reject(fn ($id) => $id === $user->id)
+                ->first();
+        } else {
             return $this->apiResponseErrors(
-                'Access denied',
-                ['error' => 'You can only create quotes for RFQs assigned to you'],
-                403
+                'Invalid request',
+                ['error' => 'Either rfq_id or conversation_id must be provided'],
+                400
             );
         }
 
@@ -85,11 +129,18 @@ class QuoteController extends Controller
                 $totalPrice += $subtotal;
             }
 
+            $defaultMessage = $rfq
+                ? "Quote for RFQ #{$rfq->id}"
+                : ($conversation ? 'Quote from conversation' : 'Quote');
+
             $quote = Quote::create([
-                'rfq_id'         => $rfq->id,
-                'total_price'    => $totalPrice,
-                'seller_message' => $request->seller_message ?? "Quote for RFQ #{$rfq->id}",
-                'status'         => Quote::STATUS_SENT,
+                'rfq_id'          => $request->rfq_id,
+                'conversation_id' => $request->conversation_id,
+                'seller_id'       => $rfq ? null : $user->id, // Set seller_id for conversation quotes
+                'buyer_id'        => $rfq ? null : ($conversation ? $otherParticipantId : null),
+                'total_price'     => $totalPrice,
+                'seller_message'  => $request->seller_message ?? $defaultMessage,
+                'status'          => Quote::STATUS_SENT,
             ]);
 
             foreach ($request->items as $item) {
@@ -101,15 +152,20 @@ class QuoteController extends Controller
                 ]);
             }
 
-            $rfq->transitionTo(Rfq::STATUS_QUOTED);
-
-            $quote->load(['rfq.buyer', 'rfq.seller', 'items.product']);
+            if ($rfq) {
+                $rfq->transitionTo(Rfq::STATUS_QUOTED);
+                $quote->load(['rfq.buyer', 'rfq.seller', 'items.product']);
+                $message = 'Quote created and sent successfully, RFQ marked as quoted';
+            } else {
+                $quote->load(['items.product', 'conversation']);
+                $message = 'Quote created from conversation successfully';
+            }
 
             DB::commit();
 
             return $this->apiResponse(
                 new QuoteResource($quote),
-                'Quote created and sent successfully, RFQ marked as quoted',
+                $message,
                 201
             );
         } catch (Exception $e) {
@@ -130,7 +186,7 @@ class QuoteController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $quote = Quote::with(['rfq.buyer', 'rfq.seller', 'rfq.initialProduct', 'items.product'])
+        $quote = Quote::with(['rfq.buyer', 'rfq.seller', 'rfq.initialProduct', 'conversation', 'items.product'])
             ->find($id);
 
         if (! $quote) {
@@ -144,7 +200,14 @@ class QuoteController extends Controller
         $user = Auth::user();
 
         $hasAccess = false;
+
         if ($quote->rfq && ($quote->rfq->seller_id === $user->id || $quote->rfq->buyer_id === $user->id)) {
+            $hasAccess = true;
+        } elseif ($quote->conversation_id && $quote->conversation) {
+            if (in_array($user->id, $quote->conversation->participant_ids)) {
+                $hasAccess = true;
+            }
+        } elseif ($quote->seller_id === $user->id || $quote->buyer_id === $user->id) {
             $hasAccess = true;
         }
 
