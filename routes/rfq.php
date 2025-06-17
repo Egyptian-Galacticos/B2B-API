@@ -13,8 +13,6 @@ Route::middleware(['jwt.auth', 'is_suspended:active'])->group(function () {
         Route::post('/', [QuoteController::class, 'store'])->name('store');
         Route::get('/{id}', [QuoteController::class, 'show'])->name('show');
         Route::put('/{id}', [QuoteController::class, 'update'])->name('update');
-        Route::patch('/{id}/accept', [QuoteController::class, 'accept'])->name('accept');
-        Route::patch('/{id}/reject', [QuoteController::class, 'reject'])->name('reject');
         Route::delete('/{id}', [QuoteController::class, 'destroy'])->name('destroy');
     });
 });

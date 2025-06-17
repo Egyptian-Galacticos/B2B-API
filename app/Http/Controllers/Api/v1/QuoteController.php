@@ -166,6 +166,8 @@ class QuoteController extends Controller
      * Update an existing quote.
      *
      * This method updates a quote with new items and pricing information.
+     * It handles role-based access control for sellers and buyers.
+     * Sellers can update their own quotes, while buyers can only accept/reject quotes.
      */
     public function update(UpdateQuoteRequest $request, int $id): JsonResponse
     {
@@ -181,8 +183,11 @@ class QuoteController extends Controller
             );
         }
 
-        // Only the assigned seller can update quotes
-        if (! $quote->rfq || $quote->rfq->seller_id !== $user->id) {
+        $isSeller = $user->hasRole('seller');
+        $isBuyer = $user->hasRole('buyer');
+        $isAdmin = $user->hasRole('admin');
+
+        if ($isSeller && (! $quote->rfq || $quote->rfq->seller_id !== $user->id)) {
             return $this->apiResponseErrors(
                 'Access denied',
                 ['error' => 'You can only update quotes for RFQs assigned to you'],
@@ -190,13 +195,63 @@ class QuoteController extends Controller
             );
         }
 
+        if ($isBuyer && (! $quote->rfq || $quote->rfq->buyer_id !== $user->id)) {
+            return $this->apiResponseErrors(
+                'Access denied',
+                ['error' => 'You can only accept/reject quotes for your own RFQs'],
+                403
+            );
+        }
+
+        if (! $isAdmin && ! $isSeller && ! $isBuyer) {
+            return $this->apiResponseErrors(
+                'Access denied',
+                ['error' => 'You do not have permission to update quotes'],
+                403
+            );
+        }
+
         DB::beginTransaction();
 
         try {
-            $shouldSend = $request->has('send_immediately') && $request->send_immediately;
-            $newStatus = $shouldSend ? Quote::STATUS_SENT : Quote::STATUS_PENDING;
+            $newStatus = $quote->status;
             $totalPrice = $quote->total_price;
-            if ($request->has('items')) {
+
+            if ($request->has('status')) {
+                $requestedStatus = $request->status;
+
+                if (! $quote->canTransitionTo($requestedStatus)) {
+                    return $this->apiResponseErrors(
+                        'Invalid status transition',
+                        ['error' => "Quote cannot transition from '{$quote->status}' to '{$requestedStatus}'"],
+                        422
+                    );
+                }
+
+                if ($requestedStatus === Quote::STATUS_ACCEPTED || $requestedStatus === Quote::STATUS_REJECTED) {
+                    if (! $isBuyer && ! $isAdmin) {
+                        return $this->apiResponseErrors(
+                            'Access denied',
+                            ['error' => 'Only buyers can accept or reject quotes'],
+                            403
+                        );
+                    }
+                }
+
+                if ($requestedStatus === Quote::STATUS_SENT) {
+                    if (! $isSeller && ! $isAdmin) {
+                        return $this->apiResponseErrors(
+                            'Access denied',
+                            ['error' => 'Only sellers can send quotes'],
+                            403
+                        );
+                    }
+                }
+
+                $newStatus = $requestedStatus;
+            }
+
+            if ($request->has('items') && ($isSeller || $isAdmin)) {
                 $totalPrice = 0;
 
                 foreach ($request->items as $itemData) {
@@ -226,13 +281,28 @@ class QuoteController extends Controller
                 }
             }
 
-            $quote->update([
-                'total_price'    => $totalPrice,
-                'seller_message' => $request->seller_message ?? $quote->seller_message,
-                'status'         => $newStatus,
-            ]);
+            $updateData = [];
 
-            if ($shouldSend) {
+            if ($isSeller || $isAdmin) {
+                $updateData['total_price'] = $totalPrice;
+                if ($request->has('seller_message')) {
+                    $updateData['seller_message'] = $request->seller_message;
+                }
+            }
+
+            if ($newStatus !== $quote->status) {
+                $updateData['status'] = $newStatus;
+            }
+
+            if (! empty($updateData)) {
+                $quote->update($updateData);
+            }
+
+            if ($newStatus === Quote::STATUS_ACCEPTED && $quote->status !== Quote::STATUS_ACCEPTED) {
+                $quote->transitionTo(Quote::STATUS_ACCEPTED);
+            } elseif ($newStatus === Quote::STATUS_REJECTED && $quote->status !== Quote::STATUS_REJECTED) {
+                $quote->transitionTo(Quote::STATUS_REJECTED);
+            } elseif ($newStatus === Quote::STATUS_SENT && $quote->status !== Quote::STATUS_SENT) {
                 $quote->transitionTo(Quote::STATUS_SENT);
             }
 
@@ -240,9 +310,12 @@ class QuoteController extends Controller
 
             DB::commit();
 
-            $message = $shouldSend
-                ? 'Quote updated and sent successfully. RFQ marked as quoted.'
-                : 'Quote updated successfully';
+            $message = match ($newStatus) {
+                Quote::STATUS_ACCEPTED => 'Quote accepted successfully. RFQ has also been accepted.',
+                Quote::STATUS_REJECTED => 'Quote rejected successfully.',
+                Quote::STATUS_SENT     => 'Quote updated and sent successfully. RFQ marked as quoted.',
+                default                => 'Quote updated successfully'
+            };
 
             return $this->apiResponse(
                 new QuoteResource($quote),
@@ -254,114 +327,6 @@ class QuoteController extends Controller
             return $this->apiResponseErrors(
                 'Failed to update quote',
                 ['error' => 'An error occurred while updating the quote', 'details' => $e->getMessage()],
-                500
-            );
-        }
-    }
-
-    /**
-     * Accept a quote (buyer action)
-     *
-     * This method allows a buyer to accept a quote for their RFQ.
-     * It transitions the quote to 'accepted' status and marks the RFQ as accepted.
-     */
-    public function accept(string $id): JsonResponse
-    {
-        $quote = Quote::with(['rfq'])->find($id);
-
-        if (! $quote) {
-            return $this->apiResponseErrors(
-                'Quote not found',
-                ['error' => 'The requested quote does not exist'],
-                404
-            );
-        }
-
-        $user = Auth::user();
-
-        if (! $quote->rfq || $quote->rfq->buyer_id !== $user->id) {
-            return $this->apiResponseErrors(
-                'Access denied',
-                ['error' => 'You can only accept quotes for your own RFQs'],
-                403
-            );
-        }
-
-        if (! $quote->canTransitionTo(Quote::STATUS_ACCEPTED)) {
-            return $this->apiResponseErrors(
-                'Cannot accept quote',
-                ['error' => 'Quote cannot be accepted from current status: '.$quote->status],
-                422
-            );
-        }
-
-        try {
-            $quote->transitionTo(Quote::STATUS_ACCEPTED);
-            $quote->load(['rfq.buyer', 'rfq.seller', 'items.product']);
-
-            return $this->apiResponse(
-                new QuoteResource($quote),
-                'Quote accepted successfully. RFQ has also been accepted.'
-            );
-        } catch (\Exception $e) {
-            return $this->apiResponseErrors(
-                'Failed to accept quote',
-                ['error' => 'An error occurred while accepting the quote'],
-                500
-            );
-        }
-    }
-
-    /**
-     * Reject a quote (buyer action)
-     *
-     * This method allows a buyer to reject a quote for their RFQ.
-     * It transitions the quote to 'rejected' status.
-     */
-
-    // no change for the rfq statuse to reject immediately they might negotiate?
-    public function reject(string $id): JsonResponse
-    {
-        $quote = Quote::with(['rfq'])->find($id);
-
-        if (! $quote) {
-            return $this->apiResponseErrors(
-                'Quote not found',
-                ['error' => 'The requested quote does not exist'],
-                404
-            );
-        }
-
-        $user = Auth::user();
-
-        if (! $quote->rfq || $quote->rfq->buyer_id !== $user->id) {
-            return $this->apiResponseErrors(
-                'Access denied',
-                ['error' => 'You can only reject quotes for your own RFQs'],
-                403
-            );
-        }
-
-        if (! $quote->canTransitionTo(Quote::STATUS_REJECTED)) {
-            return $this->apiResponseErrors(
-                'Cannot reject quote',
-                ['error' => 'Quote cannot be rejected from current status: '.$quote->status],
-                422
-            );
-        }
-
-        try {
-            $quote->transitionTo(Quote::STATUS_REJECTED);
-            $quote->load(['rfq.buyer', 'rfq.seller', 'items.product']);
-
-            return $this->apiResponse(
-                new QuoteResource($quote),
-                'Quote rejected successfully'
-            );
-        } catch (Exception $e) {
-            return $this->apiResponseErrors(
-                'Failed to reject quote',
-                ['error' => 'An error occurred while rejecting the quote'],
                 500
             );
         }
