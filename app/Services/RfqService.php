@@ -9,17 +9,6 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class RfqService
 {
     /**
-     * Get paginated RFQs for a seller
-     */
-    public function getForSeller(int $sellerId, int $perPage = 15): LengthAwarePaginator
-    {
-        return Rfq::forSeller($sellerId)
-            ->with(['buyer', 'seller', 'initialProduct', 'quotes'])
-            ->latest()
-            ->paginate($perPage);
-    }
-
-    /**
      * Create a new RFQ
      */
     public function create(array $data): Rfq

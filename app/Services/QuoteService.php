@@ -8,6 +8,7 @@ use App\Models\QuoteItem;
 use App\Models\Rfq;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -15,29 +16,38 @@ use InvalidArgumentException;
 class QuoteService
 {
     /**
-     * Get paginated quotes for user
+     * Get paginated quotes with filtering and sorting
+     *
+     * @param Request $request - The request containing filter and sort parameters
+     * @param int|null $userId - User ID to filter quotes (null for admin to see all)
+     * @param int $perPage - Number of items per page
      */
-    public function getForUser(int $userId, int $perPage = 15): LengthAwarePaginator
+    public function getWithFilters(Request $request, ?int $userId = null, int $perPage = 15): LengthAwarePaginator
     {
-        return Quote::with([
-            'rfq:id,initial_quantity,shipping_country,buyer_message,status',
-            'conversation:id',
-            'items:id,quote_id,product_id,quantity,unit_price,notes',
-            'items.product:id,name,brand',
-        ])
-            ->where(function ($q) use ($userId) {
-                $q->whereHas('rfq', function ($subQuery) use ($userId) {
-                    $subQuery->where('seller_id', $userId)->orWhere('buyer_id', $userId);
-                })
-                    ->orWhere(function ($subQuery) use ($userId) {
-                        $subQuery->whereNull('rfq_id')
-                            ->where(function ($innerQuery) use ($userId) {
-                                $innerQuery->where('seller_id', $userId)
-                                    ->orWhere('buyer_id', $userId);
-                            });
-                    });
-            })
-            ->paginate($perPage);
+        $queryHandler = new QueryHandler($request);
+
+        $query = Quote::with([
+            'rfq',
+            'conversation',
+            'items',
+            'items.product',
+        ]);
+
+        if ($userId) {
+            $query->where(function ($q) use ($userId) {
+                $q->where('seller_id', $userId)->orWhere('buyer_id', $userId);
+            });
+        }
+
+        $query = $queryHandler
+            ->setBaseQuery($query)
+            ->setAllowedSorts(['id', 'total_price', 'status', 'created_at', 'updated_at', 'seller_message', 'rfq.initial_quantity', 'rfq.shipping_country', 'rfq.status',
+            ])
+            ->setAllowedFilters(['id', 'total_price', 'status', 'seller_message', 'rfq_id', 'conversation_id', 'seller_id', 'buyer_id', 'created_at', 'updated_at', 'rfq.initial_quantity', 'rfq.shipping_country', 'rfq.status', 'rfq.buyer_id', 'rfq.seller_id', 'items.product.name', 'items.product.brand',
+            ])
+            ->apply();
+
+        return $query->paginate($perPage)->withQueryString();
     }
 
     /**
@@ -87,7 +97,7 @@ class QuoteService
      */
     public function findWithAccess(int $quoteId, int $userId): Quote
     {
-        $quote = Quote::with(['rfq.buyer', 'rfq.seller', 'rfq.initialProduct', 'conversation', 'items.product'])
+        $quote = Quote::with(['rfq', 'rfq.buyer', 'rfq.seller', 'rfq.initialProduct', 'conversation', 'items', 'items.product'])
             ->findOrFail($quoteId);
 
         if (! $this->canAccessQuote($quote, $userId)) {
@@ -102,7 +112,7 @@ class QuoteService
      */
     public function update(int $quoteId, array $data, int $userId, array $userRoles): Quote
     {
-        $quote = Quote::with(['rfq.initialProduct', 'items'])->findOrFail($quoteId);
+        $quote = Quote::with(['rfq', 'rfq.initialProduct', 'items'])->findOrFail($quoteId);
 
         $this->validateUpdateAccess($quote, $userId, $userRoles);
 

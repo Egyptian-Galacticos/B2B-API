@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateQuoteRequest;
 use App\Http\Requests\UpdateQuoteRequest;
 use App\Http\Resources\QuoteResource;
+use App\Models\User;
 use App\Services\QuoteService;
 use App\Traits\ApiResponse;
 use Exception;
@@ -25,14 +26,23 @@ class QuoteController extends Controller
     ) {}
 
     /**
-     * List quotes with pagination
+     * List quotes
      *
-     * This method retrieves all quotes for the authenticated user
+     * - Admin: See all quotes in the system
+     * - Regular users: See all their quotes (both as buyer and seller)
      */
     public function index(Request $request): JsonResponse
     {
         try {
-            $quotes = $this->quoteService->getForUser(Auth::id());
+            $user = Auth::user();
+            assert($user instanceof User);
+            $perPage = (int) $request->get('size', 15);
+
+            if ($user->isAdmin()) {
+                $quotes = $this->quoteService->getWithFilters($request, null, $perPage);
+            } else {
+                $quotes = $this->quoteService->getWithFilters($request, $user->id, $perPage);
+            }
 
             return $this->apiResponse(
                 QuoteResource::collection($quotes),
