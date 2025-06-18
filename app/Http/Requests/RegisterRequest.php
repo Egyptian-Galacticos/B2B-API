@@ -39,6 +39,8 @@ class RegisterRequest extends BaseRequest
             'user.email' => ['required', 'email:rfc,dns', 'max:255', 'unique:users,email'],
             // @example StrongPassword123!
             'user.password' => ['required', 'string', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&\-_#.])[A-Za-z\d@$!%*?&\-_#.]{8,}$/', 'confirmed'],
+            // @example StrongPassword123!
+            'user.password_confirmation' => ['required', 'same:user.password'],
             // @example +1234567890
             'user.phone_number' => ['nullable', 'string', 'max:20', 'regex:/^[\+]?[1-9][\d]{0,15}$/'],
             // Company Data
