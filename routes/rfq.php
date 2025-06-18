@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\v1\QuoteController;
 use App\Http\Controllers\Api\v1\RfqController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['jwt.auth', 'is_suspended:active'])->group(function () {
+Route::middleware(['jwt.auth', 'is_email_verified', 'is_suspended:active'])->group(function () {
     // RFQ API Resource routes
     Route::apiResource('rfqs', RfqController::class);
 
