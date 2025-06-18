@@ -60,14 +60,26 @@ class QueryHandler
             $parts = explode('.', $field);
 
             if (count($parts) === 1) {
+                // Direct column sorting
                 $this->query->orderBy($field, $direction);
             } else {
+                // Relationship sorting using Eloquent
                 $relation = $parts[0];
                 $column = $parts[1];
 
-                $this->query->whereHas($relation, function ($q) use ($column, $direction) {
-                    $q->orderBy($column, $direction);
-                });
+                // Get the relationship instance
+                $relationInstance = $this->query->getModel()->{$relation}();
+
+                // Use Eloquent's orderBy with a subquery
+                $this->query->orderBy(
+                    $relationInstance->select($column)
+                        ->whereColumn(
+                            $relationInstance->getQualifiedOwnerKeyName(),
+                            $relationInstance->getQualifiedForeignKeyName()
+                        )
+                        ->take(1),
+                    $direction
+                );
             }
         }
     }
@@ -145,7 +157,7 @@ class QueryHandler
     protected function getOperatorFromMode(string $mode): string
     {
         return match ($mode) {
-            'contains', 'starts_with', 'ends_with' => 'LIKE',
+            'contains', 'startsWith', 'endsWith' => 'LIKE',
             'equals'     => '=',
             'not_equals' => '!=',
             'gte'        => '>=',
@@ -157,10 +169,10 @@ class QueryHandler
     protected function formatValueByMode(string $value, string $mode): string
     {
         return match ($mode) {
-            'contains'    => "%{$value}%",
-            'starts_with' => "{$value}%",
-            'ends_with'   => "%{$value}",
-            default       => $value,
+            'contains'   => "%{$value}%",
+            'startsWith' => "{$value}%",
+            'endsWith'   => "%{$value}",
+            default      => $value,
         };
     }
 }
