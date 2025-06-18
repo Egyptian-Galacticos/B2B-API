@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Rfq\CreateRfqRequest;
 use App\Http\Requests\Rfq\UpdateRfqRequest;
 use App\Http\Resources\RfqResource;
+use App\Models\User;
 use App\Services\RfqService;
 use App\Traits\ApiResponse;
 use Exception;
@@ -25,14 +26,23 @@ class RfqController extends Controller
     ) {}
 
     /**
-     * List RFQs for sellers
+     * List RFQs
      *
-     * This method retrieves all RFQs that the authenticated seller has access to.
+     * - Admin : See all RFQs in the system
+     * - Regular users: See all their RFQs (both as buyer and seller)
      */
     public function index(Request $request): JsonResponse
     {
         try {
-            $rfqs = $this->rfqService->getForSeller(Auth::id());
+            $user = Auth::user();
+            assert($user instanceof User);
+            $perPage = (int) $request->get('size', 15);
+
+            if ($user->isAdmin()) {
+                $rfqs = $this->rfqService->getWithFilters($request, null, null, $perPage);
+            } else {
+                $rfqs = $this->rfqService->getWithFilters($request, $user->id, null, $perPage);
+            }
 
             return $this->apiResponse(
                 RfqResource::collection($rfqs),

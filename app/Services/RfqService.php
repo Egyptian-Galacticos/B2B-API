@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Rfq;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class RfqService
@@ -86,5 +87,38 @@ class RfqService
             Rfq::STATUS_QUOTED      => 'RFQ marked as quoted',
             default                 => 'RFQ updated successfully'
         };
+    }
+
+    /**
+     * Get paginated RFQs with filtering and sorting
+     */
+    public function getWithFilters(Request $request, ?int $userId = null, ?string $userType = null, int $perPage = 15): LengthAwarePaginator
+    {
+        $queryHandler = new QueryHandler($request);
+
+        $query = Rfq::with(['buyer', 'seller', 'initialProduct', 'quotes']);
+
+        if ($userId && $userType) {
+            if ($userType === 'buyer') {
+                $query->forBuyer($userId);
+            } elseif ($userType === 'seller') {
+                $query->forSeller($userId);
+            }
+        } elseif ($userId) {
+
+            $query->where(function ($q) use ($userId) {
+                $q->where('buyer_id', $userId)->orWhere('seller_id', $userId);
+            });
+        }
+
+        $query = $queryHandler
+            ->setBaseQuery($query)
+            ->setAllowedSorts(['id', 'initial_quantity', 'shipping_country', 'status', 'created_at', 'updated_at', 'buyer.name', 'seller.name', 'initialProduct.name', 'initialProduct.brand', 'initialProduct.price',
+            ])
+            ->setAllowedFilters(['id', 'initial_quantity', 'shipping_country', 'shipping_address', 'status', 'buyer_id', 'seller_id', 'initial_product_id', 'created_at', 'updated_at', 'buyer.name', 'buyer.email', 'seller.name', 'seller.email', 'initialProduct.name', 'initialProduct.brand', 'initialProduct.model_number',
+            ])
+            ->apply();
+
+        return $query->paginate($perPage)->withQueryString();
     }
 }
