@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SellerUpgradeRequest;
-use App\Http\Resources\UserResource;
+use App\Http\Resources\SellerUpgradeResource;
 use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -48,11 +48,15 @@ class SellerUpgradeController extends Controller
 
                 $user->assignRole('seller');
 
+                $user->update(['status' => 'pending']);
+
                 DB::commit();
 
+                $user = $user->fresh()->load('company');
+
                 return $this->apiResponse(
-                    new UserResource($user->fresh()),
-                    'Successfully upgraded to seller',
+                    new SellerUpgradeResource($user),
+                    'Successfully upgraded to seller. Your account is now pending admin approval.',
                     201
                 );
             } catch (\Exception $e) {
