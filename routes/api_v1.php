@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\v1\CompanyController;
 use App\Http\Controllers\Api\v1\EmailVerificationController;
 use App\Http\Controllers\Api\v1\ProductController;
 use App\Http\Controllers\Api\v1\SellerUpgradeController;
+use App\Http\Controllers\Api\v1\TagController;
 use App\Http\Controllers\Api\v1\UserController;
 use App\Http\Controllers\Api\v1\WishlistController;
 use Illuminate\Support\Facades\Route;
@@ -33,6 +34,8 @@ Route::prefix('v1')->group(function () {
     // Public products endpoint (browsing without auth)
     Route::get('products', [ProductController::class, 'index'])->name('products.public.index');
     Route::get('products/{slug}', [ProductController::class, 'show'])->name('products.public.show');
+    Route::get('products/tags/all', [TagController::class, 'index'])->name('products.tags.index');
+    Route::post('products/tags/clear-cache', [TagController::class, 'clearCache'])->name('products.tags.clear-cache');
 
     // Public category endpoints (browsing without auth)
     Route::get('categories', [CategoryController::class, 'index'])->name('categories.public.index');
@@ -108,7 +111,6 @@ Route::prefix('v1')->group(function () {
             Route::post('products/bulk-delete', [ProductController::class, 'bulkDelete'])->name('products.bulk.delete');
             Route::post('products/bulk-active', [ProductController::class, 'bulkActive'])->name('products.bulk.active');
             Route::post('products/bulk-deactivate', [ProductController::class, 'bulkDeactivate'])->name('products.bulk.deactivate');
-            Route::get('tags', [ProductController::class, 'getTags'])->name('products.tags');
             // Product management (requires ownership)
             Route::middleware(['product.owner'])->group(function () {
                 Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update');
