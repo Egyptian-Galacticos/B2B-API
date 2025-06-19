@@ -52,41 +52,15 @@ class ProductDetailsResource extends JsonResource
             'sample_price'     => $this->sample_price,
 
             // Main image (single)
-            'main_image' => $this->getFirstMedia('main_image') ? [
-                'id'            => $this->getFirstMedia('main_image')->id,
-                'name'          => $this->getFirstMedia('main_image')->name,
-                'file_name'     => $this->getFirstMedia('main_image')->file_name,
-                'url'           => $this->getFirstMedia('main_image')->getUrl(),
-                'thumbnail_url' => $this->getFirstMedia('main_image')->getUrl('thumb'),
-                'size'          => $this->getFirstMedia('main_image')->size,
-                'mime_type'     => $this->getFirstMedia('main_image')->mime_type,
-            ] : null,
+            'main_image' => $this->getFirstMedia('main_image')
+                ? MediaResource::make($this->getFirstMedia('main_image'))
+                : null,
 
             // Product images (multiple)
-            'images' => $this->getMedia('product_images')->map(function ($media) {
-                return [
-                    'id'            => $media->id,
-                    'name'          => $media->name,
-                    'file_name'     => $media->file_name,
-                    'url'           => $media->getUrl(),
-                    'thumbnail_url' => $media->getUrl('thumb'),
-                    'size'          => $media->size,
-                    'mime_type'     => $media->mime_type,
-                ];
-            }),
+            'images' => MediaResource::collection($this->getMedia('product_images')),
 
             // Product documents
-            'documents' => $this->getMedia('product_documents')->map(function ($media) {
-                return [
-                    'id'                  => $media->id,
-                    'name'                => $media->name,
-                    'file_name'           => $media->file_name,
-                    'url'                 => $media->getUrl(),
-                    'size'                => $media->size,
-                    'mime_type'           => $media->mime_type,
-                    'human_readable_size' => $this->formatBytes($media->size),
-                ];
-            }),
+            'documents' => MediaResource::collection($this->getMedia('product_documents')),
 
             // Counts for convenience
             'media_counts' => [

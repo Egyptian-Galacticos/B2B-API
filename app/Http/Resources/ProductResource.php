@@ -63,26 +63,14 @@ class ProductResource extends JsonResource
                 return $sellerData;
             }),
 
-            // Main image (single)
-            'main_image' => $this->getFirstMedia('main_image') ? [
-                'id'            => $this->getFirstMedia('main_image')->id,
-                'name'          => $this->getFirstMedia('main_image')->name,
-                'file_name'     => $this->getFirstMedia('main_image')->file_name,
-                'url'           => $this->getFirstMedia('main_image')->getUrl(),
-                'thumbnail_url' => $this->getFirstMedia('main_image')->getUrl('thumb'),
-                'size'          => $this->getFirstMedia('main_image')->size,
-                'mime_type'     => $this->getFirstMedia('main_image')->mime_type,
-            ] : null,
-            'images' => $this->getMedia('product_images')->map(function ($media) {
-                return [
-                    'id'            => $media->id,
-                    'name'          => $media->name,
-                    'file_name'     => $media->file_name,
-                    'url'           => $media->getUrl(),
-                    'thumbnail_url' => $media->getUrl('thumb'),
-                    'size'          => $media->size,
-                    'mime_type'     => $media->mime_type,
-                ];
+            'main_image' => $this->whenLoaded('images', function () {
+                $this->getFirstMedia('main_image')
+                ? MediaResource::make($this->getFirstMedia('main_image'))
+                : null;
+            }),
+
+            'images' => $this->whenLoaded('images', function () {
+                MediaResource::collection($this->getMedia('product_images'));
             }),
 
         ];
