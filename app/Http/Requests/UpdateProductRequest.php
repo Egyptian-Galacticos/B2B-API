@@ -49,11 +49,11 @@ class UpdateProductRequest extends BaseRequest
             'product_tags' => ['sometimes', 'array'],
 
             // File validation
-            //            'main_image'             => ['nullable', 'image', 'max:10240'], // 10MB max
-            //            'images'                 => ['nullable', 'array'],
-            //            'images.*'               => ['image', 'max:10240'], // 10MB max per image
-            //            'documents'              => ['nullable', 'array'],
-            //            'documents.*'            => ['file', 'mimes:pdf,doc,docx', 'max:20480'], // 20MB max per document
+            'main_image'  => ['nullable', 'image', 'max:10240'], // 10MB max
+            'images'      => ['nullable', 'array'],
+            'images.*'    => ['image', 'max:10240'], // 10MB max per image
+            'documents'   => ['required', 'array'],
+            'documents.*' => ['file', 'mimes:pdf,doc,docx', 'max:20480'], // 20MB max per document
         ];
     }
 }
