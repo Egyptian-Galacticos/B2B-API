@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Category;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class CategoryService
@@ -65,12 +66,20 @@ class CategoryService
             } else {
                 throw new \Exception('Invalid parent_id provided.');
             }
+            if ($newCategory = Category::where('name', ucwords(strtolower($categoryData['name'])))->first()) {
+                return $newCategory->id;
+            }
+            $hierarchyData = (new Category)->calculateHierarchyData($parentId);
 
             // Create the new category
             $newCategory = Category::create([
-                'name'      => $categoryData['name'],
-                'parent_id' => $parentId,
-                'slug'      => $this->generateUniqueSlug($categoryData['name']),
+                'name'       => ucwords(strtolower($categoryData['name'])),
+                'parent_id'  => $parentId,
+                'slug'       => $this->generateUniqueSlug($categoryData['name']),
+                'level'      => $hierarchyData['level'],
+                'path'       => $hierarchyData['path'],
+                'created_by' => Auth::id(),
+                'updated_by' => Auth::id(),
             ]);
 
             return $newCategory->id;
