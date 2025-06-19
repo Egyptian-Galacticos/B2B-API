@@ -6,7 +6,9 @@ use App\Models\Category;
 use App\Models\PriceTier;
 use App\Models\Product;
 use App\Models\User;
+use Exception;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Log;
 
 class ProductSeeder extends Seeder
 {
@@ -22,15 +24,12 @@ class ProductSeeder extends Seeder
             return;
         }
 
-        // Create products for each seller
         foreach ($sellers as $seller) {
-            $productCount = rand(3, 8); // Each seller gets 3-8 products
-
+            $productCount = rand(8, 15);
             for ($i = 0; $i < $productCount; $i++) {
                 $category = $categories->random();
                 $basePrice = rand(10, 1000);
 
-                // Create product names based on category
                 $productNames = $this->getProductNamesForCategory($category->name);
                 $productName = fake()->randomElement($productNames);
                 $product = Product::create([
@@ -66,6 +65,8 @@ class ProductSeeder extends Seeder
                 $tags = fake()->words(rand(2, 5));
                 $product->attachTags($tags);
 
+                $this->addProductImages($product, $category->name);
+
                 if (fake()->boolean(70)) {
                     $this->createPricingTiers($product);
                 }
@@ -73,22 +74,138 @@ class ProductSeeder extends Seeder
         }
     }
 
+    /**
+     * Add images to product efficiently using local placeholder images
+     */
+    private function addProductImages(Product $product, string $categoryName): void
+    {
+        $imagePath = $this->getLocalProductImagePath($categoryName);
+
+        try {
+            if (fake()->boolean(90) && $imagePath && file_exists($imagePath)) {
+                // Copy the file to a temporary location to avoid it being moved
+                $tempPath = storage_path('app/temp_'.uniqid().'_'.basename($imagePath));
+                copy($imagePath, $tempPath);
+
+                $product->addMedia($tempPath)
+                    ->toMediaCollection('main_image');
+            }
+
+            if (fake()->boolean(60) && $imagePath && file_exists($imagePath)) {
+                $additionalImageCount = rand(1, 2);
+                for ($i = 0; $i < $additionalImageCount; $i++) {
+                    $tempPath = storage_path('app/temp_'.uniqid().'_'.basename($imagePath));
+                    copy($imagePath, $tempPath);
+
+                    $product->addMedia($tempPath)
+                        ->toMediaCollection('product_images');
+                }
+            }
+        } catch (Exception $e) {
+            Log::warning("Failed to add image to product {$product->id}: ".$e->getMessage());
+        }
+    }
+
+    /**
+     * Get local image path for product based on category
+     */
+    private function getLocalProductImagePath(string $categoryName): ?string
+    {
+        $basePath = storage_path('app/public/placeholders/');
+
+        $imageMap = [
+            'iPhone'           => 'electronics.jpg',
+            'Samsung Galaxy'   => 'electronics.jpg',
+            'Gaming Laptops'   => 'electronics.jpg',
+            'Business Laptops' => 'electronics.jpg',
+            'Headphones'       => 'electronics.jpg',
+            'Speakers'         => 'electronics.jpg',
+
+            'Shirts'   => 'fashion.jpg',
+            'Pants'    => 'fashion.jpg',
+            'Dresses'  => 'fashion.jpg',
+            'Tops'     => 'fashion.jpg',
+            'Sneakers' => 'fashion.jpg',
+            'Boots'    => 'fashion.jpg',
+
+            'Living Room' => 'home.jpg',
+            'Bedroom'     => 'home.jpg',
+            'Kitchen'     => 'home.jpg',
+            'Laundry'     => 'home.jpg',
+            'Plants'      => 'home.jpg',
+            'Tools'       => 'home.jpg',
+
+            'Gym Equipment' => 'sports.jpg',
+            'Yoga'          => 'sports.jpg',
+            'Camping'       => 'sports.jpg',
+            'Hiking'        => 'sports.jpg',
+
+            'Engine'   => 'automotive.jpg',
+            'Brakes'   => 'automotive.jpg',
+            'Interior' => 'automotive.jpg',
+            'Exterior' => 'automotive.jpg',
+        ];
+
+        $filename = $imageMap[$categoryName] ?? 'default.jpg';
+
+        return $basePath.$filename;
+    }
+
+    /**
+     * Map category names to image categories
+     */
+    private function getImageCategory(string $categoryName): string
+    {
+        $categoryMappings = [
+            'iPhone'         => 'electronics',
+            'Samsung Galaxy' => 'electronics',
+            'Gaming Laptops' => 'electronics',
+            'Headphones'     => 'electronics',
+            'Shirts'         => 'clothing',
+            'Dresses'        => 'clothing',
+            'Sneakers'       => 'clothing',
+            'Living Room'    => 'furniture',
+            'Kitchen'        => 'furniture',
+        ];
+
+        return $categoryMappings[$categoryName] ?? 'default';
+    }
+
     private function getProductNamesForCategory(string $categoryName): array
     {
         $productNames = [
-            'iPhone'         => ['iPhone 15 Pro', 'iPhone 14', 'iPhone SE', 'iPhone 13 Mini'],
-            'Samsung Galaxy' => ['Galaxy S24 Ultra', 'Galaxy A54', 'Galaxy Z Fold5', 'Galaxy Note20'],
-            'Gaming Laptops' => ['ASUS ROG Strix', 'MSI Gaming Laptop', 'Alienware m15', 'HP Omen Gaming'],
-            'Headphones'     => ['Sony WH-1000XM5', 'Bose QuietComfort', 'AirPods Pro', 'Sennheiser HD'],
+            'iPhone'           => ['iPhone 15 Pro', 'iPhone 14', 'iPhone SE'],
+            'Samsung Galaxy'   => ['Galaxy S24 Ultra', 'Galaxy A54', 'Galaxy Z Fold5'],
+            'Gaming Laptops'   => ['ASUS ROG Strix', 'MSI Gaming Laptop', 'Alienware m15'],
+            'Business Laptops' => ['ThinkPad X1', 'MacBook Pro', 'Dell XPS'],
+            'Headphones'       => ['Sony WH-1000XM5', 'Bose QuietComfort', 'AirPods Pro'],
+            'Speakers'         => ['JBL Charge', 'Bose SoundLink', 'Sony SRS'],
 
-            'Shirts'   => ['Cotton Dress Shirt', 'Casual Button-Down', 'Polo Shirt', 'Henley Shirt'],
-            'Dresses'  => ['Summer Midi Dress', 'Cocktail Dress', 'Maxi Dress', 'Business Dress'],
-            'Sneakers' => ['Nike Air Max', 'Adidas Ultraboost', 'Converse Chuck Taylor', 'Vans Old Skool'],
+            'Shirts'   => ['Cotton Dress Shirt', 'Casual Button-Down', 'Polo Shirt'],
+            'Pants'    => ['Chino Pants', 'Dress Pants', 'Cargo Pants'],
+            'Dresses'  => ['Summer Midi Dress', 'Cocktail Dress', 'Maxi Dress'],
+            'Tops'     => ['Blouse', 'Tank Top', 'Sweater'],
+            'Sneakers' => ['Nike Air Max', 'Adidas Ultraboost', 'Converse Chuck Taylor'],
+            'Boots'    => ['Work Boots', 'Hiking Boots', 'Fashion Boots'],
 
-            'Living Room' => ['Sectional Sofa', 'Coffee Table', 'TV Stand', 'Accent Chair'],
-            'Kitchen'     => ['Stainless Steel Refrigerator', 'Gas Range', 'Dishwasher', 'Microwave Oven'],
+            'Living Room' => ['Sectional Sofa', 'Coffee Table', 'TV Stand'],
+            'Bedroom'     => ['Queen Bed', 'Nightstand', 'Dresser'],
+            'Kitchen'     => ['Refrigerator', 'Gas Range', 'Dishwasher'],
+            'Laundry'     => ['Washing Machine', 'Dryer', 'Laundry Basket'],
+            'Plants'      => ['Indoor Plants', 'Garden Plants', 'Succulents'],
+            'Tools'       => ['Garden Tools', 'Hand Tools', 'Power Tools'],
 
-            'default' => ['Premium Product', 'Professional Grade', 'Commercial Quality', 'Industrial Strength'],
+            'Gym Equipment' => ['Dumbbells', 'Treadmill', 'Exercise Bike'],
+            'Yoga'          => ['Yoga Mat', 'Yoga Blocks', 'Yoga Straps'],
+            'Camping'       => ['Tent', 'Sleeping Bag', 'Camping Stove'],
+            'Hiking'        => ['Hiking Boots', 'Backpack', 'Hiking Poles'],
+
+            'Engine'   => ['Engine Parts', 'Engine Oil', 'Air Filter'],
+            'Brakes'   => ['Brake Pads', 'Brake Discs', 'Brake Fluid'],
+            'Interior' => ['Seat Covers', 'Floor Mats', 'Dashboard'],
+            'Exterior' => ['Car Wax', 'Bumper Guards', 'Headlights'],
+
+            'default' => ['Premium Product', 'Professional Grade', 'Commercial Quality'],
         ];
 
         return $productNames[$categoryName] ?? $productNames['default'];
