@@ -24,15 +24,22 @@ class CategoryController extends Controller
      * Display a listing of categories
      *
      * This method retrieves a list of categories with optional children and recursive children.
+     *
+     * @unauthenticated
      */
     public function index(Request $request, QueryHandler $queryHandler): JsonResponse
     {
         try {
             $query = Category::with(['parent', 'creator', 'updater'])
+                ->where('status', 'active')
                 ->withCount('products');
 
             if ($request->boolean('include_children', true)) {
-                $query->with(['children', 'recursiveChildren']);
+                $query->with(['children' => function ($q) {
+                    $q->where('status', 'active');
+                }, 'recursiveChildren' => function ($q) {
+                    $q->where('status', 'active');
+                }]);
             }
 
             $query = $queryHandler
@@ -48,7 +55,12 @@ class CategoryController extends Controller
             return $this->apiResponse(
                 new CategoryCollection($categories),
                 'Categories retrieved successfully',
-                200
+                200,
+                [
+                    'meta' => [
+                        'total' => $categories->count(),
+                    ],
+                ]
             );
         } catch (Exception $e) {
             return $this->apiResponse(
@@ -129,9 +141,22 @@ class CategoryController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $category = Category::findOrFail($id);
-            $category->load(['parent', 'children', 'recursiveChildren', 'creator', 'updater'])
-                ->loadCount('products');
+            $category = Category::where('status', 'active')
+                ->findOrFail($id);
+
+            $category->load([
+                'parent' => function ($q) {
+                    $q->where('status', 'active');
+                },
+                'children' => function ($q) {
+                    $q->where('status', 'active');
+                },
+                'recursiveChildren' => function ($q) {
+                    $q->where('status', 'active');
+                },
+                'creator',
+                'updater',
+            ])->loadCount('products');
 
             return $this->apiResponse(
                 new CategoryResource($category),
