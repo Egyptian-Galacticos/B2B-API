@@ -54,6 +54,7 @@ class Product extends Model implements HasMedia
         'sample_available' => 'boolean',
         'sample_price'     => 'decimal:2',
     ];
+    protected $with = ['media'];
 
     public function getSlugOptions(): SlugOptions
     {
