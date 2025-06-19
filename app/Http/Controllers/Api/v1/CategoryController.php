@@ -57,9 +57,7 @@ class CategoryController extends Controller
                 'Categories retrieved successfully',
                 200,
                 [
-                    'meta' => [
-                        'total' => $categories->count(),
-                    ],
+                    'total' => $categories->count(),
                 ]
             );
         } catch (Exception $e) {
