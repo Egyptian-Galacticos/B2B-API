@@ -38,6 +38,16 @@ class ProductResource extends JsonResource
                 return $this->tags->pluck('name');
             }),
 
+            'tiers' => $this->whenLoaded('tiers', function () {
+                return $this->tiers->map(function ($tier) {
+                    return [
+                        'from_quantity' => $tier->from_quantity,
+                        'to_quantity'   => $tier->to_quantity,
+                        'price'         => $tier->price,
+                    ];
+                });
+            }),
+
             // Relationships
             'seller' => $this->whenLoaded('seller', function () {
 

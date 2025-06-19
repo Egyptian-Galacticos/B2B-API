@@ -11,7 +11,6 @@ use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Http\Resources\ProductDetailsResource;
 use App\Http\Resources\ProductResource;
-use App\Http\Resources\TagResource;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
@@ -53,7 +52,7 @@ class ProductController extends Controller
         $perPage = (int) $request->get('size', 10);
 
         $query = $queryHandler
-            ->setBaseQuery(Product::query()->with(['seller.company', 'category', 'tags'])->where('is_active', true)->where('is_approved', true))
+            ->setBaseQuery(Product::query()->with(['seller.company', 'category', 'tags', 'tiers'])->where('is_active', true)->where('is_approved', true))
             ->setAllowedSorts([
                 'price',
                 'created_at',
@@ -653,14 +652,14 @@ class ProductController extends Controller
         );
     }
 
-    public function getTags(Request $request): JsonResponse
-    {
-        $tags = Tag::all();
-
-        return $this->apiResponse(
-            TagResource::collection($tags),
-            'Tags retrieved successfully.',
-            200
-        );
-    }
+    //    public function getTags(Request $request): JsonResponse
+    //    {
+    //        $tags = Tag::all();
+    //
+    //        return $this->apiResponse(
+    //            TagResource::collection($tags),
+    //            'Tags retrieved successfully.',
+    //            200
+    //        );
+    //    }
 }
