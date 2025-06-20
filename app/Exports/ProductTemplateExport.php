@@ -2,8 +2,7 @@
 
 namespace App\Exports;
 
-use App\Http\Requests\StoreProductRequest;
-use App\Models\Category;
+use App\Http\Requests\Product\StoreProductRequest;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;

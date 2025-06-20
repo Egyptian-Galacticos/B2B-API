@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Product;
+
+use App\Http\Requests\BaseRequest;
 
 class BulkProductImportRequest extends BaseRequest
 {
@@ -19,11 +21,10 @@ class BulkProductImportRequest extends BaseRequest
             'products.*.name'                        => ['required', 'string', 'max:255'],
             'products.*.description'                 => ['nullable', 'string'],
             'products.*.hs_code'                     => ['nullable', 'string', 'max:255'],
-            'products.*.price'                       => ['required', 'numeric', 'min:0'],
+            'products.*.weight'                      => ['required', 'numeric', 'min:0'],
             'products.*.currency'                    => ['required', 'string', 'size:3'],
             'products.*.origin'                      => ['nullable', 'string', 'max:255'],
             'products.*.category'                    => ['required', 'string', 'max:255'],
-            'products.*.specifications'              => ['nullable', 'array'],
             'products.*.certifications'              => ['nullable', 'array'],
             'products.*.dimensions'                  => ['nullable', 'array'],
             'products.*.sample_available'            => ['boolean'],
@@ -35,11 +36,13 @@ class BulkProductImportRequest extends BaseRequest
             'products.*.product_tags'                => ['required', 'array'],
 
             // Image/document URLs
-            'products.*.main_image'  => ['nullable', 'url'],
-            'products.*.images'      => ['nullable', 'array'],
-            'products.*.images.*'    => ['url'],
-            'products.*.documents'   => ['nullable', 'array'],
-            'products.*.documents.*' => ['url'],
+            'products.*.main_image'       => ['nullable', 'url'],
+            'products.*.images'           => ['nullable', 'array'],
+            'products.*.images.*'         => ['url'],
+            'products.*.documents'        => ['nullable', 'array'],
+            'products.*.documents.*'      => ['url'],
+            'products.*.specifications'   => ['nullable', 'array'],
+            'products.*.specifications.*' => ['url'],
         ];
     }
 

@@ -1,7 +1,9 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Product;
 
+use App\Http\Resources\MediaResource;
+use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -27,7 +29,7 @@ class ProductDetailsResource extends JsonResource
             'slug'        => $this->slug,
             'description' => $this->description,
             'hs_code'     => $this->hs_code,
-            'price'       => $this->price,
+            'weight'      => $this->weight,
             'currency'    => $this->currency,
 
             'origin'      => $this->origin,
@@ -42,7 +44,6 @@ class ProductDetailsResource extends JsonResource
             'tags' => $this->whenLoaded('tags', function () {
                 return $this->tags->pluck('name');
             }),
-            'specifications'   => $this->specifications,
             'certifications'   => $this->certifications,
             'dimensions'       => $this->dimensions,
             'is_active'        => $this->is_active,
@@ -60,7 +61,8 @@ class ProductDetailsResource extends JsonResource
             'images' => MediaResource::collection($this->getMedia('product_images')),
 
             // Product documents
-            'documents' => MediaResource::collection($this->getMedia('product_documents')),
+            'documents'      => MediaResource::collection($this->getMedia('product_documents')),
+            'specifications' => MediaResource::collection($this->getMedia('product_specifications')),
 
             // Counts for convenience
             'media_counts' => [

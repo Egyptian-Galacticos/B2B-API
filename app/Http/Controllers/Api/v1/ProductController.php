@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Api\v1;
 
 use App\Exports\ProductTemplateExport;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\BulkProductActionRequest;
-use App\Http\Requests\BulkProductImportRequest;
-use App\Http\Requests\ProductUpdateStatusRequest;
-use App\Http\Requests\StoreProductRequest;
-use App\Http\Requests\UpdateProductRequest;
-use App\Http\Resources\ProductDetailsResource;
-use App\Http\Resources\ProductResource;
+use App\Http\Requests\Product\BulkProductActionRequest;
+use App\Http\Requests\Product\BulkProductImportRequest;
+use App\Http\Requests\Product\ProductUpdateStatusRequest;
+use App\Http\Requests\Product\StoreProductRequest;
+use App\Http\Requests\Product\UpdateProductRequest;
+use App\Http\Resources\Product\ProductDetailsResource;
+use App\Http\Resources\Product\ProductResource;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
@@ -25,7 +25,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Exception;
-use Spatie\Tags\Tag;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ProductController extends Controller
@@ -54,7 +53,7 @@ class ProductController extends Controller
         $query = $queryHandler
             ->setBaseQuery(Product::query()->with(['seller.company', 'category', 'tags', 'tiers'])->where('is_active', true)->where('is_approved', true))
             ->setAllowedSorts([
-                'price',
+                'weight',
                 'created_at',
                 'name',
                 'brand',
@@ -70,7 +69,7 @@ class ProductController extends Controller
                 'brand',
                 'model_number',
                 'currency',
-                'price',
+                'weight',
                 'origin',
                 'is_active',
                 'is_approved',
@@ -175,7 +174,7 @@ class ProductController extends Controller
         }
 
         return $this->apiResponse(
-            ProductDetailsResource::make($product->load('tiers', 'seller.company', 'tags')),
+            ProductDetailsResource::make($product->load('tiers', 'seller.company', 'tags', 'media')),
             'Product created successfully.',
             201
         );
@@ -263,8 +262,17 @@ class ProductController extends Controller
             }
         }
 
+        if ($request->hasFile('specifications')) {
+            foreach ($request->file('specifications') as $document) {
+                $product
+                    ->addMedia($document)
+                    ->usingName('Product Specification - '.$document->getClientOriginalName())
+                    ->toMediaCollection('product_specifications');
+            }
+        }
+
         return $this->apiResponse(
-            new ProductResource($product->fresh()->load(['seller.company', 'media', 'tiers'])),
+            new ProductDetailsResource($product->fresh()->load(['seller.company', 'media', 'tiers', 'tags'])),
             'Product updated successfully',
             200
         );
@@ -278,19 +286,24 @@ class ProductController extends Controller
     public function updateStatus(ProductUpdateStatusRequest $request, int $id): JsonResponse
     {
         // Get the product (ownership already verified in middleware or double-checking here)
-        $product = Product::findOrFail($id);
+        try {
+            $product = Product::findOrFail($id);
+            $data = $request->validated();
+            $product->update($data);
 
-        if ($product->seller_id !== Auth::id()) {
-            return $this->apiResponseErrors('Only the product owner can update the status', [], 403);
+            return $this->apiResponse(
+                $product->fresh(),
+                'Product status updated successfully',
+                200
+            );
+        } catch (ModelNotFoundException $e) {
+            return $this->apiResponseErrors(
+                message: 'Product not found.',
+                errors : ['id' => $id],
+                status: 404,
+            );
         }
-        $data = $request->validated();
-        $product->update($data);
 
-        return $this->apiResponse(
-            $product->fresh(),
-            'Product status updated successfully',
-            200
-        );
     }
 
     /**
@@ -316,31 +329,31 @@ class ProductController extends Controller
      *
      * @authenticated
      */
-    public function deleteImage(string $product, int $mediaId): JsonResponse
-    {
-        // Get the product from middleware (ownership already verified)
-        $product = Product::where('slug', $product)->firstOrFail();
-
-        // Find the media item
-        $media = $product->getMedia('product_images')->find($mediaId);
-
-        if (! $media) {
-            return $this->apiResponseErrors(
-                'Image not found.',
-                ['media_id' => $mediaId],
-                404,
-            );
-        }
-
-        // Delete the media item
-        $media->delete();
-
-        return $this->apiResponse(
-            null,
-            'Image deleted successfully.',
-            200
-        );
-    }
+    //    public function deleteImage(string $product, int $mediaId): JsonResponse
+    //    {
+    //        // Get the product from middleware (ownership already verified)
+    //        $product = Product::where('slug', $product)->firstOrFail();
+    //
+    //        // Find the media item
+    //        $media = $product->getMedia('product_images')->find($mediaId);
+    //
+    //        if (! $media) {
+    //            return $this->apiResponseErrors(
+    //                'Image not found.',
+    //                ['media_id' => $mediaId],
+    //                404,
+    //            );
+    //        }
+    //
+    //        // Delete the media item
+    //        $media->delete();
+    //
+    //        return $this->apiResponse(
+    //            null,
+    //            'Image deleted successfully.',
+    //            200
+    //        );
+    //    }
 
     /**
      * delete the product document.
@@ -348,13 +361,21 @@ class ProductController extends Controller
      * @param string|int $identifier
      * @return Product|null
      */
-    public function deleteDocument(string $product, int $mediaId): JsonResponse
+    public function deleteProductMedia(string $product, string $collection, int $mediaId): JsonResponse
     {
+        if ($collection == 'main_image') {
+            return $this->apiResponseErrors(
+                'You can not delete main image.',
+                ['media_id' => $mediaId],
+                404,
+            );
+        }
         // Get the product from middleware (ownership already verified)
         $product = Product::where('slug', $product)->firstOrFail();
 
         // Find the media item
-        $media = $product->getMedia('product_documents')->find($mediaId);
+
+        $media = $product->getMedia($collection)->find($mediaId);
 
         if (! $media) {
             return $this->apiResponseErrors(
@@ -530,6 +551,16 @@ class ProductController extends Controller
                         }
                     }
                 }
+                if (isset($product['specifications']) && is_array($product['specifications'])) {
+                    foreach ($product['specifications'] as $specificationUrl) {
+                        if (filter_var($specificationUrl, FILTER_VALIDATE_URL)) {
+                            $productModel
+                                ->addMediaFromUrl($specificationUrl)
+                                ->usingName('Product Specification - '.basename($specificationUrl))
+                                ->toMediaCollection('product_specifications');
+                        }
+                    }
+                }
 
                 $savedProducts[] = $productModel->fresh()->load('media', 'tiers', 'seller.company');
             }
@@ -620,7 +651,7 @@ class ProductController extends Controller
                     ->where('seller_id', $sellerId)
             )
             ->setAllowedSorts([
-                'price',
+                'weight',
                 'created_at',
                 'name',
                 'brand',
@@ -635,7 +666,7 @@ class ProductController extends Controller
                 'brand',
                 'model_number',
                 'currency',
-                'price',
+                'weight',
                 'origin',
                 'is_active',
                 'is_approved',

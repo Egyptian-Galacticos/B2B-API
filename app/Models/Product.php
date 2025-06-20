@@ -29,7 +29,7 @@ class Product extends Model implements HasMedia
         'slug',
         'description',
         'hs_code',
-        'price',
+        'weight',
         'currency',
         'minimum_order_quantity',
         'lead_time_days',
@@ -166,9 +166,9 @@ class Product extends Model implements HasMedia
         return $query->where('name', 'like', '%'.$name.'%');
     }
 
-    public function scopeByPriceRange($query, $minPrice, $maxPrice)
+    public function scopeByWeightRange($query, $minWeight, $maxWeight)
     {
-        return $query->whereBetween('price', [$minPrice, $maxPrice]);
+        return $query->whereBetween('weight', [$minWeight, $maxWeight]);
     }
 
     public function isActive(): bool

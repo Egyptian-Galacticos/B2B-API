@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->text('description')->nullable();
             $table->string('hs_code')->nullable();
-            $table->decimal('price', 10, 2);
+            //            $table->decimal('price', 10, 2);
             $table->string('currency', 10);
             $table->string('origin');
             $table->json('specifications')->nullable();

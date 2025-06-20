@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Product;
 
+use App\Http\Resources\MediaResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -21,7 +22,7 @@ class ProductResource extends JsonResource
             'name'             => $this->name,
             'slug'             => $this->slug,
             'description'      => $this->description,
-            'price'            => $this->price,
+            'weight'           => $this->weight,
             'currency'         => $this->currency,
             'is_featured'      => $this->is_featured,
             'is_active'        => $this->is_active,

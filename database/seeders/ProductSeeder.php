@@ -40,7 +40,7 @@ class ProductSeeder extends Seeder
                     'name'           => $productName,
                     'description'    => $this->generateProductDescription($productName, $category->name),
                     'sku'            => strtoupper(fake()->bothify('??###??')),
-                    'price'          => $basePrice,
+                    'weight'         => $basePrice,
                     'currency'       => fake()->randomElement(['USD', 'EUR', 'GBP']),
                     'origin'         => fake()->randomElement(['USA', 'China', 'Germany', 'Japan', 'South Korea']),
                     'hs_code'        => fake()->numerify('########'),
@@ -233,7 +233,7 @@ class ProductSeeder extends Seeder
 
     private function createPricingTiers(Product $product): void
     {
-        $basePrice = $product->price;
+        $basePrice = $product->weight;
         // Tier 1: 1-50 units
         PriceTier::create([
             'product_id'    => $product->id,

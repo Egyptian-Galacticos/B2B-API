@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Product;
+
+use App\Http\Requests\BaseRequest;
 
 class StoreProductRequest extends BaseRequest
 {
@@ -17,7 +19,7 @@ class StoreProductRequest extends BaseRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    public function rules(): array
+    public function rules()
     {
         return [
             'brand'                       => ['nullable', 'string', 'max:255'],
@@ -26,12 +28,11 @@ class StoreProductRequest extends BaseRequest
             'name'                        => ['required', 'string', 'max:255'],
             'description'                 => ['nullable', 'string'],
             'hs_code'                     => ['nullable', 'string', 'max:255'],
-            'price'                       => ['required', 'numeric', 'min:0'],
+            'weight'                      => ['required', 'numeric', 'min:0'],
             'currency'                    => ['required', 'string', 'size:3'], // e.g., USD, EUR
             'origin'                      => ['nullable', 'string', 'max:255'],
             'category_id'                 => ['required'],
             'category'                    => ['sometimes'],
-            'specifications'              => ['nullable'],
             'certifications'              => ['nullable'],
             'dimensions'                  => ['nullable'],
             'sample_available'            => ['boolean'],
@@ -44,11 +45,13 @@ class StoreProductRequest extends BaseRequest
             'product_tags'                => ['required'],
 
             // File validation
-            'main_image'  => ['nullable', 'image', 'max:10240'], // 10MB max
-            'images'      => ['nullable', 'array'],
-            'images.*'    => ['image', 'max:10240'], // 10MB max per image
-            'documents'   => ['nullable', 'array'],
-            'documents.*' => ['file', 'mimes:pdf,doc,docx', 'max:20480'], // 20MB max per document
+            'main_image'       => ['nullable', 'image', 'max:10240'], // 10MB max
+            'images'           => ['nullable', 'array'],
+            'images.*'         => ['image', 'max:10240'], // 10MB max per image
+            'documents'        => ['nullable', 'array'],
+            'documents.*'      => ['file', 'mimes:pdf,doc,docx', 'max:20480'], // 20MB max per document
+            'specifications'   => ['nullable', 'array'],
+            'specifications.*' => ['file', 'mimes:pdf,doc,docx', 'max:20480'], // 20MB max per specification file
         ];
     }
 
