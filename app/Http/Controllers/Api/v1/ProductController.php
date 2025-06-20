@@ -75,7 +75,9 @@ class ProductController extends Controller
                 'is_active',
                 'is_approved',
                 'created_at',
-                'seller.name',
+                'category.name',
+                'category.id',
+                'seller.company.name',
                 'seller_id',
                 'is_featured',
 
