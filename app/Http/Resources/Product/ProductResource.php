@@ -64,15 +64,12 @@ class ProductResource extends JsonResource
                 return $sellerData;
             }),
 
-            'main_image' => $this->whenLoaded('images', function () {
-                $this->getFirstMedia('main_image')
+            'main_image' => $this->getFirstMedia('main_image')
                 ? MediaResource::make($this->getFirstMedia('main_image'))
-                : null;
-            }),
+                : null,
 
-            'images' => $this->whenLoaded('images', function () {
-                MediaResource::collection($this->getMedia('product_images'));
-            }),
+            // Product images (multiple)
+            'images' => MediaResource::collection($this->getMedia('product_images')),
 
         ];
     }
