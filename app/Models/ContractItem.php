@@ -2,15 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ContractItem extends Model
 {
-    /** @use HasFactory<\Database\Factories\ContractItemFactory> */
-    use HasFactory;
-    public $timestamps = false; // No automatic timestamps
+    public $timestamps = false;
     protected $fillable = [
         'contract_id',
         'product_id',
