@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -176,22 +177,15 @@ class Quote extends Model
         ]);
 
         $buyer = User::find($buyerId);
+        $seller = User::find($sellerId);
 
-        $billingAddress = null;
-        if ($buyer && $buyer->company && $buyer->company->address) {
-            $address = $buyer->company->address;
-            if (is_array($address)) {
-                $billingAddress = implode(', ', array_filter([
-                    $address['street'] ?? '',
-                    $address['city'] ?? '',
-                    $address['state'] ?? '',
-                    $address['country'] ?? '',
-                    $address['postal_code'] ?? '',
-                ]));
-            } else {
-                $billingAddress = $address;
-            }
-        }
+        $billingAddress = $this->generateBillingAddress($buyer);
+
+        $shippingAddress = $this->generateShippingAddress($buyer);
+
+        $estimatedDelivery = $this->generateEstimatedDelivery();
+
+        $termsAndConditions = $this->generateTermsAndConditions();
 
         $contract = Contract::create([
             'quote_id'             => $this->id,
@@ -202,10 +196,10 @@ class Quote extends Model
             'total_amount'         => $this->total_price,
             'currency'             => $this->currency ?? 'USD',
             'contract_date'        => now(),
-            'estimated_delivery'   => $this->delivery_date ?? null,
-            'shipping_address'     => $this->shipping_address ?? null,
+            'estimated_delivery'   => $estimatedDelivery,
+            'shipping_address'     => $shippingAddress,
             'billing_address'      => $billingAddress,
-            'terms_and_conditions' => $this->terms_and_conditions ?? null,
+            'terms_and_conditions' => $termsAndConditions,
         ]);
 
         foreach ($this->items as $quoteItem) {
@@ -213,7 +207,7 @@ class Quote extends Model
                 'product_id'     => $quoteItem->product_id,
                 'quantity'       => $quoteItem->quantity,
                 'unit_price'     => $quoteItem->unit_price,
-                'total_price'    => $quoteItem->total_price, // Now uses the accessor
+                'total_price'    => $quoteItem->total_price,
                 'specifications' => $quoteItem->specifications ?? null,
             ]);
         }
@@ -224,8 +218,102 @@ class Quote extends Model
     private function generateContractNumber(): string
     {
         $year = date('Y');
-        $count = Contract::whereYear('created_at', $year)->count() + 1;
 
-        return "CON-{$year}-".str_pad($count, 6, '0', STR_PAD_LEFT);
+        for ($attempt = 1; $attempt <= 10; $attempt++) {
+            $count = Contract::whereYear('created_at', $year)->count() + $attempt;
+            $contractNumber = "CON-{$year}-".str_pad($count, 6, '0', STR_PAD_LEFT);
+
+            if (! Contract::where('contract_number', $contractNumber)->exists()) {
+                return $contractNumber;
+            }
+        }
+
+        $timestamp = time();
+
+        return "CON-{$year}-".str_pad($timestamp % 1000000, 6, '0', STR_PAD_LEFT);
+    }
+
+    private function generateBillingAddress(?User $buyer): ?string
+    {
+        if (! $buyer || ! $buyer->company || ! $buyer->company->address) {
+            return null;
+        }
+
+        $address = $buyer->company->address;
+        if (is_array($address)) {
+            return implode(', ', array_filter([
+                $address['street'] ?? '',
+                $address['city'] ?? '',
+                $address['state'] ?? '',
+                $address['country'] ?? '',
+                $address['postal_code'] ?? '',
+            ]));
+        }
+
+        return $address;
+    }
+
+    private function generateShippingAddress(?User $buyer): ?string
+    {
+        if ($this->rfq && $this->rfq->shipping_address) {
+            return $this->rfq->shipping_address;
+        }
+
+        if ($buyer && $buyer->company && $buyer->company->address) {
+            $address = $buyer->company->address;
+            if (is_array($address)) {
+                return implode(', ', array_filter([
+                    $address['street'] ?? '',
+                    $address['city'] ?? '',
+                    $address['state'] ?? '',
+                    $address['country'] ?? '',
+                    $address['postal_code'] ?? '',
+                ]));
+            }
+
+            return $address;
+        }
+
+        return null;
+    }
+
+    private function generateEstimatedDelivery(): Carbon
+    {
+        if ($this->rfq) {
+            $baseDeliveryDays = 7;
+            $quantity = $this->rfq->initial_quantity ?? 1;
+
+            if ($quantity > 100) {
+                $baseDeliveryDays += 14;
+            } elseif ($quantity > 50) {
+                $baseDeliveryDays += 7;
+            }
+
+            return now()->addDays($baseDeliveryDays);
+        }
+
+        return now()->addDays(14);
+    }
+
+    private function generateTermsAndConditions(): string
+    {
+        $baseTerms = [
+            'Payment terms: Net 30 days from invoice date.',
+            'Delivery charges may apply and will be quoted separately.',
+            'Returns accepted within 30 days in original condition.',
+            'Prices are valid for 30 days from quote date.',
+            'This contract is governed by applicable commercial law.',
+        ];
+
+        if ($this->rfq && $this->rfq->shipping_country) {
+            $baseTerms[] = "International shipping to {$this->rfq->shipping_country} - additional duties and taxes may apply.";
+        }
+
+        $totalQuantity = $this->items->sum('quantity');
+        if ($totalQuantity > 100) {
+            $baseTerms[] = 'Large quantity order - delivery may be split into multiple shipments.';
+        }
+
+        return implode(' ', $baseTerms);
     }
 }
