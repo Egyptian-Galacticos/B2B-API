@@ -21,17 +21,20 @@ class MessageFactory extends Factory
         $conversations = Conversation::pluck('id');
         $users = User::pluck('id');
 
+        if ($users->isEmpty()) {
+            $user = User::factory()->create();
+            $users = collect([$user->id]);
+        }
+
         return [
             'conversation_id' => $conversations->isNotEmpty()
                 ? $conversations->random()
                 : Conversation::factory(),
-            'sender_id' => $users->isNotEmpty()
-                ? $users->random()
-                : User::factory(),
-            'content' => $this->faker->paragraph(),
-            'type'    => $this->faker->randomElement(['text', 'image', 'file']),
-            'sent_at' => $this->faker->dateTimeBetween('-1 month', 'now'),
-            'is_read' => $this->faker->boolean(80),
+            'sender_id' => $users->random(),
+            'content'   => $this->faker->paragraph(),
+            'type'      => $this->faker->randomElement(['text', 'image', 'file']),
+            'sent_at'   => $this->faker->dateTimeBetween('-1 month', 'now'),
+            'is_read'   => $this->faker->boolean(80),
         ];
     }
 }
