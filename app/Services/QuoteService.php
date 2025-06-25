@@ -156,7 +156,13 @@ class QuoteService
                 $quote->update($updateData);
             }
 
-            $quote->load(['rfq.buyer', 'rfq.seller', 'items.product']);
+            if (isset($updateData['status']) && $updateData['status'] === Quote::STATUS_ACCEPTED) {
+                if (! $quote->hasContract()) {
+                    $quote->acceptAndCreateContract();
+                }
+            }
+
+            $quote->load(['rfq.buyer', 'rfq.seller', 'items.product', 'contract']);
 
             return $quote;
         });
@@ -185,8 +191,8 @@ class QuoteService
             throw new AuthorizationException('You can only delete your own quotes');
         }
 
-        if ($quote->status !== Quote::STATUS_PENDING) {
-            throw new InvalidArgumentException('Can only delete quotes with status: pending');
+        if ($quote->status !== Quote::STATUS_SENT) {
+            throw new InvalidArgumentException('Can only delete quotes with status: sent');
         }
 
         $quote->delete();
@@ -198,7 +204,7 @@ class QuoteService
     public function getStatusMessage(string $status): string
     {
         return match ($status) {
-            Quote::STATUS_ACCEPTED => 'Quote accepted successfully. RFQ has also been accepted.',
+            Quote::STATUS_ACCEPTED => 'Quote accepted successfully and contract created.',
             Quote::STATUS_REJECTED => 'Quote rejected successfully.',
             Quote::STATUS_SENT     => 'Quote updated and sent successfully. RFQ marked as quoted.',
             default                => 'Quote updated successfully'
