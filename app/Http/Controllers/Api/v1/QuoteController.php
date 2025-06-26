@@ -127,7 +127,7 @@ class QuoteController extends Controller
                 'seller_message' => $request->seller_message,
             ], Auth::id(), $userRoles);
 
-            $message = $this->quoteService->getStatusMessage($request->status ?? $quote->status);
+            $message = $this->quoteService->getStatusMessage($quote->status);
 
             return $this->apiResponse(
                 new QuoteResource($quote),

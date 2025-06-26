@@ -72,8 +72,8 @@ class QuoteService
             $quote = Quote::create([
                 'rfq_id'          => $data['rfq_id'] ?? null,
                 'conversation_id' => $data['conversation_id'] ?? null,
-                'seller_id'       => $rfq ? null : $userId,
-                'buyer_id'        => $rfq ? null : ($conversation ? $this->getOtherParticipant($conversation, $userId) : null),
+                'seller_id'       => $userId,
+                'buyer_id'        => $rfq ? $rfq->buyer_id : ($conversation ? $this->getOtherParticipant($conversation, $userId) : null),
                 'total_price'     => $totalPrice,
                 'seller_message'  => $data['seller_message'] ?? $this->getDefaultMessage($rfq),
                 'status'          => Quote::STATUS_SENT,
