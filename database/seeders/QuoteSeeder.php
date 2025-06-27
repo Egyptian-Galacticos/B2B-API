@@ -2,10 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\Conversation;
 use App\Models\Product;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Rfq;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class QuoteSeeder extends Seeder
@@ -15,6 +17,15 @@ class QuoteSeeder extends Seeder
      */
     public function run(): void
     {
+        // Create RFQ-based quotes
+        $this->createRfqBasedQuotes();
+
+        // Create conversation-based quotes
+        $this->createConversationBasedQuotes();
+    }
+
+    private function createRfqBasedQuotes(): void
+    {
         $rfqsWithQuotes = Rfq::whereIn('status', [Rfq::STATUS_IN_PROGRESS, Rfq::STATUS_QUOTED])->get();
 
         if ($rfqsWithQuotes->isEmpty()) {
@@ -22,12 +33,14 @@ class QuoteSeeder extends Seeder
         }
 
         foreach ($rfqsWithQuotes as $rfq) {
-            if (fake()->boolean(70)) {
+            if (fake()->boolean(50)) {
                 $createdAt = fake()->dateTimeBetween($rfq->created_at, 'now');
                 $updatedAt = fake()->dateTimeBetween($createdAt, 'now');
 
                 $quote = Quote::create([
                     'rfq_id'         => $rfq->id,
+                    'buyer_id'       => $rfq->buyer_id,
+                    'seller_id'      => $rfq->seller_id,
                     'total_price'    => 0,
                     'seller_message' => fake()->optional(0.8)->paragraph(2),
                     'status'         => $this->getQuoteStatus($rfq->status),
@@ -41,10 +54,58 @@ class QuoteSeeder extends Seeder
                     return $item->quantity * $item->unit_price;
                 });
                 $quote->update(['total_price' => $totalPrice]);
+            }
+        }
+    }
 
-                if ($rfq->status === Rfq::STATUS_QUOTED && $quote->status === Quote::STATUS_PENDING) {
-                    $quote->update(['status' => Quote::STATUS_SENT]);
+    private function createConversationBasedQuotes(): void
+    {
+        $conversations = Conversation::where('type', 'direct')
+            ->where('is_active', true)
+            ->get();
+
+        foreach ($conversations as $conversation) {
+            if (fake()->boolean(60)) {
+                $participantIds = $conversation->participant_ids;
+
+                if (count($participantIds) < 2) {
+                    continue;
                 }
+
+                $users = User::whereIn('id', $participantIds)->get();
+                $buyer = $users->filter(fn ($user) => $user->hasRole('buyer'))->first();
+                $seller = $users->filter(fn ($user) => $user->hasRole('seller'))->first();
+
+                if (! $buyer || ! $seller) {
+                    $buyer = $users->first();
+                    $seller = $users->last();
+                }
+
+                $createdAt = fake()->dateTimeBetween($conversation->created_at, 'now');
+                $updatedAt = fake()->dateTimeBetween($createdAt, 'now');
+
+                $quote = Quote::create([
+                    'conversation_id' => $conversation->id,
+                    'buyer_id'        => $buyer->id,
+                    'seller_id'       => $seller->id,
+                    'total_price'     => 0,
+                    'seller_message'  => fake()->optional(0.8)->paragraph(2),
+                    'status'          => fake()->randomElement([
+                        Quote::STATUS_SENT,
+                        Quote::STATUS_SENT,
+                        Quote::STATUS_ACCEPTED,
+                        Quote::STATUS_REJECTED,
+                    ]),
+                    'created_at' => $createdAt,
+                    'updated_at' => $updatedAt,
+                ]);
+
+                $this->createConversationQuoteItems($quote, $seller);
+
+                $totalPrice = $quote->items->sum(function ($item) {
+                    return $item->quantity * $item->unit_price;
+                });
+                $quote->update(['total_price' => $totalPrice]);
             }
         }
     }
@@ -62,12 +123,7 @@ class QuoteSeeder extends Seeder
             ]);
         }
 
-        return fake()->randomElement([
-            Quote::STATUS_PENDING,
-            Quote::STATUS_PENDING,
-            Quote::STATUS_PENDING,
-            Quote::STATUS_SENT,
-        ]);
+        return Quote::STATUS_SENT;
     }
 
     private function createQuoteItems(Quote $quote, Rfq $rfq): void
@@ -114,6 +170,38 @@ class QuoteSeeder extends Seeder
                     ]);
                 }
             }
+        }
+    }
+
+    private function createConversationQuoteItems(Quote $quote, User $seller): void
+    {
+        $sellerProducts = Product::where('seller_id', $seller->id)
+            ->where('is_active', true)
+            ->get();
+
+        if ($sellerProducts->isEmpty()) {
+            $sellerProducts = Product::where('is_active', true)->limit(5)->get();
+        }
+
+        if ($sellerProducts->isEmpty()) {
+            return;
+        }
+
+        $itemCount = rand(1, 3);
+        $selectedProducts = $sellerProducts->random(min($itemCount, $sellerProducts->count()));
+
+        foreach ($selectedProducts as $product) {
+            $quantity = rand(1, 50);
+            $basePrice = $product->price ?? rand(10, 500);
+            $unitPrice = $this->calculateQuotePrice($basePrice);
+
+            QuoteItem::create([
+                'quote_id'   => $quote->id,
+                'product_id' => $product->id,
+                'quantity'   => $quantity,
+                'unit_price' => $unitPrice,
+                'notes'      => fake()->optional(0.3)->sentence(),
+            ]);
         }
     }
 

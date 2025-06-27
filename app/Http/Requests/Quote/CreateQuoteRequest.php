@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Quote;
 
 use App\Traits\ApiResponse;
 use Illuminate\Contracts\Validation\Validator;

@@ -14,11 +14,13 @@ class Rfq extends Model
     const STATUS_SEEN = 'Seen';
     const STATUS_IN_PROGRESS = 'In Progress';
     const STATUS_QUOTED = 'Quoted';
+    const STATUS_REJECTED = 'Rejected';
     const VALID_STATUSES = [
         self::STATUS_PENDING,
         self::STATUS_SEEN,
         self::STATUS_IN_PROGRESS,
         self::STATUS_QUOTED,
+        self::STATUS_REJECTED,
     ];
     protected $fillable = [
         'buyer_id',
@@ -77,6 +79,11 @@ class Rfq extends Model
         return $query->where('status', self::STATUS_QUOTED);
     }
 
+    public function scopeRejected($query)
+    {
+        return $query->where('status', self::STATUS_REJECTED);
+    }
+
     public function scopeForBuyer($query, $buyerId)
     {
         return $query->where('buyer_id', $buyerId);
@@ -108,6 +115,11 @@ class Rfq extends Model
         return $this->status === self::STATUS_QUOTED;
     }
 
+    public function isRejected()
+    {
+        return $this->status === self::STATUS_REJECTED;
+    }
+
     public function canTransitionTo($newStatus)
     {
         if (! in_array($newStatus, self::VALID_STATUSES)) {
@@ -115,10 +127,11 @@ class Rfq extends Model
         }
 
         $validTransitions = [
-            self::STATUS_PENDING     => [self::STATUS_SEEN, self::STATUS_IN_PROGRESS, self::STATUS_QUOTED],
-            self::STATUS_SEEN        => [self::STATUS_IN_PROGRESS, self::STATUS_QUOTED],
+            self::STATUS_PENDING     => [self::STATUS_SEEN, self::STATUS_IN_PROGRESS, self::STATUS_QUOTED, self::STATUS_REJECTED],
+            self::STATUS_SEEN        => [self::STATUS_IN_PROGRESS, self::STATUS_QUOTED, self::STATUS_REJECTED],
             self::STATUS_IN_PROGRESS => [self::STATUS_QUOTED],
-            self::STATUS_QUOTED      => [], // Final status - no transitions out
+            self::STATUS_QUOTED      => [],
+            self::STATUS_REJECTED    => [],
         ];
 
         return in_array($newStatus, $validTransitions[$this->status] ?? []);

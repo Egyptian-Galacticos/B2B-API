@@ -32,4 +32,9 @@ class QuoteItem extends Model
     {
         return $this->belongsTo(Product::class);
     }
+
+    public function getTotalPriceAttribute(): float
+    {
+        return $this->quantity * $this->unit_price;
+    }
 }

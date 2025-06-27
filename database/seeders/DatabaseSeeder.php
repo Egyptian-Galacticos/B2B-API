@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Contract;
 use App\Models\Conversation;
 use App\Models\Escrow;
 use App\Models\Message;
@@ -21,15 +22,39 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             ProductSeeder::class,
             RfqSeeder::class,
+        ]);
+
+        Conversation::factory()->betweenBuyerAndSeller()->count(5)->create();
+
+        $this->call([
             QuoteSeeder::class,
+            ContractSeeder::class,
             WishlistSeeder::class,
         ]);
 
-        // Create random data using factories
-        Escrow::factory()->count(2)->create();
-        Payment::factory()->count(2)->create();
-        Conversation::factory()->count(2)->create();
-        Message::factory()->count(4)->create();
-        MessageAttachment::factory()->count(2)->create();
+        if (Contract::count() > 0) {
+            Escrow::factory()->count(2)->create();
+            Payment::factory()->count(2)->create();
+        }
+
+        if (Contract::count() > 0) {
+            Conversation::factory()->forContract()->count(2)->create();
+        }
+
+        $conversations = Conversation::whereNotNull('participant_ids')->get();
+        foreach ($conversations as $conversation) {
+            $participantIds = $conversation->participant_ids;
+
+            if (empty($participantIds) || ! is_array($participantIds)) {
+                continue;
+            }
+
+            Message::factory()->count(rand(2, 5))->create([
+                'conversation_id' => $conversation->id,
+                'sender_id'       => fake()->randomElement($participantIds),
+            ]);
+        }
+
+        MessageAttachment::factory()->count(3)->create();
     }
 }

@@ -57,151 +57,172 @@ class UserSeeder extends Seeder
             ]);
         }
 
-        // Create sellers (5 active + 2 with different statuses)
-        for ($i = 0; $i < 7; $i++) {
-            if ($i < 5) {
-                // Active verified sellers
-                $user = User::create([
-                    'first_name'        => fake()->firstName(),
-                    'last_name'         => fake()->lastName(),
-                    'email'             => fake()->unique()->safeEmail(),
-                    'password'          => Hash::make('password'),
-                    'email_verified_at' => now(),
-                    'remember_token'    => Str::random(10),
-                    'status'            => 'active',
-                    'is_email_verified' => true,
-                ]);
+        $this->createSellers();
+        $this->createBuyers();
+    }
+
+    private function createSellers(): void
+    {
+        for ($i = 1; $i <= 7; $i++) {
+            $email = "seller{$i}@example.com";
+
+            if ($i <= 5) {
+                $user = User::firstOrCreate(
+                    ['email' => $email],
+                    [
+                        'first_name'        => 'Seller',
+                        'last_name'         => "User {$i}",
+                        'password'          => Hash::make('password'),
+                        'email_verified_at' => now(),
+                        'remember_token'    => Str::random(10),
+                        'status'            => 'active',
+                        'is_email_verified' => true,
+                    ]
+                );
                 $user->assignRole('seller');
 
-                // Create seller's company
-                Company::create([
-                    'user_id'       => $user->id,
-                    'name'          => fake()->company().' Ltd',
-                    'tax_id'        => 'SEL'.str_pad($i + 1, 3, '0', STR_PAD_LEFT),
-                    'email'         => fake()->unique()->companyEmail(),
-                    'company_phone' => fake()->phoneNumber(),
-                    'address'       => [
-                        'street'      => fake()->streetAddress(),
-                        'city'        => fake()->city(),
-                        'state'       => fake()->state(),
-                        'country'     => fake()->randomElement(['USA', 'Canada', 'UK', 'Germany']),
-                        'postal_code' => fake()->postcode(),
-                    ],
-                    'website'           => fake()->optional(0.7)->url(),
-                    'description'       => fake()->optional(0.5)->sentence(10),
-                    'is_email_verified' => true,
-                ]);
+                if (! $user->company) {
+                    Company::create([
+                        'user_id'       => $user->id,
+                        'name'          => "Seller Company {$i} Ltd",
+                        'tax_id'        => 'SEL'.str_pad($i, 3, '0', STR_PAD_LEFT),
+                        'email'         => "seller{$i}@company.com",
+                        'company_phone' => '+1234567'.str_pad($i, 3, '0', STR_PAD_LEFT),
+                        'address'       => [
+                            'street'      => "{$i}00 Seller Street",
+                            'city'        => "Seller City {$i}",
+                            'state'       => "State {$i}",
+                            'country'     => 'USA',
+                            'postal_code' => '1000'.$i,
+                        ],
+                        'website'           => "https://seller{$i}.com",
+                        'description'       => "Seller company {$i} description",
+                        'is_email_verified' => true,
+                    ]);
+                }
             } else {
-                // Edge case sellers
                 $statuses = [
-                    ['user_status' => 'pending', 'email_verified' => false, 'company_status' => 'pending'],
-                    ['user_status' => 'suspended', 'email_verified' => true, 'company_status' => 'verified'],
+                    6 => ['user_status' => 'pending', 'email_verified' => false, 'company_status' => 'pending'],
+                    7 => ['user_status' => 'suspended', 'email_verified' => true, 'company_status' => 'verified'],
                 ];
-                $statusData = $statuses[$i - 5];
+                $statusData = $statuses[$i];
 
-                $user = User::create([
-                    'first_name'        => fake()->firstName(),
-                    'last_name'         => fake()->lastName(),
-                    'email'             => fake()->unique()->safeEmail(),
-                    'password'          => Hash::make('password'),
-                    'email_verified_at' => $statusData['email_verified'] ? now() : null,
-                    'remember_token'    => Str::random(10),
-                    'status'            => $statusData['user_status'],
-                    'is_email_verified' => $statusData['email_verified'],
-                ]);
+                $user = User::firstOrCreate(
+                    ['email' => $email],
+                    [
+                        'first_name'        => 'Seller',
+                        'last_name'         => "User {$i}",
+                        'password'          => Hash::make('password'),
+                        'email_verified_at' => $statusData['email_verified'] ? now() : null,
+                        'remember_token'    => Str::random(10),
+                        'status'            => $statusData['user_status'],
+                        'is_email_verified' => $statusData['email_verified'],
+                    ]
+                );
                 $user->assignRole('seller');
 
-                Company::create([
-                    'user_id'       => $user->id,
-                    'name'          => fake()->company().' Ltd',
-                    'tax_id'        => 'SEL'.str_pad($i + 1, 3, '0', STR_PAD_LEFT),
-                    'email'         => fake()->unique()->companyEmail(),
-                    'company_phone' => fake()->phoneNumber(),
-                    'address'       => [
-                        'street'      => fake()->streetAddress(),
-                        'city'        => fake()->city(),
-                        'state'       => fake()->state(),
-                        'country'     => fake()->randomElement(['USA', 'Canada', 'UK', 'Germany']),
-                        'postal_code' => fake()->postcode(),
-                    ],
-                    'website'           => fake()->optional(0.5)->url(),
-                    'description'       => fake()->optional(0.3)->sentence(8),
-                    'is_email_verified' => $statusData['company_status'] === 'verified',
-                ]);
+                if (! $user->company) {
+                    Company::create([
+                        'user_id'       => $user->id,
+                        'name'          => "Seller Company {$i} Ltd",
+                        'tax_id'        => 'SEL'.str_pad($i, 3, '0', STR_PAD_LEFT),
+                        'email'         => "seller{$i}@company.com",
+                        'company_phone' => '+1234567'.str_pad($i, 3, '0', STR_PAD_LEFT),
+                        'address'       => [
+                            'street'      => "{$i}00 Seller Street",
+                            'city'        => "Seller City {$i}",
+                            'state'       => "State {$i}",
+                            'country'     => 'USA',
+                            'postal_code' => '1000'.$i,
+                        ],
+                        'website'           => $i === 6 ? null : "https://seller{$i}.com",
+                        'description'       => "Seller company {$i} description",
+                        'is_email_verified' => $statusData['company_status'] === 'verified',
+                    ]);
+                }
             }
         }
+    }
 
-        // Create buyers (8 active + 2 with different statuses)
-        for ($i = 0; $i < 10; $i++) {
-            if ($i < 8) {
-                // Active verified buyers
-                $user = User::create([
-                    'first_name'        => fake()->firstName(),
-                    'last_name'         => fake()->lastName(),
-                    'email'             => fake()->unique()->safeEmail(),
-                    'password'          => Hash::make('password'),
-                    'email_verified_at' => now(),
-                    'remember_token'    => Str::random(10),
-                    'status'            => 'active',
-                    'is_email_verified' => true,
-                ]);
+    private function createBuyers(): void
+    {
+        for ($i = 1; $i <= 10; $i++) {
+            $email = "buyer{$i}@example.com";
+
+            if ($i <= 8) {
+                $user = User::firstOrCreate(
+                    ['email' => $email],
+                    [
+                        'first_name'        => 'Buyer',
+                        'last_name'         => "User {$i}",
+                        'password'          => Hash::make('password'),
+                        'email_verified_at' => now(),
+                        'remember_token'    => Str::random(10),
+                        'status'            => 'active',
+                        'is_email_verified' => true,
+                    ]
+                );
                 $user->assignRole('buyer');
 
-                // Create buyer's company
-                Company::create([
-                    'user_id'       => $user->id,
-                    'name'          => fake()->company().' Corp',
-                    'tax_id'        => 'BUY'.str_pad($i + 1, 3, '0', STR_PAD_LEFT),
-                    'email'         => fake()->unique()->companyEmail(),
-                    'company_phone' => fake()->phoneNumber(),
-                    'address'       => [
-                        'street'      => fake()->streetAddress(),
-                        'city'        => fake()->city(),
-                        'state'       => fake()->state(),
-                        'country'     => fake()->randomElement(['USA', 'Canada', 'UK', 'France', 'Australia']),
-                        'postal_code' => fake()->postcode(),
-                    ],
-                    'website'           => fake()->optional(0.6)->url(),
-                    'description'       => fake()->optional(0.4)->sentence(12),
-                    'is_email_verified' => true,
-                ]);
+                if (! $user->company) {
+                    Company::create([
+                        'user_id'       => $user->id,
+                        'name'          => "Buyer Company {$i} Corp",
+                        'tax_id'        => 'BUY'.str_pad($i, 3, '0', STR_PAD_LEFT),
+                        'email'         => "buyer{$i}@company.com",
+                        'company_phone' => '+1234568'.str_pad($i, 3, '0', STR_PAD_LEFT),
+                        'address'       => [
+                            'street'      => "{$i}00 Buyer Avenue",
+                            'city'        => "Buyer City {$i}",
+                            'state'       => "State {$i}",
+                            'country'     => 'USA',
+                            'postal_code' => '2000'.$i,
+                        ],
+                        'website'           => "https://buyer{$i}.com",
+                        'description'       => "Buyer company {$i} description",
+                        'is_email_verified' => true,
+                    ]);
+                }
             } else {
-                // Edge case buyers
                 $statuses = [
-                    ['user_status' => 'pending', 'email_verified' => true, 'company_status' => 'pending'],
-                    ['user_status' => 'active', 'email_verified' => false, 'company_status' => 'verified'],
+                    9  => ['user_status' => 'pending', 'email_verified' => true, 'company_status' => 'pending'],
+                    10 => ['user_status' => 'active', 'email_verified' => false, 'company_status' => 'verified'],
                 ];
-                $statusData = $statuses[$i - 8];
+                $statusData = $statuses[$i];
 
-                $user = User::create([
-                    'first_name'        => fake()->firstName(),
-                    'last_name'         => fake()->lastName(),
-                    'email'             => fake()->unique()->safeEmail(),
-                    'password'          => Hash::make('password'),
-                    'email_verified_at' => $statusData['email_verified'] ? now() : null,
-                    'remember_token'    => Str::random(10),
-                    'status'            => $statusData['user_status'],
-                    'is_email_verified' => $statusData['email_verified'],
-                ]);
+                $user = User::firstOrCreate(
+                    ['email' => $email],
+                    [
+                        'first_name'        => 'Buyer',
+                        'last_name'         => "User {$i}",
+                        'password'          => Hash::make('password'),
+                        'email_verified_at' => $statusData['email_verified'] ? now() : null,
+                        'remember_token'    => Str::random(10),
+                        'status'            => $statusData['user_status'],
+                        'is_email_verified' => $statusData['email_verified'],
+                    ]
+                );
                 $user->assignRole('buyer');
 
-                Company::create([
-                    'user_id'       => $user->id,
-                    'name'          => fake()->company().' Corp',
-                    'tax_id'        => 'BUY'.str_pad($i + 1, 3, '0', STR_PAD_LEFT),
-                    'email'         => fake()->unique()->companyEmail(),
-                    'company_phone' => fake()->phoneNumber(),
-                    'address'       => [
-                        'street'      => fake()->streetAddress(),
-                        'city'        => fake()->city(),
-                        'state'       => fake()->state(),
-                        'country'     => fake()->randomElement(['USA', 'Canada', 'UK', 'France', 'Australia']),
-                        'postal_code' => fake()->postcode(),
-                    ],
-                    'website'           => fake()->optional(0.4)->url(),
-                    'description'       => fake()->optional(0.2)->sentence(8),
-                    'is_email_verified' => $statusData['company_status'] === 'verified',
-                ]);
+                if (! $user->company) {
+                    Company::create([
+                        'user_id'       => $user->id,
+                        'name'          => "Buyer Company {$i} Corp",
+                        'tax_id'        => 'BUY'.str_pad($i, 3, '0', STR_PAD_LEFT),
+                        'email'         => "buyer{$i}@company.com",
+                        'company_phone' => '+1234568'.str_pad($i, 3, '0', STR_PAD_LEFT),
+                        'address'       => [
+                            'street'      => "{$i}00 Buyer Avenue",
+                            'city'        => "Buyer City {$i}",
+                            'state'       => "State {$i}",
+                            'country'     => 'USA',
+                            'postal_code' => '2000'.$i,
+                        ],
+                        'website'           => $i === 10 ? null : "https://buyer{$i}.com",
+                        'description'       => "Buyer company {$i} description",
+                        'is_email_verified' => $statusData['company_status'] === 'verified',
+                    ]);
+                }
             }
         }
     }

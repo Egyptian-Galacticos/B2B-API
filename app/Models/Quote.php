@@ -5,17 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use InvalidArgumentException;
 
 class Quote extends Model
 {
     /** @use HasFactory<\Database\Factories\QuoteFactory> */
     use HasFactory, SoftDeletes;
-    const STATUS_PENDING = 'pending';
     const STATUS_SENT = 'sent';
     const STATUS_ACCEPTED = 'accepted';
     const STATUS_REJECTED = 'rejected';
     const VALID_STATUSES = [
-        self::STATUS_PENDING,
         self::STATUS_SENT,
         self::STATUS_ACCEPTED,
         self::STATUS_REJECTED,
@@ -28,10 +27,12 @@ class Quote extends Model
         'total_price',
         'seller_message',
         'status',
+        'accepted_at',
     ];
     protected $casts = [
         'total_price' => 'decimal:2',
         'status'      => 'string',
+        'accepted_at' => 'datetime',
     ];
 
     // releationships
@@ -43,6 +44,11 @@ class Quote extends Model
     public function conversation()
     {
         return $this->belongsTo(Conversation::class);
+    }
+
+    public function contract()
+    {
+        return $this->hasOne(Contract::class);
     }
 
     public function items()
@@ -62,24 +68,30 @@ class Quote extends Model
         return $this->belongsTo(User::class, 'buyer_id');
     }
 
+    // Primary seller relationship - always returns a relationship instance
     public function seller()
     {
-        // Return direct seller if exists, otherwise get from RFQ
-        return $this->seller_id ? $this->directSeller : ($this->rfq ? $this->rfq->seller() : null);
+        return $this->belongsTo(User::class, 'seller_id');
     }
 
+    // Primary buyer relationship - always returns a relationship instance
     public function buyer()
     {
-        // Return direct buyer if exists, otherwise get from RFQ
-        return $this->buyer_id ? $this->directBuyer : ($this->rfq ? $this->rfq->buyer() : null);
+        return $this->belongsTo(User::class, 'buyer_id');
+    }
+
+    // Helper methods to get seller/buyer with fallback to RFQ
+    public function getSellerAttribute()
+    {
+        return $this->seller_id ? $this->directSeller : ($this->rfq ? $this->rfq->seller : null);
+    }
+
+    public function getBuyerAttribute()
+    {
+        return $this->buyer_id ? $this->directBuyer : ($this->rfq ? $this->rfq->buyer : null);
     }
 
     // scopes
-    public function scopePending($query)
-    {
-        return $query->where('status', self::STATUS_PENDING);
-    }
-
     public function scopeSent($query)
     {
         return $query->where('status', self::STATUS_SENT);
@@ -93,12 +105,6 @@ class Quote extends Model
     public function scopeRejected($query)
     {
         return $query->where('status', self::STATUS_REJECTED);
-    }
-
-    // accessors
-    public function isPending(): bool
-    {
-        return $this->status === self::STATUS_PENDING;
     }
 
     public function isSent(): bool
@@ -116,7 +122,6 @@ class Quote extends Model
         return $this->status === self::STATUS_REJECTED;
     }
 
-    // Status transition helpers
     public function canTransitionTo($newStatus)
     {
         if (! in_array($newStatus, self::VALID_STATUSES)) {
@@ -124,7 +129,6 @@ class Quote extends Model
         }
 
         $validTransitions = [
-            self::STATUS_PENDING  => [self::STATUS_SENT],
             self::STATUS_SENT     => [self::STATUS_ACCEPTED, self::STATUS_REJECTED],
             self::STATUS_ACCEPTED => [],
             self::STATUS_REJECTED => [],
@@ -136,18 +140,20 @@ class Quote extends Model
     public function transitionTo($newStatus)
     {
         if (! $this->canTransitionTo($newStatus)) {
-            throw new \InvalidArgumentException("Cannot transition from {$this->status} to {$newStatus}");
+            throw new InvalidArgumentException("Cannot transition from {$this->status} to {$newStatus}");
         }
 
-        // Only update RFQ status if there's an RFQ
         if ($newStatus === self::STATUS_SENT && $this->rfq && $this->rfq->status !== Rfq::STATUS_QUOTED) {
             $this->rfq->transitionTo(Rfq::STATUS_QUOTED);
         }
 
-        // Note: RFQ remains in 'Quoted' status as it's the final status in the new workflow
-
         $this->status = $newStatus;
 
         return $this->save();
+    }
+
+    public function hasContract(): bool
+    {
+        return $this->contract()->exists();
     }
 }

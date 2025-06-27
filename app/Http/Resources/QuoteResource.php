@@ -48,6 +48,17 @@ class QuoteResource extends JsonResource
                 });
             }),
 
+            'contract' => $this->whenLoaded('contract', function () {
+                return [
+                    'id'                 => $this->contract->id,
+                    'contract_number'    => $this->contract->contract_number,
+                    'status'             => $this->contract->status,
+                    'total_amount'       => $this->contract->total_amount,
+                    'contract_date'      => $this->contract->contract_date,
+                    'estimated_delivery' => $this->contract->estimated_delivery,
+                ];
+            }),
+
         ];
     }
 }

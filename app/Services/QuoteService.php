@@ -74,8 +74,8 @@ class QuoteService
             $quote = Quote::create([
                 'rfq_id'          => $data['rfq_id'] ?? null,
                 'conversation_id' => $data['conversation_id'] ?? null,
-                'seller_id'       => $rfq ? null : $userId,
-                'buyer_id'        => $rfq ? null : ($conversation ? $this->getOtherParticipant($conversation, $userId) : null),
+                'seller_id'       => $userId,
+                'buyer_id'        => $rfq ? $rfq->buyer_id : ($conversation ? $this->getOtherParticipant($conversation, $userId) : null),
                 'total_price'     => $totalPrice,
                 'seller_message'  => $data['seller_message'] ?? $this->getDefaultMessage($rfq),
                 'status'          => Quote::STATUS_SENT,
@@ -136,12 +136,18 @@ class QuoteService
                 if (! empty($data['status'])) {
                     $this->validateStatusTransition($quote, $data['status'], $userRoles);
                     $updateData['status'] = $data['status'];
+                    if ($data['status'] === Quote::STATUS_ACCEPTED) {
+                        $updateData['accepted_at'] = now();
+                    }
                 }
             } else {
 
                 if (! empty($data['status'])) {
                     $this->validateStatusTransition($quote, $data['status'], $userRoles);
                     $updateData['status'] = $data['status'];
+                    if ($data['status'] === Quote::STATUS_ACCEPTED) {
+                        $updateData['accepted_at'] = now();
+                    }
                 }
 
                 if (! empty($data['items']) && $this->canUpdateItems($userRoles)) {
@@ -158,7 +164,8 @@ class QuoteService
                 $quote->update($updateData);
             }
 
-            $quote->load(['buyer.company', 'seller.company', 'rfq.buyer', 'rfq.seller', 'items.product']);
+            $quote->load(['rfq.buyer', 'rfq.seller', 'items.product', 'contract']);
+
 
             return $quote;
         });
@@ -187,8 +194,8 @@ class QuoteService
             throw new AuthorizationException('You can only delete your own quotes');
         }
 
-        if ($quote->status !== Quote::STATUS_PENDING) {
-            throw new InvalidArgumentException('Can only delete quotes with status: pending');
+        if ($quote->status !== Quote::STATUS_SENT) {
+            throw new InvalidArgumentException('Can only delete quotes with status: sent');
         }
 
         $quote->delete();
@@ -200,7 +207,7 @@ class QuoteService
     public function getStatusMessage(string $status): string
     {
         return match ($status) {
-            Quote::STATUS_ACCEPTED => 'Quote accepted successfully. RFQ has also been accepted.',
+            Quote::STATUS_ACCEPTED => 'Quote accepted successfully. The seller can now create a contract from this accepted quote.',
             Quote::STATUS_REJECTED => 'Quote rejected successfully.',
             Quote::STATUS_SENT     => 'Quote updated and sent successfully. RFQ marked as quoted.',
             default                => 'Quote updated successfully'

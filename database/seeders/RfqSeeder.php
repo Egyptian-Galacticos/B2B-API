@@ -24,17 +24,17 @@ class RfqSeeder extends Seeder
         }
 
         $statusDistribution = [
-            Rfq::STATUS_PENDING     => 35,
-            Rfq::STATUS_SEEN        => 25,
-            Rfq::STATUS_IN_PROGRESS => 25,
-            Rfq::STATUS_QUOTED      => 15,
+            Rfq::STATUS_PENDING     => 25,
+            Rfq::STATUS_SEEN        => 20,
+            Rfq::STATUS_IN_PROGRESS => 35,
+            Rfq::STATUS_QUOTED      => 20,
         ];
 
         foreach ($activeBuyers->take(5) as $buyer) {
-            $sellersForThisBuyer = $activeSellers->shuffle()->take(rand(2, 4));
+            $sellersForThisBuyer = $activeSellers->shuffle()->take(rand(2, 3));
 
             foreach ($sellersForThisBuyer as $seller) {
-                $rfqCount = rand(1, 3);
+                $rfqCount = rand(1, 2);
 
                 for ($i = 0; $i < $rfqCount; $i++) {
                     $product = $activeProducts->where('seller_id', $seller->id)->random();
