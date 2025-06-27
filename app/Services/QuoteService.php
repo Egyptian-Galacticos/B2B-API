@@ -156,12 +156,6 @@ class QuoteService
                 $quote->update($updateData);
             }
 
-            if (isset($updateData['status']) && $updateData['status'] === Quote::STATUS_ACCEPTED) {
-                if (! $quote->hasContract()) {
-                    $quote->acceptAndCreateContract();
-                }
-            }
-
             $quote->load(['rfq.buyer', 'rfq.seller', 'items.product', 'contract']);
 
             return $quote;

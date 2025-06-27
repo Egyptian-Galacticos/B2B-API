@@ -1,12 +1,14 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Quote;
 
+use App\Models\Quote;
 use App\Traits\ApiResponse;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class UpdateQuoteRequest extends FormRequest
 {
@@ -28,6 +30,15 @@ class UpdateQuoteRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'status' => [
+                'nullable',
+                'string',
+                Rule::in([
+                    Quote::STATUS_SENT,
+                    Quote::STATUS_ACCEPTED,
+                    Quote::STATUS_REJECTED,
+                ]),
+            ],
             'seller_message'     => 'nullable|string|max:1000',
             'items'              => 'sometimes|array|min:1',
             'items.*.id'         => 'nullable|exists:quote_items,id', // Nullable for new items
@@ -41,6 +52,7 @@ class UpdateQuoteRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'status.in'                           => 'Status must be one of: sent, accepted, rejected',
             'items.array'                         => 'Quote items must be an array',
             'items.min'                           => 'At least one quote item is required when updating items',
             'items.*.id.exists'                   => 'Selected quote item does not exist',
