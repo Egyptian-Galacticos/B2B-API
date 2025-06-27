@@ -17,18 +17,26 @@ return new class extends Migration
             $table->foreignId('quote_id')->constrained('quotes')->onDelete('cascade');
             $table->foreignId('buyer_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('seller_id')->constrained('users')->onDelete('cascade');
-            $table->enum('status', ['active', 'in_progress', 'completed', 'cancelled', 'disputed'])->default('active');
+            $table->enum('status', [
+                'pending_approval',
+                'approved',
+                'pending_payment',
+                'in_progress',
+                'shipped',
+                'delivered',
+                'completed',
+                'cancelled',
+            ])->default('pending_approval');
             $table->decimal('total_amount', 15, 2);
             $table->string('currency', 10)->default('USD');
             $table->timestamp('contract_date');
             $table->timestamp('estimated_delivery')->nullable();
-            $table->text('shipping_address')->nullable();
-            $table->text('billing_address')->nullable();
+            $table->json('shipping_address')->nullable();
+            $table->json('billing_address')->nullable();
             $table->text('terms_and_conditions')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamps();
         });
-
     }
 
     /**

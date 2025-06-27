@@ -19,6 +19,7 @@ Route::middleware(['jwt.auth', 'is_email_verified', 'is_suspended:active'])->gro
     Route::prefix('contracts')->name('contracts.')->group(function () {
         Route::get('/', [ContractController::class, 'index'])->name('index');
         Route::get('/{id}', [ContractController::class, 'show'])->name('show');
+        Route::post('/', [ContractController::class, 'store'])->name('store');
         Route::put('/{id}', [ContractController::class, 'update'])->name('update');
     });
 });

@@ -101,10 +101,12 @@ class ContractSeeder extends Seeder
     private function getContractStatus(): string
     {
         return fake()->randomElement([
-            Contract::STATUS_ACTIVE,
-            Contract::STATUS_ACTIVE,
+            Contract::STATUS_PENDING_APPROVAL,
+            Contract::STATUS_APPROVED,
+            Contract::STATUS_PENDING_PAYMENT,
             Contract::STATUS_IN_PROGRESS,
-            Contract::STATUS_IN_PROGRESS,
+            Contract::STATUS_SHIPPED,
+            Contract::STATUS_DELIVERED,
             Contract::STATUS_COMPLETED,
             Contract::STATUS_CANCELLED,
         ]);

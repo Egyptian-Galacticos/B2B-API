@@ -8,17 +8,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Contract extends Model
 {
-    const STATUS_ACTIVE = 'active';
+    const STATUS_PENDING_APPROVAL = 'pending_approval';
+    const STATUS_APPROVED = 'approved';
+    const STATUS_PENDING_PAYMENT = 'pending_payment';
     const STATUS_IN_PROGRESS = 'in_progress';
+    const STATUS_SHIPPED = 'shipped';
+    const STATUS_DELIVERED = 'delivered';
     const STATUS_COMPLETED = 'completed';
     const STATUS_CANCELLED = 'cancelled';
-    const STATUS_DISPUTED = 'disputed';
     const VALID_STATUSES = [
-        self::STATUS_ACTIVE,
+        self::STATUS_PENDING_APPROVAL,
+        self::STATUS_APPROVED,
+        self::STATUS_PENDING_PAYMENT,
         self::STATUS_IN_PROGRESS,
+        self::STATUS_SHIPPED,
+        self::STATUS_DELIVERED,
         self::STATUS_COMPLETED,
         self::STATUS_CANCELLED,
-        self::STATUS_DISPUTED,
     ];
     protected $fillable = [
         'quote_id',
@@ -38,6 +44,8 @@ class Contract extends Model
     protected $casts = [
         'contract_date'      => 'datetime',
         'estimated_delivery' => 'datetime',
+        'shipping_address'   => 'array',
+        'billing_address'    => 'array',
         'metadata'           => 'array',
         'total_amount'       => 'decimal:2',
     ];
@@ -69,14 +77,34 @@ class Contract extends Model
         return $query->where('buyer_id', $userId)->orWhere('seller_id', $userId);
     }
 
-    public function scopeActive($query)
+    public function scopePendingApproval($query)
     {
-        return $query->where('status', self::STATUS_ACTIVE);
+        return $query->where('status', self::STATUS_PENDING_APPROVAL);
+    }
+
+    public function scopeApproved($query)
+    {
+        return $query->where('status', self::STATUS_APPROVED);
+    }
+
+    public function scopePendingPayment($query)
+    {
+        return $query->where('status', self::STATUS_PENDING_PAYMENT);
     }
 
     public function scopeInProgress($query)
     {
         return $query->where('status', self::STATUS_IN_PROGRESS);
+    }
+
+    public function scopeShipped($query)
+    {
+        return $query->where('status', self::STATUS_SHIPPED);
+    }
+
+    public function scopeDelivered($query)
+    {
+        return $query->where('status', self::STATUS_DELIVERED);
     }
 
     public function scopeCompleted($query)
@@ -89,11 +117,6 @@ class Contract extends Model
         return $query->where('status', self::STATUS_CANCELLED);
     }
 
-    public function scopeDisputed($query)
-    {
-        return $query->where('status', self::STATUS_DISPUTED);
-    }
-
     public function canTransitionTo(string $status): bool
     {
         if (! in_array($status, self::VALID_STATUSES)) {
@@ -101,11 +124,14 @@ class Contract extends Model
         }
 
         $allowedTransitions = [
-            self::STATUS_ACTIVE      => [self::STATUS_IN_PROGRESS, self::STATUS_CANCELLED, self::STATUS_DISPUTED],
-            self::STATUS_IN_PROGRESS => [self::STATUS_COMPLETED, self::STATUS_CANCELLED, self::STATUS_DISPUTED],
-            self::STATUS_DISPUTED    => [self::STATUS_ACTIVE, self::STATUS_IN_PROGRESS, self::STATUS_CANCELLED],
-            self::STATUS_COMPLETED   => [],
-            self::STATUS_CANCELLED   => [],
+            self::STATUS_PENDING_APPROVAL => [self::STATUS_APPROVED, self::STATUS_CANCELLED],
+            self::STATUS_APPROVED         => [self::STATUS_PENDING_PAYMENT, self::STATUS_CANCELLED],
+            self::STATUS_PENDING_PAYMENT  => [self::STATUS_IN_PROGRESS, self::STATUS_CANCELLED],
+            self::STATUS_IN_PROGRESS      => [self::STATUS_SHIPPED, self::STATUS_CANCELLED],
+            self::STATUS_SHIPPED          => [self::STATUS_DELIVERED, self::STATUS_CANCELLED],
+            self::STATUS_DELIVERED        => [self::STATUS_COMPLETED],
+            self::STATUS_COMPLETED        => [],
+            self::STATUS_CANCELLED        => [],
         ];
 
         return in_array($status, $allowedTransitions[$this->status] ?? []);
@@ -122,14 +148,34 @@ class Contract extends Model
         return false;
     }
 
-    public function isActive(): bool
+    public function isPendingApproval(): bool
     {
-        return $this->status === self::STATUS_ACTIVE;
+        return $this->status === self::STATUS_PENDING_APPROVAL;
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === self::STATUS_APPROVED;
+    }
+
+    public function isPendingPayment(): bool
+    {
+        return $this->status === self::STATUS_PENDING_PAYMENT;
     }
 
     public function isInProgress(): bool
     {
         return $this->status === self::STATUS_IN_PROGRESS;
+    }
+
+    public function isShipped(): bool
+    {
+        return $this->status === self::STATUS_SHIPPED;
+    }
+
+    public function isDelivered(): bool
+    {
+        return $this->status === self::STATUS_DELIVERED;
     }
 
     public function isCompleted(): bool
@@ -140,10 +186,5 @@ class Contract extends Model
     public function isCancelled(): bool
     {
         return $this->status === self::STATUS_CANCELLED;
-    }
-
-    public function isDisputed(): bool
-    {
-        return $this->status === self::STATUS_DISPUTED;
     }
 }
