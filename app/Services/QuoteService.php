@@ -134,12 +134,18 @@ class QuoteService
                 if (! empty($data['status'])) {
                     $this->validateStatusTransition($quote, $data['status'], $userRoles);
                     $updateData['status'] = $data['status'];
+                    if ($data['status'] === Quote::STATUS_ACCEPTED) {
+                        $updateData['accepted_at'] = now();
+                    }
                 }
             } else {
 
                 if (! empty($data['status'])) {
                     $this->validateStatusTransition($quote, $data['status'], $userRoles);
                     $updateData['status'] = $data['status'];
+                    if ($data['status'] === Quote::STATUS_ACCEPTED) {
+                        $updateData['accepted_at'] = now();
+                    }
                 }
 
                 if (! empty($data['items']) && $this->canUpdateItems($userRoles)) {
@@ -198,7 +204,7 @@ class QuoteService
     public function getStatusMessage(string $status): string
     {
         return match ($status) {
-            Quote::STATUS_ACCEPTED => 'Quote accepted successfully and contract created.',
+            Quote::STATUS_ACCEPTED => 'Quote accepted successfully. The seller can now create a contract from this accepted quote.',
             Quote::STATUS_REJECTED => 'Quote rejected successfully.',
             Quote::STATUS_SENT     => 'Quote updated and sent successfully. RFQ marked as quoted.',
             default                => 'Quote updated successfully'
