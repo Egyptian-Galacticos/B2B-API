@@ -23,6 +23,7 @@ class UpdateRfqRequest extends FormRequest
                     Rfq::STATUS_SEEN,
                     Rfq::STATUS_IN_PROGRESS,
                     Rfq::STATUS_QUOTED,
+                    Rfq::STATUS_REJECTED,
                 ]),
             ],
         ];
@@ -32,7 +33,7 @@ class UpdateRfqRequest extends FormRequest
     {
         return [
             'status.required' => 'Status is required.',
-            'status.in'       => 'Invalid status. Allowed values are: seen, In Progress, Quoted.',
+            'status.in'       => 'Invalid status. Allowed values are: seen, In Progress, Quoted, Rejected.',
         ];
     }
 }

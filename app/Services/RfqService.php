@@ -74,6 +74,7 @@ class RfqService
             Rfq::STATUS_SEEN        => 'RFQ marked as seen',
             Rfq::STATUS_IN_PROGRESS => 'RFQ marked as in progress',
             Rfq::STATUS_QUOTED      => 'RFQ marked as quoted',
+            Rfq::STATUS_REJECTED    => 'RFQ marked as rejected',
             default                 => 'RFQ updated successfully'
         };
     }
