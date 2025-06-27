@@ -24,7 +24,7 @@ class BulkProductImportRequest extends BaseRequest
             'products.*.weight'                      => ['required', 'numeric', 'min:0'],
             'products.*.currency'                    => ['required', 'string', 'size:3'],
             'products.*.origin'                      => ['nullable', 'string', 'max:255'],
-            'products.*.category'                    => ['required', 'string', 'max:255'],
+            'products.*.category_id'                 => ['required', 'integer'],
             'products.*.certifications'              => ['nullable', 'array'],
             'products.*.dimensions'                  => ['nullable', 'array'],
             'products.*.sample_available'            => ['boolean'],

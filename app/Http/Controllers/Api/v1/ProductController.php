@@ -216,6 +216,9 @@ class ProductController extends Controller
         // Get the product from middleware (ownership already verified)
         $product = $request->get('product');
         $validated = $request->validated();
+        $validated['dimensions'] = json_decode($validated['dimensions'], true);
+        $validated['price_tiers'] = json_decode($validated['price_tiers'], true);
+        $validated['product_tags'] = json_decode($validated['product_tags'], true);
 
         // Remove file fields from validated data as they're handled separately
         $productData = collect($validated)->except(['main_image', 'images', 'documents', 'price_tiers'])->toArray();
@@ -299,11 +302,10 @@ class ProductController extends Controller
         } catch (ModelNotFoundException $e) {
             return $this->apiResponseErrors(
                 message: 'Product not found.',
-                errors : ['id' => $id],
+                errors: ['id' => $id],
                 status: 404,
             );
         }
-
     }
 
     /**
@@ -488,11 +490,10 @@ class ProductController extends Controller
             foreach ($products as $product) {
                 // Handle category ID lookup if category name is provided
                 try {
-                    if (isset($product['category'])) {
-                        $category = Category::byName($product['category'])->firstOrFail();
-                        $product['category_id'] = $category->id ?? null;
-                        unset($product['category']);
+                    if (isset($product['category_id'])) {
+                        $category = Category::findOrFail($product['category_id']);
                     }
+                    $product['seller_id'] = Auth::id();
                 } catch (ModelNotFoundException $e) {
                     DB::rollBack();
 
@@ -511,7 +512,7 @@ class ProductController extends Controller
                 $productModel = Product::create($product);
 
                 // Handle product tiers if provided
-                if (isset($product['tiers'])) {
+                if (isset($product['price_tiers'])) {
                     $productModel->tiers()->createMany($product['price_tiers']);
                 }
 

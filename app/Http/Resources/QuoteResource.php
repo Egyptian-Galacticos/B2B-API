@@ -20,8 +20,8 @@ class QuoteResource extends JsonResource
             'total_price'     => $this->total_price,
             'seller_message'  => $this->seller_message,
             'conversation_id' => $this->conversation_id,
-            'seller_id'       => $this->seller_id,
-            'buyer_id'        => $this->buyer_id,
+            'seller'          => UserResource::make($this->whenLoaded('seller')),
+            'buyer'           => UserResource::make($this->whenLoaded('buyer')),
             'status'          => $this->status,
             'created_at'      => $this->created_at,
             'updated_at'      => $this->updated_at,
@@ -43,7 +43,7 @@ class QuoteResource extends JsonResource
                         'quantity'      => $item->quantity,
                         'unit_price'    => $item->unit_price,
                         'total_price'   => $item->quantity * $item->unit_price,
-                        'notes'         => $item->notes ?? '', // Ensure it's not null
+                        'notes'         => $item->notes ?? '',
                     ];
                 });
             }),

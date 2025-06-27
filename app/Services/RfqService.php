@@ -28,7 +28,7 @@ class RfqService
             'status'             => Rfq::STATUS_PENDING,
         ]);
 
-        return $rfq->load(['buyer', 'seller', 'initialProduct']);
+        return $rfq->load(['buyer.company', 'seller.company', 'initialProduct']);
     }
 
     /**
@@ -42,7 +42,7 @@ class RfqService
             throw new \Illuminate\Auth\Access\AuthorizationException('Unauthorized access to this RFQ');
         }
 
-        return $rfq->load(['buyer', 'seller', 'initialProduct', 'quotes.items.product']);
+        return $rfq->load(['buyer.company', 'seller.company', 'initialProduct', 'quotes.items.product']);
     }
 
     /**
@@ -62,7 +62,7 @@ class RfqService
 
         $rfq->update(['status' => $newStatus]);
 
-        return $rfq->load(['buyer', 'seller', 'initialProduct', 'quotes']);
+        return $rfq->load(['buyer.company', 'seller.company', 'initialProduct', 'quotes']);
     }
 
     /**
@@ -86,7 +86,7 @@ class RfqService
     {
         $queryHandler = new QueryHandler($request);
 
-        $query = Rfq::with(['buyer', 'seller', 'initialProduct', 'quotes']);
+        $query = Rfq::with(['buyer.company', 'seller.company', 'initialProduct', 'quotes']);
 
         if ($userId && $userType) {
             if ($userType === 'buyer') {
