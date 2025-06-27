@@ -27,6 +27,8 @@ class QuoteService
         $queryHandler = new QueryHandler($request);
 
         $query = Quote::with([
+            'buyer.company',
+            'seller.company',
             'rfq',
             'conversation',
             'items',
@@ -83,9 +85,9 @@ class QuoteService
 
             if ($rfq) {
                 $rfq->transitionTo(Rfq::STATUS_QUOTED);
-                $quote->load(['rfq.buyer', 'rfq.seller', 'items.product']);
+                $quote->load(['buyer.company', 'seller.company', 'rfq.buyer', 'rfq.seller', 'items.product']);
             } else {
-                $quote->load(['items.product', 'conversation']);
+                $quote->load(['buyer.company', 'seller.company', 'items.product', 'conversation']);
             }
 
             return $quote;
@@ -97,7 +99,7 @@ class QuoteService
      */
     public function findWithAccess(int $quoteId, int $userId): Quote
     {
-        $quote = Quote::with(['rfq', 'rfq.buyer', 'rfq.seller', 'rfq.initialProduct', 'conversation', 'items', 'items.product'])
+        $quote = Quote::with(['buyer.company', 'seller.company', 'rfq', 'rfq.buyer', 'rfq.seller', 'rfq.initialProduct', 'conversation', 'items', 'items.product'])
             ->findOrFail($quoteId);
 
         if (! $this->canAccessQuote($quote, $userId)) {
@@ -112,7 +114,7 @@ class QuoteService
      */
     public function update(int $quoteId, array $data, int $userId, array $userRoles): Quote
     {
-        $quote = Quote::with(['rfq', 'rfq.initialProduct', 'items'])->findOrFail($quoteId);
+        $quote = Quote::with(['buyer.company', 'seller.company', 'rfq', 'rfq.initialProduct', 'items'])->findOrFail($quoteId);
 
         $this->validateUpdateAccess($quote, $userId, $userRoles);
 
@@ -156,7 +158,7 @@ class QuoteService
                 $quote->update($updateData);
             }
 
-            $quote->load(['rfq.buyer', 'rfq.seller', 'items.product']);
+            $quote->load(['buyer.company', 'seller.company', 'rfq.buyer', 'rfq.seller', 'items.product']);
 
             return $quote;
         });
@@ -167,7 +169,7 @@ class QuoteService
      */
     public function delete(int $quoteId, int $userId): void
     {
-        $quote = Quote::with(['rfq', 'conversation'])->findOrFail($quoteId);
+        $quote = Quote::with(['buyer.company', 'seller.company', 'rfq', 'conversation'])->findOrFail($quoteId);
 
         $canDelete = false;
 
