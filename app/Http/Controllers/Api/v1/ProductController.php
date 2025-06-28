@@ -50,6 +50,7 @@ class ProductController extends Controller
     {
         $queryHandler = new QueryHandler($request);
         $perPage = (int) $request->get('size', 10);
+        Logger()->debug('Querying products with parameters: ', $request->query());
 
         $query = $queryHandler
             ->setBaseQuery(Product::query()->with(['seller.company', 'category', 'tags', 'tiers'])->where('is_active', true)->where('is_approved', true))
@@ -62,6 +63,7 @@ class ProductController extends Controller
                 'is_active',
                 'seller.name',
                 'is_approved',
+                'category_id',
                 'is_featured',
                 'created_at',
             ])
@@ -75,10 +77,22 @@ class ProductController extends Controller
                 'is_active',
                 'is_approved',
                 'created_at',
+                'category_id',
+                'category.name',
                 'seller.name',
                 'seller_id',
                 'is_featured',
 
+            ])
+            ->setSearchableFields([
+                'name',
+                'description',
+                'brand',
+                'model_number',
+                'sku',
+                'origin',
+                'seller.name',
+                'category.name',
             ])
             ->apply()
             ->paginate($perPage)
