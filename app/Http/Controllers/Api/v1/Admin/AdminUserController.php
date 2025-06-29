@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\v1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Http\Requests\Admin\UserFilterRequest;
+use App\Http\Resources\Admin\AdminUserDetailResource;
 use App\Http\Resources\UserResource;
 use App\Services\Admin\UserService;
 use App\Traits\ApiResponse;
@@ -72,6 +73,31 @@ class AdminUserController extends Controller
                 'Failed to update user status',
                 ['error' => $e->getMessage()],
                 $e->getMessage() === 'No query results for model [App\\Models\\User] 1' ? 404 : 400
+            );
+        }
+    }
+
+    /**
+     * Get User Details (Admin)
+     *
+     * Retrieve detailed information about a specific user.
+     * Only accessible by admin users.
+     */
+    public function show(int $id): JsonResponse
+    {
+        try {
+            $user = $this->userService->getUserDetails($id);
+
+            return $this->apiResponse(
+                new AdminUserDetailResource($user),
+                'User details retrieved successfully'
+            );
+
+        } catch (Exception $e) {
+            return $this->apiResponseErrors(
+                'Failed to retrieve user details',
+                ['error' => $e->getMessage()],
+                $e->getMessage() === 'No query results for model [App\\Models\\User] '.$id ? 404 : 500
             );
         }
     }

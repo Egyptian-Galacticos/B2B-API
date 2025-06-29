@@ -115,4 +115,22 @@ class UserService
 
         return $user->fresh(['roles', 'company']);
     }
+
+    public function getUserDetails(int $userId): User
+    {
+        $user = User::with([
+            'roles',
+            'company',
+            'products' => function ($query) {
+                $query->select('id', 'seller_id', 'name', 'is_active', 'created_at')
+                    ->limit(10);
+            },
+        ])
+            ->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'admin');
+            })
+            ->findOrFail($userId);
+
+        return $user;
+    }
 }
