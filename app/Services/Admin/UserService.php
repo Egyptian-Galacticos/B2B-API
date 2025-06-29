@@ -273,10 +273,6 @@ class UserService
             throw new Exception('User is not in pending status for seller registration');
         }
 
-        if ($company->user->status === 'active' && $company->user->hasRole('seller')) {
-            throw new Exception('User is already an active seller');
-        }
-
         switch ($action) {
             case 'approve':
                 return $this->approveSellerRegistration($company, $reason, $notes, $adminId);

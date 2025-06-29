@@ -22,7 +22,7 @@ class UserFilterRequest extends FormRequest
         return [
             'status'                 => 'nullable|string|in:active,pending,suspended',
             'role'                   => 'nullable|string|in:admin,seller,buyer',
-            'is_email_verified'      => 'nullable|in:true,false,1,0,"true","false","1","0"',
+            'is_email_verified'      => 'nullable|in:true,false,1,0',
             'registration_date_from' => 'nullable|date|before_or_equal:today',
             'registration_date_to'   => 'nullable|date|after_or_equal:registration_date_from|before_or_equal:today',
             'search'                 => 'nullable|string|max:255',
