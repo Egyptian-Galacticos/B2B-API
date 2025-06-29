@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\v1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Http\Requests\Admin\UserFilterRequest;
 use App\Http\Resources\UserResource;
 use App\Services\Admin\UserService;
@@ -42,6 +43,35 @@ class AdminUserController extends Controller
                 'Failed to retrieve users',
                 ['error' => $e->getMessage()],
                 500
+            );
+        }
+    }
+
+    /**
+     * Update User Status (Admin)
+     *
+     * Update user status to suspend/activate accounts.
+     * Only accessible by admin users.
+     */
+    public function update(UpdateUserRequest $request, int $id): JsonResponse
+    {
+        try {
+            $updatedUser = $this->userService->updateUserStatus(
+                $id,
+                $request->validated(),
+                $request->user()->id
+            );
+
+            return $this->apiResponse(
+                new UserResource($updatedUser),
+                'User status updated successfully'
+            );
+
+        } catch (Exception $e) {
+            return $this->apiResponseErrors(
+                'Failed to update user status',
+                ['error' => $e->getMessage()],
+                $e->getMessage() === 'No query results for model [App\\Models\\User] 1' ? 404 : 400
             );
         }
     }

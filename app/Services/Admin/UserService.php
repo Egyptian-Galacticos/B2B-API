@@ -4,6 +4,7 @@ namespace App\Services\Admin;
 
 use App\Models\User;
 use App\Services\QueryHandler;
+use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 
@@ -79,5 +80,39 @@ class UserService
                     ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", ["%{$searchTerm}%"]);
             });
         }
+    }
+
+    /**
+     * Update user status (suspend/activate).
+     *
+     * @throws \Exception
+     */
+    public function updateUserStatus(int $userId, array $data, int $adminId): User
+    {
+        $user = User::findOrFail($userId);
+
+        if ($user->id === $adminId) {
+            throw new Exception('You cannot modify your own account status');
+        }
+
+        // for future expansion adding admins to the system
+        if ($user->hasRole('admin')) {
+            throw new Exception('Cannot modify admin user status');
+        }
+
+        $user->update([
+            'status'     => $data['status'],
+            'updated_at' => now(),
+        ]);
+
+        if ($data['status'] === 'suspended' && $user->hasRole('seller')) {
+            $user->removeRole('seller');
+        }
+
+        if ($data['status'] === 'active' && $user->company && ! $user->hasRole('seller')) {
+            $user->assignRole('seller');
+        }
+
+        return $user->fresh(['roles', 'company']);
     }
 }

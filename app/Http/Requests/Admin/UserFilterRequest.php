@@ -20,7 +20,7 @@ class UserFilterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status'                 => 'nullable|string|in:active,pending,suspended,inactive',
+            'status'                 => 'nullable|string|in:active,pending,suspended',
             'role'                   => 'nullable|string|in:admin,seller,buyer',
             'is_email_verified'      => 'nullable|string|in:true,false',
             'registration_date_from' => 'nullable|date|before_or_equal:today',
@@ -38,7 +38,7 @@ class UserFilterRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'status.in'                              => 'Status must be one of: active, pending, suspended, inactive',
+            'status.in'                              => 'Status must be one of: active, pending, suspended',
             'role.in'                                => 'Role must be one of: admin, seller, buyer',
             'is_email_verified.in'                   => 'Email verified filter must be true or false',
             'registration_date_from.before_or_equal' => 'Registration date from cannot be in the future',
