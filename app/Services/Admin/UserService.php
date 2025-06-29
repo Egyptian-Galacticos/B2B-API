@@ -2,18 +2,20 @@
 
 namespace App\Services\Admin;
 
+use App\Models\Company;
 use App\Models\User;
 use App\Services\QueryHandler;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 
 class UserService
 {
     /**
-     * Get all users with filtering and pagination using QueryHandler.
+     * Get all users with filtering and pagination.
      *
-     * @param int|null $excludeUserId User ID to exclude from results (e.g., current admin)
+     * @param int|null $excludeUserId User ID to exclude from results
      */
     public function getAllUsersWithFilters(Request $request, ?int $excludeUserId = null): LengthAwarePaginator
     {
@@ -23,7 +25,6 @@ class UserService
             $query->where('id', '!=', $excludeUserId);
         }
 
-        // Exclude admin users from the results
         $query->whereDoesntHave('roles', function ($q) {
             $q->where('name', 'admin');
         });
@@ -52,7 +53,7 @@ class UserService
     }
 
     /**
-     * Apply custom filters that QueryHandler doesn't handle.
+     * Apply custom filters for user queries.
      *
      * @param \Illuminate\Database\Eloquent\Builder $query
      */
@@ -90,7 +91,7 @@ class UserService
     /**
      * Update user status (suspend/activate).
      *
-     * @throws \Exception
+     * @throws Exception
      */
     public function updateUserStatus(int $userId, array $data, int $adminId): User
     {
@@ -114,13 +115,12 @@ class UserService
             $user->removeRole('seller');
         }
 
-        if ($data['status'] === 'active' && $user->company && ! $user->hasRole('seller')) {
-            $user->assignRole('seller');
-        }
-
         return $user->fresh(['roles', 'company']);
     }
 
+    /**
+     * Get user details with related data.
+     */
     public function getUserDetails(int $userId): User
     {
         $user = User::with([
@@ -139,6 +139,11 @@ class UserService
         return $user;
     }
 
+    /**
+     * Perform bulk user actions.
+     *
+     * @throws Exception
+     */
     public function bulkUserAction(array $userIds, string $action, int $adminId, ?string $reason = null): array
     {
         $successful = [];
@@ -150,6 +155,7 @@ class UserService
             ->where('id', '!=', $adminId)
             ->with('roles')
             ->get();
+
         if ($users->isEmpty()) {
             throw new Exception('No users found for the provided IDs or all users are admins.');
         }
@@ -192,7 +198,7 @@ class UserService
     }
 
     /**
-     * Suspend a user.
+     * Suspend a user and remove seller role if applicable.
      */
     private function suspendUser(User $user): void
     {
@@ -212,10 +218,6 @@ class UserService
     {
         if ($user->status !== 'active') {
             $user->update(['status' => 'active']);
-
-            if ($user->company && ! $user->hasRole('seller')) {
-                $user->assignRole('seller');
-            }
         }
     }
 
@@ -227,5 +229,101 @@ class UserService
         if (! $user->trashed()) {
             $user->delete();
         }
+    }
+
+    /**
+     * Get pending seller registrations.
+     */
+    public function getPendingSellerRegistrations(): Collection
+    {
+        return User::with(['roles', 'company'])
+            ->where('status', 'pending')
+            ->whereHas('company')
+            ->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'admin');
+            })
+            ->get();
+    }
+
+    /**
+     * Review seller registration (approve or reject).
+     */
+    public function reviewSellerRegistration(int $companyId, string $action, ?string $reason = null, ?string $notes = null, ?int $adminId = null): array
+    {
+        $company = Company::with('user')->findOrFail($companyId);
+
+        if (! $company->user) {
+            throw new Exception('Company has no associated user');
+        }
+
+        if ($company->user->hasRole('admin')) {
+            throw new Exception('Cannot review admin user company');
+        }
+
+        if ($company->user->status !== 'pending') {
+            throw new Exception('User is not in pending status for seller registration');
+        }
+
+        if ($company->user->status === 'active' && $company->user->hasRole('seller')) {
+            throw new Exception('User is already an active seller');
+        }
+
+        switch ($action) {
+            case 'approve':
+                return $this->approveSellerRegistration($company, $reason, $notes, $adminId);
+            case 'reject':
+                return $this->rejectSellerRegistration($company, $reason, $notes, $adminId);
+            default:
+                throw new Exception('Invalid action');
+        }
+    }
+
+    /**
+     * Approve seller registration.
+     */
+    private function approveSellerRegistration(Company $company, ?string $reason, ?string $notes, ?int $adminId): array
+    {
+        $company->user->update(['status' => 'active']);
+
+        if (! $company->user->hasRole('seller')) {
+            $company->user->assignRole('seller');
+        }
+
+        return [
+            'action'       => 'approved',
+            'company_id'   => $company->id,
+            'company_name' => $company->name,
+            'user_id'      => $company->user->id,
+            'user_email'   => $company->user->email,
+            'reason'       => $reason,
+            'notes'        => $notes,
+            'reviewed_at'  => now(),
+            'reviewed_by'  => $adminId,
+        ];
+    }
+
+    private function rejectSellerRegistration(Company $company, ?string $reason, ?string $notes, ?int $adminId): array
+    {
+        $company->user->update(['status' => 'active']);
+
+        if ($company->user->hasRole('seller')) {
+            $company->user->removeRole('seller');
+        }
+
+        if (! $company->user->hasRole('buyer')) {
+            $company->user->assignRole('buyer');
+        }
+
+        return [
+            'action'       => 'rejected',
+            'company_id'   => $company->id,
+            'company_name' => $company->name,
+            'user_id'      => $company->user->id,
+            'user_email'   => $company->user->email,
+            'reason'       => $reason,
+            'notes'        => $notes,
+            'reviewed_at'  => now(),
+            'reviewed_by'  => $adminId,
+        ];
     }
 }
