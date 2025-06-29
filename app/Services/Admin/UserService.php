@@ -23,6 +23,11 @@ class UserService
             $query->where('id', '!=', $excludeUserId);
         }
 
+        // Exclude admin users from the results
+        $query->whereDoesntHave('roles', function ($q) {
+            $q->where('name', 'admin');
+        });
+
         $queryHandler = new QueryHandler($request);
         $queryHandler->setBaseQuery($query)
             ->setAllowedSorts([
@@ -132,5 +137,95 @@ class UserService
             ->findOrFail($userId);
 
         return $user;
+    }
+
+    public function bulkUserAction(array $userIds, string $action, int $adminId, ?string $reason = null): array
+    {
+        $successful = [];
+
+        $users = User::whereIn('id', $userIds)
+            ->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'admin');
+            })
+            ->where('id', '!=', $adminId)
+            ->with('roles')
+            ->get();
+        if ($users->isEmpty()) {
+            throw new Exception('No users found for the provided IDs or all users are admins.');
+        }
+
+        foreach ($users as $user) {
+            switch ($action) {
+                case 'suspend':
+                    $this->suspendUser($user);
+                    $successful[] = [
+                        'id'     => $user->id,
+                        'email'  => $user->email,
+                        'action' => 'suspended',
+                    ];
+                    break;
+
+                case 'activate':
+                    $this->activateUser($user);
+                    $successful[] = [
+                        'id'     => $user->id,
+                        'email'  => $user->email,
+                        'action' => 'activated',
+                    ];
+                    break;
+
+                case 'delete':
+                    $this->softDeleteUser($user);
+                    $successful[] = [
+                        'id'     => $user->id,
+                        'email'  => $user->email,
+                        'action' => 'deleted',
+                    ];
+                    break;
+
+                default:
+                    throw new Exception('Invalid action');
+            }
+        }
+
+        return ['successful' => $successful];
+    }
+
+    /**
+     * Suspend a user.
+     */
+    private function suspendUser(User $user): void
+    {
+        if ($user->status !== 'suspended') {
+            $user->update(['status' => 'suspended']);
+
+            if ($user->hasRole('seller')) {
+                $user->removeRole('seller');
+            }
+        }
+    }
+
+    /**
+     * Activate a user.
+     */
+    private function activateUser(User $user): void
+    {
+        if ($user->status !== 'active') {
+            $user->update(['status' => 'active']);
+
+            if ($user->company && ! $user->hasRole('seller')) {
+                $user->assignRole('seller');
+            }
+        }
+    }
+
+    /**
+     * Soft delete a user.
+     */
+    private function softDeleteUser(User $user): void
+    {
+        if (! $user->trashed()) {
+            $user->delete();
+        }
     }
 }

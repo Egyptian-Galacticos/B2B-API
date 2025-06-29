@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\v1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\BulkUserActionRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Http\Requests\Admin\UserFilterRequest;
 use App\Http\Resources\Admin\AdminUserDetailResource;
@@ -98,6 +99,37 @@ class AdminUserController extends Controller
                 'Failed to retrieve user details',
                 ['error' => $e->getMessage()],
                 $e->getMessage() === 'No query results for model [App\\Models\\User] '.$id ? 404 : 500
+            );
+        }
+    }
+
+    /**
+     * Bulk User Actions (Admin)
+     *
+     * Perform bulk operations on multiple users (suspend, activate, delete).
+     * Only accessible by admin users.
+     */
+    public function bulkAction(BulkUserActionRequest $request): JsonResponse
+    {
+        try {
+            $results = $this->userService->bulkUserAction(
+                $request->user_ids,
+                $request->action,
+                $request->user()->id,
+                $request->reason
+            );
+
+            return $this->apiResponse(
+                $results['successful'],
+                'Bulk operation completed successfully',
+                200
+            );
+
+        } catch (Exception $e) {
+            return $this->apiResponseErrors(
+                'Failed to perform bulk operation',
+                ['error' => $e->getMessage()],
+                500
             );
         }
     }
