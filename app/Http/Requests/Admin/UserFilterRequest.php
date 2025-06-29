@@ -22,7 +22,7 @@ class UserFilterRequest extends FormRequest
         return [
             'status'                 => 'nullable|string|in:active,pending,suspended',
             'role'                   => 'nullable|string|in:admin,seller,buyer',
-            'is_email_verified'      => 'nullable|string|in:true,false',
+            'is_email_verified'      => 'nullable|in:true,false,1,0,"true","false","1","0"',
             'registration_date_from' => 'nullable|date|before_or_equal:today',
             'registration_date_to'   => 'nullable|date|after_or_equal:registration_date_from|before_or_equal:today',
             'search'                 => 'nullable|string|max:255',
@@ -40,7 +40,7 @@ class UserFilterRequest extends FormRequest
         return [
             'status.in'                              => 'Status must be one of: active, pending, suspended',
             'role.in'                                => 'Role must be one of: admin, seller, buyer',
-            'is_email_verified.in'                   => 'Email verified filter must be true or false',
+            'is_email_verified.in'                   => 'Email verified filter must be true, false, 1, or 0',
             'registration_date_from.before_or_equal' => 'Registration date from cannot be in the future',
             'registration_date_to.after_or_equal'    => 'Registration date to must be after or equal to registration date from',
             'registration_date_to.before_or_equal'   => 'Registration date to cannot be in the future',

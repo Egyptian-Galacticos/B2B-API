@@ -40,7 +40,6 @@ class UserService
                 'status',
             ])
             ->setAllowedFilters([
-                'is_email_verified',
                 'last_login_at',
             ]);
 
@@ -67,6 +66,11 @@ class UserService
             $query->whereHas('roles', function ($q) use ($request) {
                 $q->where('name', $request->role);
             });
+        }
+
+        if ($request->has('is_email_verified') && $request->is_email_verified !== null) {
+            $isVerified = in_array($request->is_email_verified, [true, 1, '1', 'true', 'TRUE'], true);
+            $query->where('is_email_verified', $isVerified);
         }
 
         if ($request->filled('registration_date_from')) {
