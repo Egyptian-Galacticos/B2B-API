@@ -110,6 +110,10 @@ class UserService
             throw new Exception('Cannot modify admin user status');
         }
 
+        if ($user->status === 'pending') {
+            throw new Exception('Cannot modify pending user status. Use seller registration review instead.');
+        }
+
         $user->update([
             'status'     => $data['status'],
             'updated_at' => now(),
@@ -157,11 +161,12 @@ class UserService
                 $q->where('name', 'admin');
             })
             ->where('id', '!=', $adminId)
+            ->where('status', '!=', 'pending')
             ->with('roles')
             ->get();
 
         if ($users->isEmpty()) {
-            throw new Exception('No users found for the provided IDs or all users are admins.');
+            throw new Exception('No users found for the provided IDs or all users are admins/pending.');
         }
 
         foreach ($users as $user) {

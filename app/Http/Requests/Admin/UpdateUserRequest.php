@@ -20,7 +20,7 @@ class UpdateUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => 'required|string|in:active,pending,suspended',
+            'status' => 'required|string|in:active,suspended',
             'reason' => 'nullable|string|max:500',
         ];
     }
@@ -32,7 +32,7 @@ class UpdateUserRequest extends FormRequest
     {
         return [
             'status.required' => 'Status is required.',
-            'status.in'       => 'Status must be one of: active, pending, suspended',
+            'status.in'       => 'Status must be one of: active, suspended',
             'reason.max'      => 'Reason cannot exceed 500 characters.',
         ];
     }
