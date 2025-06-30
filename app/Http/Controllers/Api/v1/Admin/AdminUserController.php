@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api\v1\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\BulkUserActionRequest;
-use App\Http\Requests\Admin\ReviewSellerRegistrationRequest;
-use App\Http\Requests\Admin\UpdateUserRequest;
-use App\Http\Requests\Admin\UserFilterRequest;
+use App\Http\Requests\Admin\User\BulkUserActionRequest;
+use App\Http\Requests\Admin\User\ReviewSellerRegistrationRequest;
+use App\Http\Requests\Admin\User\UpdateUserRequest;
+use App\Http\Requests\Admin\User\UserFilterRequest;
 use App\Http\Resources\Admin\AdminUserDetailResource;
 use App\Http\Resources\Admin\SellerRegistrationReviewResource;
 use App\Http\Resources\UserResource;

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\Admin;
+namespace App\Http\Requests\Admin\User;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ReviewSellerRegistrationRequest extends FormRequest
+class UpdateUserRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -20,9 +20,8 @@ class ReviewSellerRegistrationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'action' => 'required|string|in:approve,reject',
+            'status' => 'required|string|in:active,suspended',
             'reason' => 'nullable|string|max:500',
-            'notes'  => 'nullable|string|max:1000',
         ];
     }
 
@@ -32,10 +31,9 @@ class ReviewSellerRegistrationRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'action.required' => 'Review action is required.',
-            'action.in'       => 'Action must be either approve or reject.',
+            'status.required' => 'Status is required.',
+            'status.in'       => 'Status must be one of: active, suspended',
             'reason.max'      => 'Reason cannot exceed 500 characters.',
-            'notes.max'       => 'Notes cannot exceed 1000 characters.',
         ];
     }
 }
