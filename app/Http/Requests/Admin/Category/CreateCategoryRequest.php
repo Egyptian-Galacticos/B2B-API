@@ -5,17 +5,6 @@ namespace App\Http\Requests\Admin\Category;
 use App\Models\Category;
 use Illuminate\Foundation\Http\FormRequest;
 
-/**
- * Create Category Request
- *
- * For file uploads (image_file, icon_file), send as multipart/form-data:
- * - Content-Type: multipart/form-data
- * - Method: POST
- *
- * For text-only creation, JSON is supported:
- * - Content-Type: application/json
- * - Method: POST
- */
 class CreateCategoryRequest extends FormRequest
 {
     /**
@@ -42,8 +31,8 @@ class CreateCategoryRequest extends FormRequest
                 function ($attribute, $value, $fail) {
                     if ($value) {
                         $parent = Category::find($value);
-                        if ($parent && $parent->level >= 4) {
-                            $fail('Categories can only be nested up to 5 levels deep.');
+                        if ($parent && $parent->level >= 2) {
+                            $fail('Categories can only be nested up to 3 levels deep.');
                         }
                     }
                 },

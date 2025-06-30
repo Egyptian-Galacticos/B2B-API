@@ -58,8 +58,8 @@ class UpdateCategoryRequest extends FormRequest
                         }
 
                         $parent = Category::find($value);
-                        if ($parent && $parent->level >= 4) {
-                            $fail('Categories can only be nested up to 5 levels deep.');
+                        if ($parent && $parent->level >= 2) {
+                            $fail('Categories can only be nested up to 3 levels deep.');
                         }
 
                         $category = Category::find($categoryId);
