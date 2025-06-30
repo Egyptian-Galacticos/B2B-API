@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\v1\Admin\AdminCategoryController;
 use App\Http\Controllers\Api\v1\Admin\AdminProductController;
 use App\Http\Controllers\Api\v1\Admin\AdminUserController;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,20 @@ Route::prefix('admin')->middleware(['jwt.auth', 'role:admin'])->group(function (
         Route::get('/{id}', [AdminProductController::class, 'show'])->name('show');
         Route::put('/{id}/status', [AdminProductController::class, 'updateStatus'])->name('update-status');
         Route::post('/bulk-action', [AdminProductController::class, 'bulkAction'])->name('bulk-action');
+    });
+
+    // Category Management Routes
+    Route::prefix('categories')->name('admin.categories.')->group(function () {
+        Route::get('/', [AdminCategoryController::class, 'index'])->name('index');
+        Route::post('/', [AdminCategoryController::class, 'store'])->name('store');
+        Route::get('/hierarchy', [AdminCategoryController::class, 'hierarchy'])->name('hierarchy');
+        Route::get('/trashed', [AdminCategoryController::class, 'trashed'])->name('trashed');
+        Route::post('/bulk-action', [AdminCategoryController::class, 'bulkAction'])->name('bulk-action');
+        Route::get('/{id}', [AdminCategoryController::class, 'show'])->name('show');
+        Route::put('/{id}', [AdminCategoryController::class, 'update'])->name('update');
+        Route::delete('/{id}', [AdminCategoryController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/restore', [AdminCategoryController::class, 'restore'])->name('restore');
+        Route::delete('/{id}/force', [AdminCategoryController::class, 'forceDelete'])->name('force-delete');
     });
 
 });
