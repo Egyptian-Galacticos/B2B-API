@@ -1,9 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\v1\Admin\AdminCategoryController;
-use App\Http\Controllers\Api\v1\Admin\AdminContractController;
 use App\Http\Controllers\Api\v1\Admin\AdminProductController;
-use App\Http\Controllers\Api\v1\Admin\AdminQuoteController;
 use App\Http\Controllers\Api\v1\Admin\AdminRfqController;
 use App\Http\Controllers\Api\v1\Admin\AdminUserController;
 use Illuminate\Support\Facades\Route;
@@ -48,26 +46,10 @@ Route::prefix('admin')->middleware(['jwt.auth', 'role:admin'])->group(function (
 
     // RFQ Oversight Routes
     Route::prefix('rfqs')->name('admin.rfqs.')->group(function () {
-        Route::get('/', [AdminRfqController::class, 'index'])->name('index'); // works
-        Route::get('/{id}', [AdminRfqController::class, 'show'])->name('show'); // works
+        Route::get('/', [AdminRfqController::class, 'index'])->name('index');
+        Route::get('/{id}', [AdminRfqController::class, 'show'])->name('show');
         Route::put('/{id}/status', [AdminRfqController::class, 'updateStatus'])->name('update-status');
         Route::post('/bulk-action', [AdminRfqController::class, 'bulkAction'])->name('bulk-action');
-    });
-
-    // Quote Oversight Routes
-    Route::prefix('quotes')->name('admin.quotes.')->group(function () {
-        Route::get('/', [AdminQuoteController::class, 'index'])->name('index');
-        Route::get('/{id}', [AdminQuoteController::class, 'show'])->name('show');
-        Route::put('/{id}/status', [AdminQuoteController::class, 'updateStatus'])->name('update-status');
-        Route::post('/bulk-action', [AdminQuoteController::class, 'bulkAction'])->name('bulk-action');
-    });
-
-    // Contract Management Routes
-    Route::prefix('contracts')->name('admin.contracts.')->group(function () {
-        Route::get('/', [AdminContractController::class, 'index'])->name('index');
-        Route::get('/{id}', [AdminContractController::class, 'show'])->name('show');
-        Route::put('/{id}/status', [AdminContractController::class, 'updateStatus'])->name('update-status');
-        Route::post('/bulk-action', [AdminContractController::class, 'bulkAction'])->name('bulk-action');
     });
 
 });
