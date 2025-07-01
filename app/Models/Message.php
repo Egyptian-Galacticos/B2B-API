@@ -40,4 +40,28 @@ class Message extends Model
     {
         return $this->hasMany(MessageAttachment::class);
     }
+
+    // Scopes
+    public function scopeUnread($query)
+    {
+        return $query->where('is_read', false);
+    }
+
+    public function scopeForUser($query, $userId)
+    {
+        return $query->whereHas('conversation', function ($q) use ($userId) {
+            $q->where('seller_id', $userId)->orWhere('buyer_id', $userId);
+        });
+    }
+
+    // Helper methods
+    public function markAsRead()
+    {
+        $this->update(['is_read' => true]);
+    }
+
+    public function isFromUser($userId)
+    {
+        return $this->sender_id == $userId;
+    }
 }
