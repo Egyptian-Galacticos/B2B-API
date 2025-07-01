@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Rfq\AdminRfqFilterRequest;
 use App\Http\Requests\Admin\Rfq\BulkRfqActionRequest;
 use App\Http\Requests\Admin\Rfq\UpdateRfqStatusRequest;
-use App\Http\Resources\RfqResource;
+use App\Http\Resources\Admin\AdminRfqResource;
 use App\Services\Admin\RfqService;
 use App\Traits\ApiResponse;
 use Exception;
@@ -34,7 +34,7 @@ class AdminRfqController extends Controller
             $rfqs = $this->rfqService->getAllRfqsWithFilters($filters, $request);
 
             return $this->apiResponse(
-                RfqResource::collection($rfqs),
+                AdminRfqResource::collection($rfqs),
                 'RFQs retrieved successfully',
                 200,
                 $this->getPaginationMeta($rfqs)
@@ -59,7 +59,7 @@ class AdminRfqController extends Controller
             $rfq = $this->rfqService->getRfqById($id);
 
             return $this->apiResponse(
-                new RfqResource($rfq),
+                new AdminRfqResource($rfq),
                 'RFQ retrieved successfully',
                 200
             );
@@ -86,7 +86,7 @@ class AdminRfqController extends Controller
             $message = $this->rfqService->getStatusMessage($request->status);
 
             return $this->apiResponse(
-                new RfqResource($rfq),
+                new AdminRfqResource($rfq),
                 $message,
                 200
             );

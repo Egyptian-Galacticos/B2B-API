@@ -2,6 +2,7 @@
 
 namespace App\Services\Admin;
 
+use App\Http\Resources\Admin\AdminRfqResource;
 use App\Models\Rfq;
 use App\Services\QueryHandler;
 use Exception;
@@ -172,7 +173,7 @@ class RfqService
             $responseData = [];
 
             if ($action === 'update_status' && ! empty($updatedRfqs)) {
-                $responseData['rfqs'] = $updatedRfqs;
+                $responseData['rfqs'] = AdminRfqResource::collection($updatedRfqs);
             }
 
             return [
