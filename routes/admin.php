@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\v1\Admin\AdminCategoryController;
+use App\Http\Controllers\Api\v1\Admin\AdminContractController;
 use App\Http\Controllers\Api\v1\Admin\AdminProductController;
 use App\Http\Controllers\Api\v1\Admin\AdminQuoteController;
 use App\Http\Controllers\Api\v1\Admin\AdminRfqController;
@@ -59,6 +60,14 @@ Route::prefix('admin')->middleware(['jwt.auth', 'role:admin'])->group(function (
         Route::get('/{id}', [AdminQuoteController::class, 'show'])->name('show');
         Route::put('/{id}/status', [AdminQuoteController::class, 'updateStatus'])->name('update-status');
         Route::post('/bulk-action', [AdminQuoteController::class, 'bulkAction'])->name('bulk-action');
+    });
+
+    // Contract Management Routes
+    Route::prefix('contracts')->name('admin.contracts.')->group(function () {
+        Route::get('/', [AdminContractController::class, 'index'])->name('index');
+        Route::get('/{id}', [AdminContractController::class, 'show'])->name('show');
+        Route::put('/{id}/status', [AdminContractController::class, 'updateStatus'])->name('update-status');
+        Route::post('/bulk-action', [AdminContractController::class, 'bulkAction'])->name('bulk-action');
     });
 
 });
