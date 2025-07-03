@@ -38,6 +38,11 @@ class CreateRfqRequest extends FormRequest
                     if ($user && ! $user->hasRole('seller')) {
                         $fail('The selected user is not a valid seller.');
                     }
+
+                    $currentUser = User::find(Auth::id());
+                    if ($currentUser && $currentUser->hasRole('buyer') && $currentUser->hasRole('seller') && $value == Auth::id()) {
+                        $fail('You cannot create an RFQ to yourself even if you have both buyer and seller roles.');
+                    }
                 },
             ],
             'initial_product_id' => 'required|exists:products,id',

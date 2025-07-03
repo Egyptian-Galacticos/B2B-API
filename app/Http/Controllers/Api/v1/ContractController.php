@@ -134,7 +134,8 @@ class ContractController extends Controller
                 if ($newStatus === Contract::STATUS_APPROVED && $contract->status === Contract::STATUS_PENDING_APPROVAL) {
                     $contract->updateStatus(Contract::STATUS_PENDING_PAYMENT);
                 } elseif ($newStatus === Contract::STATUS_IN_PROGRESS) {
-                    if (! $user->isAdmin()) {
+                    $userModel = User::find($user->id);
+                    if (! $userModel->isAdmin()) {
                         return $this->apiResponseErrors(
                             'Unauthorized',
                             ['Only administrators can set contract status to in_progress'],
@@ -143,7 +144,8 @@ class ContractController extends Controller
                     }
                     $contract->updateStatus($newStatus);
                 } elseif ($newStatus === Contract::STATUS_CANCELLED) {
-                    if ($user->id !== $contract->buyer_id) {
+                    $userModel = User::find($user->id);
+                    if (! $userModel->canActInRole('buyer', $contract) || $user->id !== $contract->buyer_id) {
                         return $this->apiResponseErrors(
                             'Unauthorized',
                             ['Only the buyer can cancel/reject a contract'],
@@ -210,7 +212,9 @@ class ContractController extends Controller
             }
 
             $sellerId = $quote->seller_id ?? $quote->rfq?->seller_id;
-            if (! $sellerId || $sellerId !== $user->id) {
+
+            $userModel = User::find($user->id);
+            if (! $userModel->canActInRole('seller', $quote) || ! $sellerId || $sellerId !== $user->id) {
                 return $this->apiResponseErrors(
                     'Unauthorized',
                     ['Only the seller can create a contract from their quote'],
@@ -242,7 +246,15 @@ class ContractController extends Controller
 
             $parseAddress = function ($address) {
                 if (is_array($address)) {
-                    return $address;
+                    $hasRealData = false;
+                    foreach ($address as $field => $value) {
+                        if (! empty($value) && $value !== 'string' && $value !== 'null') {
+                            $hasRealData = true;
+                            break;
+                        }
+                    }
+
+                    return $hasRealData ? $address : null;
                 }
                 if (is_string($address) && ! empty($address) && $address !== 'string') {
                     return [
@@ -259,19 +271,22 @@ class ContractController extends Controller
 
             // shipping address priority:request > rfq > buyer's company
             $shippingAddress = null;
-            if ($request->has('shipping_address') && ! empty($request->shipping_address) && $request->shipping_address !== 'string') {
+            if ($request->has('shipping_address')) {
                 $shippingAddress = $parseAddress($request->shipping_address);
-            } elseif (! empty($quote->rfq?->shipping_address)) {
+            }
+            if (! $shippingAddress && ! empty($quote->rfq?->shipping_address)) {
                 $shippingAddress = $parseAddress($quote->rfq->shipping_address);
-            } elseif (! empty($buyer?->company?->address)) {
+            }
+            if (! $shippingAddress && ! empty($buyer?->company?->address)) {
                 $shippingAddress = $buyer->company->address; // Already an array
             }
 
             // billing address priority:request > buyer's company
             $billingAddress = null;
-            if ($request->has('billing_address') && ! empty($request->billing_address) && $request->billing_address !== 'string') {
+            if ($request->has('billing_address')) {
                 $billingAddress = $parseAddress($request->billing_address);
-            } elseif (! empty($buyer?->company?->address)) {
+            }
+            if (! $billingAddress && ! empty($buyer?->company?->address)) {
                 $billingAddress = $buyer->company->address;
             }
 

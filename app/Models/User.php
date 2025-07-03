@@ -142,6 +142,32 @@ class User extends Authenticatable implements HasMedia, JWTSubject
     }
 
     /**
+     * Check if user can act in a specific role for a given entity context
+     */
+    public function canActInRole(string $role, $entity = null): bool
+    {
+        if (! $this->hasRole($role)) {
+            return false;
+        }
+
+        if (! $entity) {
+            return true;
+        }
+
+        $roleField = $role.'_id';
+
+        if (method_exists($entity, $roleField) && $this->id === $entity->$roleField) {
+            return true;
+        }
+
+        if (isset($entity->rfq) && $this->id === $entity->rfq->$roleField) {
+            return true;
+        }
+
+        return true;
+    }
+
+    /**
      * Check if email is verified.
      */
     public function hasVerifiedEmail(): bool
