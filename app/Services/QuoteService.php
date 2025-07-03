@@ -45,9 +45,35 @@ class QuoteService
 
         $query = $queryHandler
             ->setBaseQuery($query)
-            ->setAllowedSorts(['id', 'total_price', 'status', 'created_at', 'updated_at', 'seller_message', 'rfq.initial_quantity', 'rfq.shipping_country', 'rfq.status',
+            ->setAllowedSorts([
+                'id',
+                'total_price',
+                'status',
+                'created_at',
+                'updated_at',
+                'seller_message',
+                'rfq.initial_quantity',
+                'rfq.shipping_country',
+                'rfq.status',
             ])
-            ->setAllowedFilters(['id', 'total_price', 'status', 'seller_message', 'rfq_id', 'conversation_id', 'seller_id', 'buyer_id', 'created_at', 'updated_at', 'rfq.initial_quantity', 'rfq.shipping_country', 'rfq.status', 'rfq.buyer_id', 'rfq.seller_id', 'items.product.name', 'items.product.brand',
+            ->setAllowedFilters([
+                'id',
+                'total_price',
+                'status',
+                'seller_message',
+                'rfq_id',
+                'conversation_id',
+                'seller_id',
+                'buyer_id',
+                'created_at',
+                'updated_at',
+                'rfq.initial_quantity',
+                'rfq.shipping_country',
+                'rfq.status',
+                'rfq.buyer_id',
+                'rfq.seller_id',
+                'items.product.name',
+                'items.product.brand',
             ])
             ->apply();
 
@@ -124,7 +150,7 @@ class QuoteService
             $updateData = [];
             $totalPrice = $quote->total_price;
 
-            $user = User::find($userId);
+            $user = User::findOrFail($userId);
             $isBuyer = $user->canActInRole('buyer', $quote);
             $isSeller = $user->canActInRole('seller', $quote);
             $isAdmin = in_array('admin', $userRoles);
@@ -216,7 +242,6 @@ class QuoteService
         };
     }
 
-    // Private helper methods
     private function validateAndGetRfq(int $rfqId, int $userId): Rfq
     {
         $rfq = Rfq::with('initialProduct')->find($rfqId);
@@ -225,7 +250,7 @@ class QuoteService
             throw new ModelNotFoundException('RFQ not found');
         }
 
-        $user = User::find($userId);
+        $user = User::findOrFail($userId);
         if (! $user->canActInRole('seller', $rfq) || $rfq->seller_id !== $userId) {
             throw new AuthorizationException('You can only create quotes for RFQs where you are the seller');
         }
@@ -293,7 +318,7 @@ class QuoteService
 
     private function validateUpdateAccess(Quote $quote, int $userId, array $userRoles): void
     {
-        $user = User::find($userId);
+        $user = User::findOrFail($userId);
         $isAdmin = in_array('admin', $userRoles);
 
         if ($isAdmin) {
@@ -344,7 +369,7 @@ class QuoteService
             throw new InvalidArgumentException("Quote cannot transition from '{$quote->status}' to '{$newStatus}'");
         }
 
-        $user = User::find($userId);
+        $user = User::findOrFail($userId);
         $isAdmin = in_array('admin', $userRoles);
 
         if ($isAdmin) {
@@ -357,8 +382,8 @@ class QuoteService
             }
 
             $isBuyerInContext = ($quote->rfq && $quote->rfq->buyer_id === $userId) ||
-                               ($quote->buyer_id === $userId) ||
-                               ($quote->conversation_id && $quote->conversation && in_array($userId, $quote->conversation->participant_ids));
+                ($quote->buyer_id === $userId) ||
+                ($quote->conversation_id && $quote->conversation && in_array($userId, $quote->conversation->participant_ids));
 
             if (! $isBuyerInContext) {
                 throw new AuthorizationException('You can only accept/reject quotes where you are the buyer');
@@ -371,8 +396,8 @@ class QuoteService
             }
 
             $isSellerInContext = ($quote->rfq && $quote->rfq->seller_id === $userId) ||
-                                ($quote->seller_id === $userId) ||
-                                ($quote->conversation_id && $quote->conversation && in_array($userId, $quote->conversation->participant_ids));
+                ($quote->seller_id === $userId) ||
+                ($quote->conversation_id && $quote->conversation && in_array($userId, $quote->conversation->participant_ids));
 
             if (! $isSellerInContext) {
                 throw new AuthorizationException('You can only send quotes where you are the seller');
@@ -390,7 +415,7 @@ class QuoteService
             return in_array('seller', $userRoles);
         }
 
-        $user = User::find($userId);
+        $user = User::findOrFail($userId);
 
         return $user && $user->canActInRole('seller', $quote);
     }

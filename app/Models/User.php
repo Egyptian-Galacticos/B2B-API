@@ -156,15 +156,15 @@ class User extends Authenticatable implements HasMedia, JWTSubject
 
         $roleField = $role.'_id';
 
-        if (method_exists($entity, $roleField) && $this->id === $entity->$roleField) {
+        if (isset($entity->$roleField) && $this->id === $entity->$roleField) {
             return true;
         }
 
-        if (isset($entity->rfq) && $this->id === $entity->rfq->$roleField) {
+        if (isset($entity->rfq) && isset($entity->rfq->$roleField) && $this->id === $entity->rfq->$roleField) {
             return true;
         }
 
-        return true;
+        return false;
     }
 
     /**

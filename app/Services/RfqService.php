@@ -54,7 +54,7 @@ class RfqService
     public function updateStatus(int $rfqId, string $newStatus, int $userId): Rfq
     {
         $rfq = Rfq::findOrFail($rfqId);
-        $user = User::find($userId);
+        $user = User::findOrFail($userId);
 
         if (! $user->canActInRole('seller', $rfq) || $rfq->seller_id !== $userId) {
             throw new AuthorizationException('Only the seller can update RFQ status');

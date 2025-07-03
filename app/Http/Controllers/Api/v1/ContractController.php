@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Auth;
 class ContractController extends Controller
 {
     use ApiResponse;
+    private const PLACEHOLDER_STRING = 'string';
+    private const PLACEHOLDER_NULL = 'null';
 
     public function __construct(private QueryHandler $queryHandler) {}
 
@@ -31,7 +33,7 @@ class ContractController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $user = Auth::user();
+            $user = User::findOrFail(Auth::id());
             $perPage = (int) $request->get('size', 15);
 
             $query = Contract::with(['buyer', 'seller', 'quote', 'items.product']);
@@ -75,7 +77,7 @@ class ContractController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            $user = Auth::user();
+            $user = User::findOrFail(Auth::id());
 
             $contract = Contract::findOrFail($id);
 
@@ -116,7 +118,7 @@ class ContractController extends Controller
     public function update(string $id, UpdateContractRequest $request): JsonResponse
     {
         try {
-            $user = Auth::user();
+            $user = User::findOrFail(Auth::id());
 
             $contract = Contract::findOrFail($id);
 
@@ -134,8 +136,7 @@ class ContractController extends Controller
                 if ($newStatus === Contract::STATUS_APPROVED && $contract->status === Contract::STATUS_PENDING_APPROVAL) {
                     $contract->updateStatus(Contract::STATUS_PENDING_PAYMENT);
                 } elseif ($newStatus === Contract::STATUS_IN_PROGRESS) {
-                    $userModel = User::find($user->id);
-                    if (! $userModel->isAdmin()) {
+                    if (! $user->isAdmin()) {
                         return $this->apiResponseErrors(
                             'Unauthorized',
                             ['Only administrators can set contract status to in_progress'],
@@ -144,8 +145,7 @@ class ContractController extends Controller
                     }
                     $contract->updateStatus($newStatus);
                 } elseif ($newStatus === Contract::STATUS_CANCELLED) {
-                    $userModel = User::find($user->id);
-                    if (! $userModel->canActInRole('buyer', $contract) || $user->id !== $contract->buyer_id) {
+                    if (! $user->canActInRole('buyer', $contract) || $user->id !== $contract->buyer_id) {
                         return $this->apiResponseErrors(
                             'Unauthorized',
                             ['Only the buyer can cancel/reject a contract'],
@@ -199,7 +199,7 @@ class ContractController extends Controller
     public function store(StoreContractRequest $request): JsonResponse
     {
         try {
-            $user = Auth::user();
+            $user = User::findOrFail(Auth::id());
 
             $quote = Quote::with(['rfq', 'items'])->findOrFail($request->quote_id);
 
@@ -213,8 +213,7 @@ class ContractController extends Controller
 
             $sellerId = $quote->seller_id ?? $quote->rfq?->seller_id;
 
-            $userModel = User::find($user->id);
-            if (! $userModel->canActInRole('seller', $quote) || ! $sellerId || $sellerId !== $user->id) {
+            if (! $user->canActInRole('seller', $quote) || ! $sellerId || $sellerId !== $user->id) {
                 return $this->apiResponseErrors(
                     'Unauthorized',
                     ['Only the seller can create a contract from their quote'],
@@ -248,7 +247,7 @@ class ContractController extends Controller
                 if (is_array($address)) {
                     $hasRealData = false;
                     foreach ($address as $field => $value) {
-                        if (! empty($value) && $value !== 'string' && $value !== 'null') {
+                        if (! empty($value) && $value !== self::PLACEHOLDER_STRING && $value !== self::PLACEHOLDER_NULL) {
                             $hasRealData = true;
                             break;
                         }
@@ -256,7 +255,7 @@ class ContractController extends Controller
 
                     return $hasRealData ? $address : null;
                 }
-                if (is_string($address) && ! empty($address) && $address !== 'string') {
+                if (is_string($address) && ! empty($address) && $address !== self::PLACEHOLDER_STRING) {
                     return [
                         'street'      => $address,
                         'city'        => '',
