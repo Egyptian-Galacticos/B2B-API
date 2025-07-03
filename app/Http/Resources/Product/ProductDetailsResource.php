@@ -3,7 +3,6 @@
 namespace App\Http\Resources\Product;
 
 use App\Http\Resources\MediaResource;
-use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,7 +21,14 @@ class ProductDetailsResource extends JsonResource
             'model_number' => $this->model_number,
             'seller_id'    => $this->seller_id,
             'seller'       => $this->whenLoaded('seller', function () {
-                return new UserResource($this->seller);
+
+                if ($this->seller->relationLoaded('company') && $this->seller->company) {
+                    $sellerData['company'] = $this->seller->company;
+                } else {
+                    $sellerData['company'] = null;
+                }
+
+                return $sellerData;
             }),
             'sku'         => $this->sku,
             'name'        => $this->name,

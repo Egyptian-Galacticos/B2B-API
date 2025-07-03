@@ -24,7 +24,6 @@ return new class extends Migration
             //            $table->decimal('price', 10, 2);
             $table->string('currency', 10);
             $table->string('origin');
-            $table->json('specifications')->nullable();
             $table->json('dimensions')->nullable();
             $table->boolean('is_active')->default(true);
             $table->boolean('is_approved')->default(false);
