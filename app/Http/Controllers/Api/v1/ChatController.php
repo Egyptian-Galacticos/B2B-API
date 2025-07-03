@@ -7,12 +7,16 @@ use App\Http\Requests\Chat\SendMessageRequest;
 use App\Http\Requests\Chat\StartConversationRequest;
 use App\Http\Resources\ConversationResource;
 use App\Http\Resources\MessageResource;
+use App\Models\User;
 use App\Services\ChatService;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ChatController extends Controller
 {
+    use ApiResponse;
+
     public function __construct(
         private ChatService $chatService
     ) {
@@ -29,16 +33,12 @@ class ChatController extends Controller
             $request->get('per_page', 15)
         );
 
-        return response()->json([
-            'success' => true,
-            'data'    => ConversationResource::collection($conversations->items()),
-            'meta'    => [
-                'current_page' => $conversations->currentPage(),
-                'last_page'    => $conversations->lastPage(),
-                'per_page'     => $conversations->perPage(),
-                'total'        => $conversations->total(),
-            ],
-        ]);
+        return $this->apiResponse(
+            data: ConversationResource::collection($conversations->items()),
+            message: 'conversations return',
+            meta: $this->getPaginationMeta($conversations)
+
+        );
     }
 
     /**
@@ -51,7 +51,7 @@ class ChatController extends Controller
 
         // Determine who is seller and who is buyer based on user roles
         $user = auth()->user();
-        $otherUser = \App\Models\User::findOrFail($otherUserId);
+        $otherUser = User::findOrFail($otherUserId);
 
         if ($user->isSeller() && $otherUser->isBuyer()) {
             $sellerId = $userId;
@@ -60,10 +60,10 @@ class ChatController extends Controller
             $sellerId = $otherUserId;
             $buyerId = $userId;
         } else {
-            return response()->json([
-                'success' => false,
-                'message' => 'Conversations can only be started between buyers and sellers.',
-            ], 400);
+            return $this->apiResponseErrors(
+                'Conversations can only be started between buyers and sellers.',
+                400
+            );
         }
 
         $conversation = $this->chatService->getOrCreateConversation(
@@ -73,10 +73,10 @@ class ChatController extends Controller
             $request->validated('title')
         );
 
-        return response()->json([
-            'success' => true,
-            'data'    => new ConversationResource($conversation->load(['seller', 'buyer', 'lastMessage.sender'])),
-        ]);
+        return $this->apiResponse(
+            data: new ConversationResource($conversation->load(['seller', 'buyer', 'lastMessage.sender'])),
+            meta: $this->getPaginationMeta($conversation)
+        );
     }
 
     /**
@@ -91,21 +91,20 @@ class ChatController extends Controller
                 $request->get('per_page', 50)
             );
 
-            return response()->json([
-                'success' => true,
-                'data'    => MessageResource::collection($messages->items()),
-                'meta'    => [
-                    'current_page' => $messages->currentPage(),
-                    'last_page'    => $messages->lastPage(),
-                    'per_page'     => $messages->perPage(),
-                    'total'        => $messages->total(),
-                ],
-            ]);
+            return $this->apiResponse(
+                data: MessageResource::collection($messages->items()),
+                message: '',
+                meta: $this->getPaginationMeta($messages)
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 403);
+
+            return $this->apiResponseErrors(
+                message: 'error on reserve data',
+                errors: [
+                    'error' => $e->getMessage(),
+                ],
+                status: 403
+            );
         }
     }
 
@@ -122,15 +121,20 @@ class ChatController extends Controller
                 $request->validated('type', 'text')
             );
 
-            return response()->json([
-                'success' => true,
-                'data'    => new MessageResource($message),
-            ], 201);
+            return $this->apiResponse(
+                data: new MessageResource($message),
+                message: 'Message sent successfully',
+                status: 201
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 403);
+            return $this->apiResponseErrors(
+                message: 'Failed to send message',
+                errors: [
+                    'error' => $e->getMessage(),
+                ],
+                status: 403
+            );
+
         }
     }
 
@@ -142,15 +146,18 @@ class ChatController extends Controller
         try {
             $this->chatService->markMessagesAsRead($conversationId, auth()->user()->id);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Messages marked as read',
-            ]);
+            return $this->apiResponse(
+                message: 'Messages marked as read',
+                status: 200
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 403);
+            return $this->apiResponseErrors(
+                message: 'Failed to mark messages as read',
+                errors: [
+                    'error' => $e->getMessage(),
+                ],
+                status: 403
+            );
         }
     }
 
@@ -161,10 +168,10 @@ class ChatController extends Controller
     {
         $count = $this->chatService->getUnreadMessageCount(auth()->user()->id);
 
-        return response()->json([
-            'success' => true,
-            'data'    => ['count' => $count],
-        ]);
+        return $this->apiResponse(
+            data: ['count' => $count],
+            message: 'Unread message count retrieved successfully'
+        );
     }
 
     /**
@@ -183,16 +190,11 @@ class ChatController extends Controller
             $request->get('per_page', 15)
         );
 
-        return response()->json([
-            'success' => true,
-            'data'    => ConversationResource::collection($conversations->items()),
-            'meta'    => [
-                'current_page' => $conversations->currentPage(),
-                'last_page'    => $conversations->lastPage(),
-                'per_page'     => $conversations->perPage(),
-                'total'        => $conversations->total(),
-            ],
-        ]);
+        return $this->apiResponse(
+            data: ConversationResource::collection($conversations->items()),
+            message: 'Conversations found',
+            meta: $this->getPaginationMeta($conversations)
+        );
     }
 
     /**
@@ -203,15 +205,18 @@ class ChatController extends Controller
         try {
             $this->chatService->archiveConversation($conversationId, auth()->user()->id);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Conversation archived',
-            ]);
+            return $this->apiResponse(
+                message: 'Conversation archived',
+                status: 200
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 403);
+            return $this->apiResponseErrors(
+                message: 'Failed to archive conversation',
+                errors: [
+                    'error' => $e->getMessage(),
+                ],
+                status: 403
+            );
         }
     }
 
@@ -223,15 +228,18 @@ class ChatController extends Controller
         try {
             $this->chatService->reactivateConversation($conversationId, auth()->user()->id);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Conversation reactivated',
-            ]);
+            return $this->apiResponse(
+                message: 'Conversation reactivated',
+                status: 200
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 403);
+            return $this->apiResponseErrors(
+                message: 'Failed to reactivate conversation',
+                errors: [
+                    'error' => $e->getMessage(),
+                ],
+                status: 403
+            );
         }
     }
 }
