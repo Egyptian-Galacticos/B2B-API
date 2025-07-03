@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Product\ProductResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -18,7 +19,7 @@ class RfqResource extends JsonResource
             'id'               => $this->id,
             'buyer'            => UserResource::make($this->whenLoaded('buyer')),
             'seller'           => UserResource::make($this->whenLoaded('seller')),
-            'initial_product'  => $this->initialProduct,
+            'initial_product'  => ProductResource::make($this->whenLoaded('initialProduct')),
             'initial_quantity' => $this->initial_quantity,
             'shipping_country' => $this->shipping_country,
             'shipping_address' => $this->shipping_address,
