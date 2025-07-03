@@ -11,10 +11,57 @@ class QueryHandler
     protected Builder $query;
     protected array $allowedSorts = [];
     protected array $allowedFilters = [];
+    protected array $searchableFields = [];
+    protected array $originalParams = [];
 
     public function __construct(Request $request)
     {
         $this->request = $request;
+        $this->originalParams = $this->parseQueryManuallyWithDots();
+    }
+
+    protected function parseQueryManuallyWithDots(): array
+    {
+        $queryString = $_SERVER['QUERY_STRING'] ?? '';
+        $params = [];
+
+        if (empty($queryString)) {
+            return $params;
+        }
+
+        $pairs = explode('&', $queryString);
+
+        foreach ($pairs as $pair) {
+            if (empty($pair)) {
+                continue;
+            }
+
+            if (strpos($pair, '=') !== false) {
+                $parts = explode('=', $pair, 2);
+                $key = urldecode($parts[0]);
+                $value = urldecode($parts[1]);
+                $params[$key] = $value;
+            } else {
+                $params[urldecode($pair)] = '';
+            }
+        }
+
+        return $params;
+    }
+
+    protected function getOriginalParam(string $key, $default = null)
+    {
+        return $this->originalParams[$key] ?? $default;
+    }
+
+    protected function getOriginalParams(): array
+    {
+        return $this->originalParams;
+    }
+
+    protected function hasOriginalParam(string $key): bool
+    {
+        return array_key_exists($key, $this->originalParams);
     }
 
     public function setBaseQuery(Builder $query): self
@@ -38,6 +85,13 @@ class QueryHandler
         return $this;
     }
 
+    public function setSearchableFields(array $fields): self
+    {
+        $this->searchableFields = $fields;
+
+        return $this;
+    }
+
     public function apply(): Builder
     {
         $this->applySorting();
@@ -48,50 +102,53 @@ class QueryHandler
 
     protected function applySorting(): void
     {
-        $fields = explode(',', $this->request->get('sortFields', ''));
-        $orders = explode(',', $this->request->get('sortOrders', ''));
+
+        $fields = explode(',', $this->getOriginalParam('sortFields', ''));
+        $orders = explode(',', $this->getOriginalParam('sortOrders', ''));
 
         foreach ($fields as $index => $field) {
-            if (! in_array($field, $this->allowedSorts)) {
+            $field = trim($field);
+            if (empty($field)) {
                 continue;
             }
 
-            $direction = $orders[$index] ?? 'asc';
+            $direction = trim($orders[$index] ?? 'asc');
             $parts = explode('.', $field);
 
             if (count($parts) === 1) {
-                // Direct column sorting
+                if (! in_array($field, $this->allowedSorts)) {
+                    continue;
+                }
                 $this->query->orderBy($field, $direction);
             } else {
-                // Relationship sorting using Eloquent
-                $relation = $parts[0];
-                $column = $parts[1];
+                [$relation, $column] = $parts;
 
-                // Get the relationship instance
+                if (! method_exists($this->query->getModel(), $relation)) {
+                    continue;
+                }
+
                 $relationInstance = $this->query->getModel()->{$relation}();
+                $relatedTable = $relationInstance->getRelated()->getTable();
+                $alias = $relatedTable.'_sort';
+                $foreignKey = $relationInstance->getQualifiedForeignKeyName();
 
-                // Use Eloquent's orderBy with a subquery
-                $this->query->orderBy(
-                    $relationInstance->select($column)
-                        ->whereColumn(
-                            $relationInstance->getQualifiedOwnerKeyName(),
-                            $relationInstance->getQualifiedForeignKeyName()
-                        )
-                        ->take(1),
-                    $direction
-                );
+                if (! collect($this->query->getQuery()->joins)->pluck('table')->contains($relatedTable.' as '.$alias)) {
+                    $this->query->leftJoin("{$relatedTable} as {$alias}", $foreignKey, '=', "{$alias}.id");
+                }
+
+                $this->query->orderBy("{$alias}.{$column}", $direction);
             }
         }
     }
 
     protected function applyFiltering(): void
     {
-        foreach ($this->request->query() as $key => $value) {
+
+        foreach ($this->originalParams as $key => $value) {
             if (! str_starts_with($key, 'filter_')) {
                 continue;
             }
 
-            // match filter_field_identifier
             if (! preg_match('/^filter_(.*?)_(\d+)$/', $key, $matches)) {
                 continue;
             }
@@ -99,7 +156,7 @@ class QueryHandler
             $fullField = $matches[1];
             $id = $matches[2];
             $modeKey = "filter_{$fullField}_{$id}_mode";
-            $mode = $this->request->get($modeKey, 'equals');
+            $mode = $this->getOriginalParam($modeKey, 'equals');
 
             if (! in_array($fullField, $this->allowedFilters)) {
                 continue;
@@ -107,9 +164,8 @@ class QueryHandler
 
             $parts = explode('.', $fullField);
 
-            // Handle 'in' and 'dateIs' specially
             if ($mode === 'in') {
-                $values = explode(',', $value);
+                $values = array_map('trim', explode(',', $value));
                 if (count($parts) === 1) {
                     $this->query->whereIn($fullField, $values);
                 } else {
@@ -124,7 +180,6 @@ class QueryHandler
             }
 
             if ($mode === 'dateIs') {
-                // compare date part only
                 if (count($parts) === 1) {
                     $this->query->whereDate($fullField, '=', $value);
                 } else {
@@ -138,7 +193,6 @@ class QueryHandler
                 continue;
             }
 
-            // default operators
             $operator = $this->getOperatorFromMode($mode);
             $formattedValue = $this->formatValueByMode($value, $mode);
 
