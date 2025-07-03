@@ -40,7 +40,8 @@ Route::prefix('admin')->middleware(['jwt.auth', 'role:admin'])->group(function (
         Route::get('/trashed', [AdminCategoryController::class, 'trashed'])->name('trashed');
         Route::post('/bulk-action', [AdminCategoryController::class, 'bulkAction'])->name('bulk-action');
         Route::get('/{id}', [AdminCategoryController::class, 'show'])->name('show');
-        Route::put('/{id}', [AdminCategoryController::class, 'update'])->name('update');
+        Route::post('/{id}', [AdminCategoryController::class, 'update'])->name('update'); // For method spoofing
+        Route::put('/{id}', [AdminCategoryController::class, 'update'])->name('update-put'); // For direct PUT
         Route::delete('/{id}', [AdminCategoryController::class, 'destroy'])->name('destroy');
         Route::patch('/{id}/restore', [AdminCategoryController::class, 'restore'])->name('restore');
         Route::delete('/{id}/force', [AdminCategoryController::class, 'forceDelete'])->name('force-delete');

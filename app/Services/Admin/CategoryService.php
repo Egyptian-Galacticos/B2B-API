@@ -168,7 +168,7 @@ class CategoryService
             DB::commit();
 
             return $category->load([
-                'parent:id,name,slug',
+                'parent:id,name,slug,level',
                 'children:id,name,slug,parent_id',
                 'creator:id,first_name,last_name,email',
                 'updater:id,first_name,last_name,email',
@@ -418,16 +418,27 @@ class CategoryService
      */
     private function updateChildrenPaths(Category $category): void
     {
+        if ($category->level >= 2) {
+            return;
+        }
+
         $children = Category::where('parent_id', $category->id)->get();
 
         foreach ($children as $child) {
+            $newLevel = $category->level + 1;
+            if ($newLevel > 2) {
+                continue;
+            }
+
             $newPath = $category->path ? $category->path.'/'.$category->id : (string) $category->id;
             $child->update([
-                'level' => $category->level + 1,
+                'level' => $newLevel,
                 'path'  => $newPath,
             ]);
 
-            $this->updateChildrenPaths($child);
+            if ($newLevel < 2) {
+                $this->updateChildrenPaths($child);
+            }
         }
     }
 

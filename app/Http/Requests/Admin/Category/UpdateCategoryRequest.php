@@ -3,18 +3,16 @@
 namespace App\Http\Requests\Admin\Category;
 
 use App\Models\Category;
+use App\Traits\ApiResponse;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 
-/**
- * Example form-data fields:
- * - _method: PUT
- * - name: Category Name
- * - image_file: [file]
- * - icon_file: [file]
- */
 class UpdateCategoryRequest extends FormRequest
 {
+    use ApiResponse;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -58,8 +56,10 @@ class UpdateCategoryRequest extends FormRequest
                         }
 
                         $parent = Category::find($value);
-                        if ($parent && $parent->level >= 2) {
-                            $fail('Categories can only be nested up to 3 levels deep.');
+                        if ($parent) {
+                            if ($parent->level >= 2) {
+                                $fail('Categories can only be nested up to 3 levels deep.');
+                            }
                         }
 
                         $category = Category::find($categoryId);
@@ -176,5 +176,30 @@ class UpdateCategoryRequest extends FormRequest
                 'remove_icon' => filter_var($this->remove_icon, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE),
             ]);
         }
+    }
+
+    /**
+     * Get the validated data from the request.
+     */
+    public function validated($key = null, $default = null)
+    {
+        return parent::validated($key, $default);
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     *
+     *
+     * @throws \Illuminate\Http\Exceptions\HttpResponseException
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            $this->apiResponseErrors(
+                'Validation failed',
+                $validator->errors()->toArray(),
+                422
+            )
+        );
     }
 }

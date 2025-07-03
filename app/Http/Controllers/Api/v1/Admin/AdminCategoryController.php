@@ -104,9 +104,10 @@ class AdminCategoryController extends Controller
     public function update(UpdateCategoryRequest $request, string $id): JsonResponse
     {
         try {
+            $validatedData = $request->validated();
             $category = $this->categoryService->updateCategory(
                 (int) $id,
-                $request->validated(),
+                $validatedData,
                 $request->user()->id
             );
 

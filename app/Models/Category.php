@@ -351,9 +351,19 @@ class Category extends Model implements HasMedia
      */
     public function getFullPathNames(string $separator = ' > '): string
     {
-        $names = $this->getAncestors()->pluck('name')->toArray();
-        $names[] = $this->name;
+        if (empty($this->path)) {
+            return $this->name;
+        }
 
-        return implode($separator, $names);
+        $ancestorIds = explode('/', $this->path);
+
+        $ancestors = Category::whereIn('id', $ancestorIds)
+            ->orderByRaw('FIELD(id, '.implode(',', $ancestorIds).')')
+            ->pluck('name')
+            ->toArray();
+
+        $ancestors[] = $this->name;
+
+        return implode($separator, $ancestors);
     }
 }
