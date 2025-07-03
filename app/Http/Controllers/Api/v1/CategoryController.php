@@ -30,24 +30,23 @@ class CategoryController extends Controller
     public function index(Request $request, QueryHandler $queryHandler): JsonResponse
     {
         try {
-            $query = Category::with(['parent', 'creator', 'updater'])
+            $query = Category::whereNull('parent_id')
                 ->where('status', 'active')
                 ->withCount('products');
 
             if ($request->boolean('include_children', true)) {
                 $query->with(['children' => function ($q) {
-                    $q->where('status', 'active');
-                }, 'recursiveChildren' => function ($q) {
-                    $q->where('status', 'active');
+                    $q->where('status', 'active')
+                        ->with(['children' => function ($qq) {
+                            $qq->where('status', 'active');
+                        }]);
                 }]);
             }
 
             $query = $queryHandler
                 ->setBaseQuery($query)
-                ->setAllowedSorts(['id', 'name', 'slug', 'description', 'status', 'level', 'sort_order', 'created_at', 'updated_at', 'products_count', 'parent.name',              'creator.name',
-                ])
-                ->setAllowedFilters(['id', 'name', 'slug', 'description', 'status', 'level', 'parent_id', 'created_by', 'sort_order', 'created_at', 'updated_at', 'parent.name', 'parent.slug', 'creator.name', 'creator.email',
-                ])
+                ->setAllowedSorts(['id', 'name', 'slug', 'description', 'status', 'level', 'sort_order', 'created_at', 'updated_at', 'products_count'])
+                ->setAllowedFilters(['id', 'name', 'slug', 'description', 'status', 'level', 'sort_order', 'created_at', 'updated_at'])
                 ->apply();
 
             $categories = $query->get();
@@ -55,10 +54,7 @@ class CategoryController extends Controller
             return $this->apiResponse(
                 new CategoryCollection($categories),
                 'Categories retrieved successfully',
-                200,
-                [
-                    'total' => $categories->count(),
-                ]
+                200
             );
         } catch (Exception $e) {
             return $this->apiResponse(
@@ -97,23 +93,20 @@ class CategoryController extends Controller
             $hierarchyData = $category->calculateHierarchyData($request->parent_id);
 
             $category = Category::create([
-                'name'         => $request->name,
-                'description'  => $request->description,
-                'parent_id'    => $request->parent_id,
-                'level'        => $hierarchyData['level'],
-                'path'         => $hierarchyData['path'],
-                'status'       => $category->determineStatusByUserRole($user),
-                'icon'         => $request->icon,
-                'seo_metadata' => $request->seo_metadata,
-                'created_by'   => $user->id,
-                'updated_by'   => $user->id,
+                'name'        => $request->name,
+                'description' => $request->description,
+                'parent_id'   => $request->parent_id,
+                'level'       => $hierarchyData['level'],
+                'path'        => $hierarchyData['path'],
+                'status'      => $category->determineStatusByUserRole($user),
+                'icon'        => $request->icon,
             ]);
 
             $category->handleFileUploads($request);
 
             DB::commit();
 
-            $category->load(['parent', 'creator', 'updater']);
+            $category->load(['parent']);
 
             return $this->apiResponse(
                 new categoryResource($category),
@@ -152,8 +145,6 @@ class CategoryController extends Controller
                 'recursiveChildren' => function ($q) {
                     $q->where('status', 'active');
                 },
-                'creator',
-                'updater',
             ])->loadCount('products');
 
             return $this->apiResponse(
@@ -203,12 +194,10 @@ class CategoryController extends Controller
             }
 
             $updateData = [
-                'name'         => $request->name,
-                'description'  => $request->description,
-                'parent_id'    => $request->parent_id,
-                'icon'         => $request->icon,
-                'seo_metadata' => $request->seo_metadata,
-                'updated_by'   => $user->id,
+                'name'        => $request->name,
+                'description' => $request->description,
+                'parent_id'   => $request->parent_id,
+                'icon'        => $request->icon,
             ];
 
             if ($request->has('status') && $category->userIsAdmin($user)) {
@@ -244,7 +233,7 @@ class CategoryController extends Controller
 
             DB::commit();
 
-            $category->load(['parent', 'creator', 'updater']);
+            $category->load(['parent']);
 
             return $this->apiResponse(
                 new CategoryResource($category),

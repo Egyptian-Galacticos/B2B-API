@@ -21,9 +21,6 @@ return new class extends Migration
             $table->integer('level')->default(0);
             $table->enum('status', ['active', 'pending', 'inactive'])->default('pending');
             $table->string('icon')->nullable();
-            $table->json('seo_metadata')->nullable();
-            $table->foreignId('created_by')->nullable()->constrained('users');
-            $table->foreignId('updated_by')->nullable()->constrained('users');
             $table->timestamps();
             $table->softDeletes();
 

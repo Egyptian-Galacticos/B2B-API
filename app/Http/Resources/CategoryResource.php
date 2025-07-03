@@ -15,29 +15,20 @@ class CategoryResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'id'           => $this->id,
-            'name'         => $this->name,
-            'description'  => $this->description,
-            'slug'         => $this->slug,
-            'parent_id'    => $this->parent_id,
-            'level'        => $this->level,
-            'path'         => $this->path,
-            'status'       => $this->status,
-            'icon'         => $this->icon,
-            'images'       => MediaResource::collection($this->getMedia('images')),
-            'seo_metadata' => $this->seo_metadata,
-            'parent'       => $this->whenLoaded('parent', fn () => new CategoryResource($this->parent)),
-            'children'     => CategoryResource::collection($this->whenLoaded('recursiveChildren')),
-            'creator'      => $this->whenLoaded('creator', fn () => [
-                'id'        => $this->creator->id,
-                'full_name' => $this->creator->full_name,
-            ]),
-            'updater' => $this->whenLoaded('updater', fn () => [
-                'id'        => $this->updater->id,
-                'full_name' => $this->updater->full_name,
-            ]),
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'id'          => $this->id,
+            'name'        => $this->name,
+            'description' => $this->description,
+            'slug'        => $this->slug,
+            'parent_id'   => $this->parent_id,
+            'level'       => $this->level,
+            'path'        => $this->path,
+            'status'      => $this->status,
+            'icon'        => $this->icon,
+            'image'       => ($firstMedia = $this->getFirstMedia('images')) ? new MediaResource($firstMedia) : null,
+            'parent'      => $this->whenLoaded('parent', fn () => new CategoryResource($this->parent)),
+            'children'    => CategoryResource::collection($this->whenLoaded('children')),
+            'created_at'  => $this->created_at,
+            'updated_at'  => $this->updated_at,
         ];
     }
 }
