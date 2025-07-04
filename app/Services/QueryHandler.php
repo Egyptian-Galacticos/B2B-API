@@ -94,6 +94,7 @@ class QueryHandler
 
     public function apply(): Builder
     {
+        $this->applyGlobalSearch();
         $this->applySorting();
         $this->applyFiltering();
 
@@ -143,7 +144,6 @@ class QueryHandler
 
     protected function applyFiltering(): void
     {
-
         foreach ($this->originalParams as $key => $value) {
             if (! str_starts_with($key, 'filter_')) {
                 continue;
@@ -159,6 +159,18 @@ class QueryHandler
             $mode = $this->getOriginalParam($modeKey, 'equals');
 
             if (! in_array($fullField, $this->allowedFilters)) {
+                continue;
+            }
+
+            // 🔹 HANDLE VIRTUAL 'price' FILTER 🔹
+            if ($fullField === 'price') {
+                $operator = $this->getOperatorFromMode($mode);
+                $formattedValue = $this->formatValueByMode($value, $mode);
+
+                $this->query->whereHas('tiers', function ($q) use ($operator, $formattedValue) {
+                    $q->where('price', $operator, $formattedValue);
+                });
+
                 continue;
             }
 
@@ -206,6 +218,36 @@ class QueryHandler
                 });
             }
         }
+    }
+
+    protected function applyGlobalSearch(): self
+    {
+        $searchTerm = trim($this->request->get('search', ''));
+
+        if (! $searchTerm || empty($this->searchableFields)) {
+            return $this;
+        }
+
+        $mainTable = $this->query->getModel()->getTable();
+
+        $this->query->where(function (Builder $query) use ($searchTerm, $mainTable) {
+            foreach ($this->searchableFields as $field) {
+                $parts = explode('.', $field);
+
+                if (count($parts) === 1) {
+                    // Example: products.name
+                    $query->orWhere("{$mainTable}.{$field}", 'LIKE', "%{$searchTerm}%");
+                } elseif (count($parts) === 2) {
+                    // Example: category.name
+                    [$relation, $column] = $parts;
+                    $query->orWhereHas($relation, function ($q) use ($column, $searchTerm) {
+                        $q->where($column, 'LIKE', "%{$searchTerm}%");
+                    });
+                }
+            }
+        });
+
+        return $this;
     }
 
     protected function getOperatorFromMode(string $mode): string
