@@ -66,19 +66,11 @@ class QuoteSeeder extends Seeder
 
         foreach ($conversations as $conversation) {
             if (fake()->boolean(60)) {
-                $participantIds = $conversation->participant_ids;
-
-                if (count($participantIds) < 2) {
-                    continue;
-                }
-
-                $users = User::whereIn('id', $participantIds)->get();
-                $buyer = $users->filter(fn ($user) => $user->hasRole('buyer'))->first();
-                $seller = $users->filter(fn ($user) => $user->hasRole('seller'))->first();
+                $buyer = User::find($conversation->buyer_id);
+                $seller = User::find($conversation->seller_id);
 
                 if (! $buyer || ! $seller) {
-                    $buyer = $users->first();
-                    $seller = $users->last();
+                    continue;
                 }
 
                 $createdAt = fake()->dateTimeBetween($conversation->created_at, 'now');
