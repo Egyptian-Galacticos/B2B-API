@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Category;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class CategoryService
@@ -73,13 +72,11 @@ class CategoryService
 
             // Create the new category
             $newCategory = Category::create([
-                'name'       => ucwords(strtolower($categoryData['name'])),
-                'parent_id'  => $parentId,
-                'slug'       => $this->generateUniqueSlug($categoryData['name']),
-                'level'      => $hierarchyData['level'],
-                'path'       => $hierarchyData['path'],
-                'created_by' => Auth::id(),
-                'updated_by' => Auth::id(),
+                'name'      => ucwords(strtolower($categoryData['name'])),
+                'parent_id' => $parentId,
+                'slug'      => $this->generateUniqueSlug($categoryData['name']),
+                'level'     => $hierarchyData['level'],
+                'path'      => $hierarchyData['path'],
             ]);
 
             return $newCategory->id;

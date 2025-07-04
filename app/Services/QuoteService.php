@@ -27,8 +27,10 @@ class QuoteService
         $queryHandler = new QueryHandler($request);
 
         $query = Quote::with([
-            'buyer.company',
-            'seller.company',
+            'directBuyer.company',
+            'directSeller.company',
+            'rfq.buyer.company',
+            'rfq.seller.company',
             'rfq',
             'conversation',
             'items',
@@ -165,7 +167,6 @@ class QuoteService
             }
 
             $quote->load(['rfq.buyer', 'rfq.seller', 'items.product', 'contract']);
-
 
             return $quote;
         });
