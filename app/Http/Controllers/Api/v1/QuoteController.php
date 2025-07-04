@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Quote\CreateQuoteRequest;
+use App\Http\Requests\Quote\IndexQuoteRequest;
 use App\Http\Requests\Quote\UpdateQuoteRequest;
 use App\Http\Resources\QuoteResource;
 use App\Models\User;
@@ -13,7 +14,6 @@ use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use InvalidArgumentException;
 
@@ -30,18 +30,19 @@ class QuoteController extends Controller
      *
      * - Admin: See all quotes in the system
      * - Regular users: See all their quotes (both as buyer and seller)
+     * - user_type parameter: 'buyer' or 'seller' for dashboard context filtering
      */
-    public function index(Request $request): JsonResponse
+    public function index(IndexQuoteRequest $request): JsonResponse
     {
         try {
             $user = Auth::user();
             assert($user instanceof User);
             $perPage = (int) $request->get('size', 15);
-
+            $userType = $request->get('user_type');
             if ($user->isAdmin()) {
-                $quotes = $this->quoteService->getWithFilters($request, null, $perPage);
+                $quotes = $this->quoteService->getWithFilters($request, null, null, $perPage);
             } else {
-                $quotes = $this->quoteService->getWithFilters($request, $user->id, $perPage);
+                $quotes = $this->quoteService->getWithFilters($request, $user->id, $userType, $perPage);
             }
 
             return $this->apiResponse(

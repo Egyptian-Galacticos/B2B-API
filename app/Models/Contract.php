@@ -77,6 +77,16 @@ class Contract extends Model
         return $query->where('buyer_id', $userId)->orWhere('seller_id', $userId);
     }
 
+    public function scopeForBuyer($query, $userId)
+    {
+        return $query->where('buyer_id', $userId);
+    }
+
+    public function scopeForSeller($query, $userId)
+    {
+        return $query->where('seller_id', $userId);
+    }
+
     public function scopePendingApproval($query)
     {
         return $query->where('status', self::STATUS_PENDING_APPROVAL);

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Contract\IndexContractRequest;
 use App\Http\Requests\Contract\StoreContractRequest;
 use App\Http\Requests\Contract\UpdateContractRequest;
 use App\Http\Resources\ContractResource;
@@ -13,7 +14,6 @@ use App\Services\QueryHandler;
 use App\Traits\ApiResponse;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ContractController extends Controller
@@ -29,15 +29,24 @@ class ContractController extends Controller
      *
      * Users can only see their own contracts (as buyer or seller)
      * Admins can see all contracts
+     * user_type parameter: 'buyer' or 'seller' for dashboard context filtering
      */
-    public function index(Request $request): JsonResponse
+    public function index(IndexContractRequest $request): JsonResponse
     {
         try {
             $user = User::findOrFail(Auth::id());
             $perPage = (int) $request->get('size', 15);
+            $userType = $request->get('user_type');
 
             $query = Contract::with(['buyer', 'seller', 'quote', 'items.product']);
-            $query->forUser($user->id);
+
+            if ($userType === 'buyer') {
+                $query->forBuyer($user->id);
+            } elseif ($userType === 'seller') {
+                $query->forSeller($user->id);
+            } else {
+                $query->forUser($user->id);
+            }
 
             $query = $this->queryHandler
                 ->setBaseQuery($query)

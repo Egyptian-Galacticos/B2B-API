@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Rfq\CreateRfqRequest;
+use App\Http\Requests\Rfq\IndexRfqRequest;
 use App\Http\Requests\Rfq\UpdateRfqRequest;
 use App\Http\Resources\RfqResource;
 use App\Models\User;
@@ -13,7 +14,6 @@ use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use InvalidArgumentException;
 
@@ -30,18 +30,20 @@ class RfqController extends Controller
      *
      * - Admin : See all RFQs in the system
      * - Regular users: See all their RFQs (both as buyer and seller)
+     * - user_type parameter: 'buyer' or 'seller' for dashboard context filtering
      */
-    public function index(Request $request): JsonResponse
+    public function index(IndexRfqRequest $request): JsonResponse
     {
         try {
             $user = Auth::user();
             assert($user instanceof User);
             $perPage = (int) $request->get('size', 15);
+            $userType = $request->get('user_type');
 
             if ($user->isAdmin()) {
                 $rfqs = $this->rfqService->getWithFilters($request, null, null, $perPage);
             } else {
-                $rfqs = $this->rfqService->getWithFilters($request, $user->id, null, $perPage);
+                $rfqs = $this->rfqService->getWithFilters($request, $user->id, $userType, $perPage);
             }
 
             return $this->apiResponse(

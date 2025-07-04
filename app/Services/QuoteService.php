@@ -18,12 +18,8 @@ class QuoteService
 {
     /**
      * Get paginated quotes with filtering and sorting
-     *
-     * @param Request $request - The request containing filter and sort parameters
-     * @param int|null $userId - User ID to filter quotes (null for admin to see all)
-     * @param int $perPage - Number of items per page
      */
-    public function getWithFilters(Request $request, ?int $userId = null, int $perPage = 15): LengthAwarePaginator
+    public function getWithFilters(Request $request, ?int $userId = null, ?string $userType = null, int $perPage = 15): LengthAwarePaginator
     {
         $queryHandler = new QueryHandler($request);
 
@@ -37,7 +33,13 @@ class QuoteService
             'contract',
         ]);
 
-        if ($userId) {
+        if ($userId && $userType) {
+            if ($userType === 'buyer') {
+                $query->forBuyer($userId);
+            } elseif ($userType === 'seller') {
+                $query->forSeller($userId);
+            }
+        } elseif ($userId) {
             $query->where(function ($q) use ($userId) {
                 $q->where('seller_id', $userId)->orWhere('buyer_id', $userId);
             });
