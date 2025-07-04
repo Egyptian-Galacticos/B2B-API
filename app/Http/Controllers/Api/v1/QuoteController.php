@@ -30,7 +30,7 @@ class QuoteController extends Controller
      *
      * - Admin: See all quotes in the system
      * - Regular users: See all their quotes (both as buyer and seller)
-     * - user_type parameter: 'buyer' or 'seller' for dashboard context filtering
+     * - user_type parameter: 'buyer' or 'seller'
      */
     public function index(IndexQuoteRequest $request): JsonResponse
     {

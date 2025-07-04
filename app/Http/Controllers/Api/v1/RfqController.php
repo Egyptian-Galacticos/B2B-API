@@ -30,7 +30,7 @@ class RfqController extends Controller
      *
      * - Admin : See all RFQs in the system
      * - Regular users: See all their RFQs (both as buyer and seller)
-     * - user_type parameter: 'buyer' or 'seller' for dashboard context filtering
+     * - user_type parameter: 'buyer' or 'seller'
      */
     public function index(IndexRfqRequest $request): JsonResponse
     {

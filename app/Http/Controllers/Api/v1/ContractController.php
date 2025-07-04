@@ -29,7 +29,7 @@ class ContractController extends Controller
      *
      * Users can only see their own contracts (as buyer or seller)
      * Admins can see all contracts
-     * user_type parameter: 'buyer' or 'seller' for dashboard context filtering
+     * user_type parameter: 'buyer' or 'seller'
      */
     public function index(IndexContractRequest $request): JsonResponse
     {
