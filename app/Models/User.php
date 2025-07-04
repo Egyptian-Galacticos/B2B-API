@@ -228,6 +228,49 @@ class User extends Authenticatable implements HasMedia, JWTSubject
     }
 
     /**
+     * Get conversations where this user is the seller.
+     */
+    public function sellerConversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'seller_id');
+    }
+
+    /**
+     * Get conversations where this user is the buyer.
+     */
+    public function buyerConversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'buyer_id');
+    }
+
+    /**
+     * Get all conversations for this user (as seller or buyer).
+     */
+    public function conversations()
+    {
+        return Conversation::where('seller_id', $this->id)
+            ->orWhere('buyer_id', $this->id);
+    }
+
+    /**
+     * Get messages sent by this user.
+     */
+    public function sentMessages(): HasMany
+    {
+        return $this->hasMany(Message::class, 'sender_id');
+    }
+
+    /**
+     * Get unread messages for this user.
+     */
+    public function unreadMessages()
+    {
+        return Message::whereHas('conversation', function ($q) {
+            $q->where('seller_id', $this->id)->orWhere('buyer_id', $this->id);
+        })->where('sender_id', '!=', $this->id)->where('is_read', false);
+    }
+
+    /**
      * Scope to get active users only.
      */
     // public function scopeActive($query)

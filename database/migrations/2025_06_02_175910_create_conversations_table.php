@@ -14,8 +14,9 @@ return new class extends Migration
         Schema::create('conversations', function (Blueprint $table) {
             $table->id();
             $table->enum('type', ['direct', 'contract'])->default('direct')->index();
+            $table->foreignId('seller_id')->constrained('users');
+            $table->foreignId('buyer_id')->constrained('users');
             $table->string('title')->nullable();
-            $table->json('participant_ids');
             $table->timestamp('last_activity_at')->nullable()->index();
             $table->boolean('is_active')->default(true)->index();
             $table->timestamps();
