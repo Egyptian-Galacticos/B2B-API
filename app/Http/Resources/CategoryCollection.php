@@ -8,8 +8,6 @@ class CategoryCollection extends ResourceCollection
 {
     public function toArray($request)
     {
-        return [
-            'data' => CategoryResource::collection($this->collection),
-        ];
+        return CategoryResource::collection($this->collection);
     }
 }
