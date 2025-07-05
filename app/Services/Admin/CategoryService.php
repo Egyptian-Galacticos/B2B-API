@@ -19,8 +19,6 @@ class CategoryService
         $query = Category::with([
             'parent:id,name,slug',
             'children:id,name,slug,parent_id',
-            'creator:id,first_name,last_name,email',
-            'updater:id,first_name,last_name,email',
             'media',
         ])
             ->withCount(['products', 'children'])
