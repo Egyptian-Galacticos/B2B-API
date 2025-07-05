@@ -40,17 +40,17 @@ class Rfq extends Model
     // relationships
     public function buyer()
     {
-        return $this->belongsTo(User::class, 'buyer_id');
+        return $this->belongsTo(User::class, 'buyer_id')->withTrashed();
     }
 
     public function seller()
     {
-        return $this->belongsTo(User::class, 'seller_id');
+        return $this->belongsTo(User::class, 'seller_id')->withTrashed();
     }
 
     public function initialProduct()
     {
-        return $this->belongsTo(Product::class, 'initial_product_id');
+        return $this->belongsTo(Product::class, 'initial_product_id')->withTrashed();
     }
 
     public function quotes()

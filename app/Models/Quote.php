@@ -59,13 +59,13 @@ class Quote extends Model
     // Direct seller relationship (for chat-based quotes)
     public function directSeller()
     {
-        return $this->belongsTo(User::class, 'seller_id');
+        return $this->belongsTo(User::class, 'seller_id')->withTrashed();
     }
 
     // Direct buyer relationship (for chat-based quotes)
     public function directBuyer()
     {
-        return $this->belongsTo(User::class, 'buyer_id');
+        return $this->belongsTo(User::class, 'buyer_id')->withTrashed();
     }
 
     // Helper methods to get seller/buyer with fallback to RFQ
