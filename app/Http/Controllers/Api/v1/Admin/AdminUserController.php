@@ -14,6 +14,7 @@ use App\Services\Admin\UserService;
 use App\Traits\ApiResponse;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class AdminUserController extends Controller
 {
@@ -132,6 +133,82 @@ class AdminUserController extends Controller
                 'Failed to perform bulk operation',
                 ['error' => $e->getMessage()],
                 500
+            );
+        }
+    }
+
+    /**
+     * Delete a specific user (admin only) - Soft Delete.
+     *
+     * @authenticated
+     */
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        try {
+            $result = $this->userService->deleteUser($id, $request->user()->id);
+
+            return $this->apiResponse(
+                null,
+                'User deleted successfully.',
+                200
+            );
+
+        } catch (Exception $e) {
+            return $this->apiResponseErrors(
+                'Failed to delete user',
+                ['error' => $e->getMessage()],
+                $e->getMessage() === 'No query results for model [App\\Models\\User] '.$id ? 404 : 400
+            );
+        }
+    }
+
+    /**
+     * Get trashed users (admin only).
+     *
+     * @authenticated
+     */
+    public function trashed(Request $request): JsonResponse
+    {
+        try {
+            $trashedUsers = $this->userService->getTrashedUsers($request);
+
+            return $this->apiResponse(
+                UserResource::collection($trashedUsers->items()),
+                'Trashed users retrieved successfully',
+                200,
+                $this->getPaginationMeta($trashedUsers)
+            );
+
+        } catch (Exception $e) {
+            return $this->apiResponseErrors(
+                'Failed to retrieve trashed users',
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * Restore a soft-deleted user (admin only).
+     *
+     * @authenticated
+     */
+    public function restore(Request $request, int $id): JsonResponse
+    {
+        try {
+            $user = $this->userService->restoreUser($id);
+
+            return $this->apiResponse(
+                new UserResource($user),
+                'User restored successfully.',
+                200
+            );
+
+        } catch (Exception $e) {
+            return $this->apiResponseErrors(
+                'Failed to restore user',
+                ['error' => $e->getMessage()],
+                $e->getMessage() === 'No query results for model [App\\Models\\User] '.$id ? 404 : 400
             );
         }
     }

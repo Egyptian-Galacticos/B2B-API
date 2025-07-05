@@ -156,14 +156,25 @@ class UserService
     {
         $successful = [];
 
-        $users = User::whereIn('id', $userIds)
-            ->whereDoesntHave('roles', function ($q) {
-                $q->where('name', 'admin');
-            })
-            ->where('id', '!=', $adminId)
-            ->where('status', '!=', 'pending')
-            ->with('roles')
-            ->get();
+        if ($action === 'restore') {
+            $users = User::onlyTrashed()
+                ->whereIn('id', $userIds)
+                ->whereDoesntHave('roles', function ($q) {
+                    $q->where('name', 'admin');
+                })
+                ->where('id', '!=', $adminId)
+                ->with('roles')
+                ->get();
+        } else {
+            $users = User::whereIn('id', $userIds)
+                ->whereDoesntHave('roles', function ($q) {
+                    $q->where('name', 'admin');
+                })
+                ->where('id', '!=', $adminId)
+                ->where('status', '!=', 'pending')
+                ->with('roles')
+                ->get();
+        }
 
         if ($users->isEmpty()) {
             throw new Exception('No users found for the provided IDs or all users are admins/pending.');
@@ -195,6 +206,15 @@ class UserService
                         'id'     => $user->id,
                         'email'  => $user->email,
                         'action' => 'deleted',
+                    ];
+                    break;
+
+                case 'restore':
+                    $user->restore();
+                    $successful[] = [
+                        'id'     => $user->id,
+                        'email'  => $user->email,
+                        'action' => 'restored',
                     ];
                     break;
 
@@ -330,5 +350,63 @@ class UserService
             'reviewed_at'  => now(),
             'reviewed_by'  => $adminId,
         ];
+    }
+
+    /**
+     * Delete a specific user (admin only) - Soft Delete.
+     *
+     * @throws Exception
+     */
+    public function deleteUser(int $userId, int $adminId): void
+    {
+        $user = User::findOrFail($userId);
+
+        if ($user->id === $adminId) {
+            throw new Exception('You cannot delete your own account');
+        }
+
+        if ($user->hasRole('admin')) {
+            throw new Exception('Cannot delete admin user');
+        }
+
+        if ($user->status === 'pending') {
+            throw new Exception('Cannot delete pending user. Use seller registration review instead.');
+        }
+
+        $user->delete();
+    }
+
+    /**
+     * Get trashed users with filtering and pagination.
+     */
+    public function getTrashedUsers(Request $request): LengthAwarePaginator
+    {
+        $query = User::onlyTrashed()
+            ->with(['roles', 'company'])
+            ->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'admin');
+            });
+
+        $perPage = (int) $request->get('size', 10);
+
+        return $query->paginate($perPage)->withQueryString();
+    }
+
+    /**
+     * Restore a soft-deleted user.
+     *
+     * @throws Exception
+     */
+    public function restoreUser(int $userId): User
+    {
+        $user = User::onlyTrashed()->findOrFail($userId);
+
+        if ($user->hasRole('admin')) {
+            throw new Exception('Cannot restore admin user');
+        }
+
+        $user->restore();
+
+        return $user->fresh(['roles', 'company']);
     }
 }

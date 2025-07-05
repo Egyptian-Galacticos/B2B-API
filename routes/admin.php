@@ -14,8 +14,11 @@ Route::prefix('admin')->middleware(['jwt.auth', 'role:admin'])->group(function (
     Route::prefix('users')->name('admin.users.')->group(function () {
         Route::get('/', [AdminUserController::class, 'index'])->name('index');
         Route::post('/bulk-action', [AdminUserController::class, 'bulkAction'])->name('bulk-action');
+        Route::get('/trashed', [AdminUserController::class, 'trashed'])->name('trashed');
         Route::get('/{id}', [AdminUserController::class, 'show'])->name('show');
         Route::put('/{id}', [AdminUserController::class, 'update'])->name('update');
+        Route::delete('/{id}', [AdminUserController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/restore', [AdminUserController::class, 'restore'])->name('restore');
     });
 
     // Seller Registration Review Routes
