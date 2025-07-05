@@ -30,8 +30,11 @@ Route::prefix('admin')->middleware(['jwt.auth', 'role:admin'])->group(function (
     // Product Management Routes
     Route::prefix('products')->name('admin.products.')->group(function () {
         Route::get('/', [AdminProductController::class, 'index'])->name('index');
+        Route::get('/trashed', [AdminProductController::class, 'trashed'])->name('trashed');
         Route::get('/{id}', [AdminProductController::class, 'show'])->name('show');
         Route::put('/{id}/status', [AdminProductController::class, 'updateStatus'])->name('update-status');
+        Route::delete('/{id}', [AdminProductController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/restore', [AdminProductController::class, 'restore'])->name('restore');
         Route::post('/bulk-action', [AdminProductController::class, 'bulkAction'])->name('bulk-action');
     });
 
@@ -73,5 +76,4 @@ Route::prefix('admin')->middleware(['jwt.auth', 'role:admin'])->group(function (
         Route::put('/{id}/status', [AdminContractController::class, 'updateStatus'])->name('update-status');
         Route::post('/bulk-action', [AdminContractController::class, 'bulkAction'])->name('bulk-action');
     });
-
 });

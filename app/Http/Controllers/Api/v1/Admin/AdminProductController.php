@@ -11,6 +11,7 @@ use App\Http\Resources\Product\ProductResource;
 use App\Services\Admin\ProductService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class AdminProductController extends Controller
 {
@@ -109,6 +110,71 @@ class AdminProductController extends Controller
         return $this->apiResponse(
             null,
             $result['message'],
+            200
+        );
+    }
+
+    /**
+     * Delete a specific product (admin only).
+     *
+     * @authenticated
+     */
+    public function destroy(int $id): JsonResponse
+    {
+        $result = $this->productService->deleteProduct($id);
+
+        if (! $result['success']) {
+            return $this->apiResponseErrors(
+                $result['message'],
+                [],
+                $result['status']
+            );
+        }
+
+        return $this->apiResponse(
+            null,
+            'Product deleted successfully.',
+            200
+        );
+    }
+
+    /**
+     * Get trashed products (admin only).
+     *
+     * @authenticated
+     */
+    public function trashed(Request $request): JsonResponse
+    {
+        $trashedProducts = $this->productService->getTrashedProducts($request);
+
+        return $this->apiResponse(
+            ProductResource::collection($trashedProducts->items()),
+            'Trashed products retrieved successfully.',
+            200,
+            $this->getPaginationMeta($trashedProducts)
+        );
+    }
+
+    /**
+     * Restore a soft-deleted product (admin only).
+     *
+     * @authenticated
+     */
+    public function restore(int $id): JsonResponse
+    {
+        $result = $this->productService->restoreProduct($id);
+
+        if (! $result['success']) {
+            return $this->apiResponseErrors(
+                $result['message'],
+                [],
+                $result['status']
+            );
+        }
+
+        return $this->apiResponse(
+            new ProductResource($result['product']),
+            'Product restored successfully.',
             200
         );
     }
