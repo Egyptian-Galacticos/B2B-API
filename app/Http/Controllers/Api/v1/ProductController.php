@@ -86,6 +86,7 @@ class ProductController extends Controller
             ->setSearchableFields([
                 'name',
                 'brand',
+                'description',
                 'model_number',
             ])
             ->apply()
