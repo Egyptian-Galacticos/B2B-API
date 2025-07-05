@@ -23,7 +23,8 @@ class ConversationFactory extends Factory
         return [
             'type'             => $this->faker->randomElement(['direct', 'contract']),
             'title'            => $this->faker->sentence(3),
-            'participant_ids'  => [],
+            'seller_id'        => null,
+            'buyer_id'         => null,
             'last_message_id'  => null,
             'last_activity_at' => $this->faker->dateTimeBetween('-1 month', 'now'),
             'is_active'        => $this->faker->boolean(80),
@@ -41,20 +42,24 @@ class ConversationFactory extends Factory
 
             if ($buyers->isEmpty() || $sellers->isEmpty()) {
                 $allUsers = User::pluck('id');
-                $userIds = $allUsers->isNotEmpty()
-                    ? $allUsers->random(min(2, $allUsers->count()))->toArray()
-                    : [];
+                if ($allUsers->count() >= 2) {
+                    $userIds = $allUsers->random(2);
+                    $buyerId = $userIds[0];
+                    $sellerId = $userIds[1];
+                } else {
+                    $buyerId = $allUsers->first();
+                    $sellerId = $allUsers->first();
+                }
             } else {
-                $userIds = [
-                    $buyers->random(),
-                    $sellers->random(),
-                ];
+                $buyerId = $buyers->random();
+                $sellerId = $sellers->random();
             }
 
             return [
-                'participant_ids' => $userIds,
-                'type'            => 'direct',
-                'title'           => 'Direct conversation between buyer and seller',
+                'buyer_id'  => $buyerId,
+                'seller_id' => $sellerId,
+                'type'      => 'direct',
+                'title'     => 'Direct conversation between buyer and seller',
             ];
         });
     }
@@ -69,24 +74,29 @@ class ConversationFactory extends Factory
 
             if ($contracts->isNotEmpty()) {
                 $contract = $contracts->random();
-                $participantIds = [$contract->buyer_id, $contract->seller_id];
+                $buyerId = $contract->buyer_id;
+                $sellerId = $contract->seller_id;
                 $title = "Contract #{$contract->contract_number} Discussion";
             } else {
                 $buyers = User::role('buyer')->where('status', 'active')->pluck('id');
                 $sellers = User::role('seller')->where('status', 'active')->pluck('id');
 
                 if ($buyers->isNotEmpty() && $sellers->isNotEmpty()) {
-                    $participantIds = [$buyers->random(), $sellers->random()];
+                    $buyerId = $buyers->random();
+                    $sellerId = $sellers->random();
                 } else {
-                    $participantIds = User::limit(2)->pluck('id')->toArray();
+                    $users = User::limit(2)->pluck('id');
+                    $buyerId = $users->first();
+                    $sellerId = $users->count() > 1 ? $users->last() : $users->first();
                 }
                 $title = 'Contract discussion';
             }
 
             return [
-                'participant_ids' => $participantIds,
-                'type'            => 'contract',
-                'title'           => $title,
+                'buyer_id'  => $buyerId,
+                'seller_id' => $sellerId,
+                'type'      => 'contract',
+                'title'     => $title,
             ];
         });
     }
@@ -94,10 +104,11 @@ class ConversationFactory extends Factory
     public function configure()
     {
         return $this->afterCreating(function (Conversation $conversation) {
-            if (! empty($conversation->participant_ids) && is_array($conversation->participant_ids)) {
+            if ($conversation->seller_id && $conversation->buyer_id) {
+                $participantIds = [$conversation->seller_id, $conversation->buyer_id];
                 $message = Message::factory()->create([
                     'conversation_id' => $conversation->id,
-                    'sender_id'       => fake()->randomElement($conversation->participant_ids),
+                    'sender_id'       => fake()->randomElement($participantIds),
                 ]);
 
                 $conversation->update([

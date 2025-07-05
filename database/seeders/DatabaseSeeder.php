@@ -41,13 +41,9 @@ class DatabaseSeeder extends Seeder
             Conversation::factory()->forContract()->count(2)->create();
         }
 
-        $conversations = Conversation::whereNotNull('participant_ids')->get();
+        $conversations = Conversation::whereNotNull('seller_id')->whereNotNull('buyer_id')->get();
         foreach ($conversations as $conversation) {
-            $participantIds = $conversation->participant_ids;
-
-            if (empty($participantIds) || ! is_array($participantIds)) {
-                continue;
-            }
+            $participantIds = [$conversation->seller_id, $conversation->buyer_id];
 
             Message::factory()->count(rand(2, 5))->create([
                 'conversation_id' => $conversation->id,

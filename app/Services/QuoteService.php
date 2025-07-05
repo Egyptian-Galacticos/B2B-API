@@ -186,7 +186,7 @@ class QuoteService
         }
 
         if ($quote->conversation_id && $quote->conversation) {
-            if (in_array($userId, $quote->conversation->participant_ids)) {
+            if ($quote->conversation->isParticipant($userId)) {
                 $canDelete = true;
             }
         }
@@ -235,7 +235,7 @@ class QuoteService
     {
         $conversation = Conversation::findOrFail($conversationId);
 
-        if (! in_array($userId, $conversation->participant_ids)) {
+        if (! $conversation->isParticipant($userId)) {
             throw new AuthorizationException('You are not a participant in this conversation');
         }
 
@@ -267,9 +267,13 @@ class QuoteService
 
     private function getOtherParticipant(Conversation $conversation, int $userId): int
     {
-        return collect($conversation->participant_ids)
-            ->reject(fn ($id) => $id === $userId)
-            ->first();
+        $otherParticipant = $conversation->getOtherParticipant($userId);
+
+        if (! $otherParticipant) {
+            throw new InvalidArgumentException('Invalid participant in conversation');
+        }
+
+        return $otherParticipant->id;
     }
 
     private function canAccessQuote(Quote $quote, int $userId): bool
@@ -278,7 +282,7 @@ class QuoteService
             return true;
         }
 
-        if ($quote->conversation_id && $quote->conversation && in_array($userId, $quote->conversation->participant_ids)) {
+        if ($quote->conversation_id && $quote->conversation && $quote->conversation->isParticipant($userId)) {
             return true;
         }
 
@@ -303,7 +307,7 @@ class QuoteService
             }
 
             if ($quote->conversation_id && $quote->conversation) {
-                if (in_array($userId, $quote->conversation->participant_ids)) {
+                if ($quote->conversation->isParticipant($userId)) {
                     $canUpdate = true;
                 }
             }
@@ -321,7 +325,7 @@ class QuoteService
             }
 
             if ($quote->conversation_id && $quote->conversation) {
-                if (in_array($userId, $quote->conversation->participant_ids)) {
+                if ($quote->conversation->isParticipant($userId)) {
                     $canUpdate = true;
                 }
             }
