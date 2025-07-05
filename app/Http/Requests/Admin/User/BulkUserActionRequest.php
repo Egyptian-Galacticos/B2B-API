@@ -19,12 +19,19 @@ class BulkUserActionRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'user_ids'   => 'required|array|min:1|max:100',
-            'user_ids.*' => 'required|integer|exists:users,id',
-            'action'     => 'required|string|in:suspend,activate,delete',
-            'reason'     => 'nullable|string|max:500',
+        $rules = [
+            'user_ids' => 'required|array|min:1|max:100',
+            'action'   => 'required|string|in:suspend,activate,delete,restore',
+            'reason'   => 'nullable|string|max:500',
         ];
+
+        if ($this->input('action') === 'restore') {
+            $rules['user_ids.*'] = 'required|integer|exists:users,id';
+        } else {
+            $rules['user_ids.*'] = 'required|integer|exists:users,id';
+        }
+
+        return $rules;
     }
 
     /**
@@ -39,7 +46,7 @@ class BulkUserActionRequest extends FormRequest
             'user_ids.max'      => 'Cannot process more than 100 users at once.',
             'user_ids.*.exists' => 'One or more selected users do not exist.',
             'action.required'   => 'Action is required.',
-            'action.in'         => 'Action must be one of: suspend, activate, delete',
+            'action.in'         => 'Action must be one of: suspend, activate, delete, restore',
             'reason.max'        => 'Reason cannot exceed 500 characters.',
         ];
     }
