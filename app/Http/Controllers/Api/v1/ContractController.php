@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Contract\IndexContractRequest;
 use App\Http\Requests\Contract\StoreContractRequest;
 use App\Http\Requests\Contract\UpdateContractRequest;
 use App\Http\Resources\ContractResource;
@@ -13,12 +14,13 @@ use App\Services\QueryHandler;
 use App\Traits\ApiResponse;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ContractController extends Controller
 {
     use ApiResponse;
+    private const PLACEHOLDER_STRING = 'string';
+    private const PLACEHOLDER_NULL = 'null';
 
     public function __construct(private QueryHandler $queryHandler) {}
 
@@ -27,15 +29,24 @@ class ContractController extends Controller
      *
      * Users can only see their own contracts (as buyer or seller)
      * Admins can see all contracts
+     * user_type parameter: 'buyer' or 'seller'
      */
-    public function index(Request $request): JsonResponse
+    public function index(IndexContractRequest $request): JsonResponse
     {
         try {
-            $user = Auth::user();
+            $user = User::findOrFail(Auth::id());
             $perPage = (int) $request->get('size', 15);
+            $userType = $request->get('user_type');
 
             $query = Contract::with(['buyer', 'seller', 'quote', 'items.product']);
-            $query->forUser($user->id);
+
+            if ($userType === 'buyer') {
+                $query->forBuyer($user->id);
+            } elseif ($userType === 'seller') {
+                $query->forSeller($user->id);
+            } else {
+                $query->forUser($user->id);
+            }
 
             $query = $this->queryHandler
                 ->setBaseQuery($query)
@@ -75,7 +86,7 @@ class ContractController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            $user = Auth::user();
+            $user = User::findOrFail(Auth::id());
 
             $contract = Contract::findOrFail($id);
 
@@ -116,7 +127,7 @@ class ContractController extends Controller
     public function update(string $id, UpdateContractRequest $request): JsonResponse
     {
         try {
-            $user = Auth::user();
+            $user = User::findOrFail(Auth::id());
 
             $contract = Contract::findOrFail($id);
 
@@ -143,7 +154,7 @@ class ContractController extends Controller
                     }
                     $contract->updateStatus($newStatus);
                 } elseif ($newStatus === Contract::STATUS_CANCELLED) {
-                    if ($user->id !== $contract->buyer_id) {
+                    if (! $user->canActInRole('buyer', $contract) || $user->id !== $contract->buyer_id) {
                         return $this->apiResponseErrors(
                             'Unauthorized',
                             ['Only the buyer can cancel/reject a contract'],
@@ -197,7 +208,7 @@ class ContractController extends Controller
     public function store(StoreContractRequest $request): JsonResponse
     {
         try {
-            $user = Auth::user();
+            $user = User::findOrFail(Auth::id());
 
             $quote = Quote::with(['rfq', 'items'])->findOrFail($request->quote_id);
 
@@ -210,7 +221,8 @@ class ContractController extends Controller
             }
 
             $sellerId = $quote->seller_id ?? $quote->rfq?->seller_id;
-            if (! $sellerId || $sellerId !== $user->id) {
+
+            if (! $user->canActInRole('seller', $quote) || ! $sellerId || $sellerId !== $user->id) {
                 return $this->apiResponseErrors(
                     'Unauthorized',
                     ['Only the seller can create a contract from their quote'],
@@ -242,9 +254,17 @@ class ContractController extends Controller
 
             $parseAddress = function ($address) {
                 if (is_array($address)) {
-                    return $address;
+                    $hasRealData = false;
+                    foreach ($address as $field => $value) {
+                        if (! empty($value) && $value !== self::PLACEHOLDER_STRING && $value !== self::PLACEHOLDER_NULL) {
+                            $hasRealData = true;
+                            break;
+                        }
+                    }
+
+                    return $hasRealData ? $address : null;
                 }
-                if (is_string($address) && ! empty($address) && $address !== 'string') {
+                if (is_string($address) && ! empty($address) && $address !== self::PLACEHOLDER_STRING) {
                     return [
                         'street'      => $address,
                         'city'        => '',
@@ -259,19 +279,22 @@ class ContractController extends Controller
 
             // shipping address priority:request > rfq > buyer's company
             $shippingAddress = null;
-            if ($request->has('shipping_address') && ! empty($request->shipping_address) && $request->shipping_address !== 'string') {
+            if ($request->has('shipping_address')) {
                 $shippingAddress = $parseAddress($request->shipping_address);
-            } elseif (! empty($quote->rfq?->shipping_address)) {
+            }
+            if (! $shippingAddress && ! empty($quote->rfq?->shipping_address)) {
                 $shippingAddress = $parseAddress($quote->rfq->shipping_address);
-            } elseif (! empty($buyer?->company?->address)) {
+            }
+            if (! $shippingAddress && ! empty($buyer?->company?->address)) {
                 $shippingAddress = $buyer->company->address; // Already an array
             }
 
             // billing address priority:request > buyer's company
             $billingAddress = null;
-            if ($request->has('billing_address') && ! empty($request->billing_address) && $request->billing_address !== 'string') {
+            if ($request->has('billing_address')) {
                 $billingAddress = $parseAddress($request->billing_address);
-            } elseif (! empty($buyer?->company?->address)) {
+            }
+            if (! $billingAddress && ! empty($buyer?->company?->address)) {
                 $billingAddress = $buyer->company->address;
             }
 
