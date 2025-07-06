@@ -66,7 +66,6 @@ class AiSearchController extends Controller
                 $structureText .= "\n";
             }
 
-            // 👇 *** MODIFIED PROMPT: Ask the AI for a query that returns ONLY the product IDs
             $prompt = $structureText."\n\nRules:\n".
                 "1. Return ONLY the SQL query to select the `id` column from the 'products' table.\n".
                 "2. The query should find products based on the user's request.\n".
@@ -80,7 +79,6 @@ class AiSearchController extends Controller
 
             $cleanSql = trim($queryResponse->text());
 
-            // 👇 *** MODIFIED SAFETY CHECK: Ensure the generated query only selects product IDs.
             if (! preg_match('/^SELECT .*`?id`?.* FROM `?products`?/i', $cleanSql)) {
                 return $this->apiResponseErrors(
                     message: 'The AI have an error while search',
