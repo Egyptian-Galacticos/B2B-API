@@ -28,13 +28,9 @@ class Category extends Model implements HasMedia
         'level',
         'status',
         'icon',
-        'seo_metadata',
-        'created_by',
-        'updated_by',
     ];
     protected $casts = [
-        'seo_metadata' => 'array',
-        'level'        => 'integer',
+        'level' => 'integer',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -90,16 +86,6 @@ class Category extends Model implements HasMedia
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
-    }
-
-    public function creator(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function updater(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'updated_by');
     }
 
     // Query Scopes
@@ -351,9 +337,19 @@ class Category extends Model implements HasMedia
      */
     public function getFullPathNames(string $separator = ' > '): string
     {
-        $names = $this->getAncestors()->pluck('name')->toArray();
-        $names[] = $this->name;
+        if (empty($this->path)) {
+            return $this->name;
+        }
 
-        return implode($separator, $names);
+        $ancestorIds = explode('/', $this->path);
+
+        $ancestors = Category::whereIn('id', $ancestorIds)
+            ->orderByRaw('FIELD(id, '.implode(',', $ancestorIds).')')
+            ->pluck('name')
+            ->toArray();
+
+        $ancestors[] = $this->name;
+
+        return implode($separator, $ancestors);
     }
 }

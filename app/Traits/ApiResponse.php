@@ -34,25 +34,15 @@ trait ApiResponse
      * Generate pagination metadata from a paginated query result
      *
      * @param mixed $paginatedQuery Laravel paginated query result
-     * @param array $options Additional options for pagination metadata
      * @return array Pagination metadata
      */
-    public function getPaginationMeta($paginatedQuery, array $options = []): array
+    public function getPaginationMeta($paginatedQuery): array
     {
-        $meta = [
+        return [
             'limit'      => $paginatedQuery->perPage(),
             'total'      => $paginatedQuery->total(),
             'totalPages' => $paginatedQuery->lastPage(),
+            'page'       => $paginatedQuery->currentPage(),
         ];
-
-        if (! isset($options['includePage']) || $options['includePage']) {
-            $meta['page'] = $paginatedQuery->currentPage();
-        }
-
-        if (isset($options['includeHasMore']) && $options['includeHasMore']) {
-            $meta['has_more_pages'] = $paginatedQuery->hasMorePages();
-        }
-
-        return $meta;
     }
 }

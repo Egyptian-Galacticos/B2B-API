@@ -20,16 +20,12 @@ class StoreCategoryRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'name'                     => 'required|string|max:255|unique:categories,name',
-            'description'              => 'nullable|string|max:1000',
-            'parent_id'                => 'nullable|exists:categories,id',
-            'icon'                     => 'nullable|string|max:255',
-            'seo_metadata'             => 'nullable|array',
-            'seo_metadata.title'       => 'nullable|string|max:255',
-            'seo_metadata.description' => 'nullable|string|max:500',
-            'seo_metadata.keywords'    => 'nullable|string|max:255',
-            'image_file'               => 'nullable|file|mimes:jpeg,png,gif,webp|max:2048',
-            'icon_file'                => 'nullable|file|mimes:svg,png,jpeg|max:1024',
+            'name'        => 'required|string|max:255|unique:categories,name',
+            'description' => 'nullable|string|max:1000',
+            'parent_id'   => 'nullable|exists:categories,id',
+            'icon'        => 'nullable|string|max:255',
+            'image_file'  => 'nullable|file|mimes:jpeg,png,gif,webp|max:2048',
+            'icon_file'   => 'nullable|file|mimes:svg,png,jpeg|max:1024',
         ];
     }
 

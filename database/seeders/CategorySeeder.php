@@ -112,7 +112,7 @@ class CategorySeeder extends Seeder
                 'parent_id'   => null,
                 'level'       => 0,
                 'path'        => null,
-                'status'      => fake()->randomElement(['active', 'active', 'active', 'inactive']), // 75% active, 25% inactive
+                'status'      => 'active',
             ]);
 
             $this->addCategoryImage($parentCategory);
@@ -126,7 +126,7 @@ class CategorySeeder extends Seeder
                     'parent_id'   => $parentCategory->id,
                     'level'       => 1,
                     'path'        => $parentCategory->id,
-                    'status'      => fake()->randomElement(['active', 'active', 'active', 'active', 'inactive', 'pending']), // 67% active, 17% inactive, 17% pending
+                    'status'      => 'active',
                 ]);
 
                 $this->addCategoryImage($childCategory);
@@ -140,7 +140,7 @@ class CategorySeeder extends Seeder
                         'parent_id'   => $childCategory->id,
                         'level'       => 2,
                         'path'        => $parentCategory->id.'/'.$childCategory->id,
-                        'status'      => fake()->randomElement(['active', 'active', 'active', 'inactive', 'pending']), // 50% active, 17% inactive, 17% pending, 17% draft
+                        'status'      => 'active',
                     ]);
 
                     $this->addCategoryImage($grandChildCategory, $childCategory->name);

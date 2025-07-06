@@ -28,19 +28,15 @@ class UpdateCategoryRequest extends BaseRequest
         }
 
         return [
-            'name'                     => 'required|string|max:255|unique:categories,name,'.$categoryId,
-            'description'              => 'nullable|string|max:1000',
-            'parent_id'                => 'nullable|exists:categories,id|different:id',
-            'status'                   => 'nullable|in:active,pending,inactive',
-            'icon'                     => 'nullable|string|max:255',
-            'seo_metadata'             => 'nullable|array',
-            'seo_metadata.title'       => 'nullable|string|max:255',
-            'seo_metadata.description' => 'nullable|string|max:500',
-            'seo_metadata.keywords'    => 'nullable|string|max:255',
-            'image_file'               => 'nullable|image|mimes:jpeg,png,gif,webp|max:2048',
-            'icon_file'                => 'nullable|image|mimes:svg,png,jpeg|max:1024',
-            'remove_image'             => 'nullable|boolean',
-            'remove_icon_file'         => 'nullable|boolean',
+            'name'             => 'required|string|max:255|unique:categories,name,'.$categoryId,
+            'description'      => 'nullable|string|max:1000',
+            'parent_id'        => 'nullable|exists:categories,id|different:id',
+            'status'           => 'nullable|in:active,pending,inactive',
+            'icon'             => 'nullable|string|max:255',
+            'image_file'       => 'nullable|image|mimes:jpeg,png,gif,webp|max:2048',
+            'icon_file'        => 'nullable|image|mimes:svg,png,jpeg|max:1024',
+            'remove_image'     => 'nullable|boolean',
+            'remove_icon_file' => 'nullable|boolean',
         ];
     }
 

@@ -60,6 +60,7 @@ class ProductController extends Controller
                 'currency',
                 'is_active',
                 'seller.name',
+                'category.name',
                 'is_approved',
                 'is_featured',
                 'created_at',
@@ -72,6 +73,7 @@ class ProductController extends Controller
                 'weight',
                 'origin',
                 'is_active',
+                'price',
                 'is_approved',
                 'created_at',
                 'category.name',
@@ -79,7 +81,13 @@ class ProductController extends Controller
                 'seller.company.name',
                 'seller_id',
                 'is_featured',
-
+                'sample_available',
+            ])
+            ->setSearchableFields([
+                'name',
+                'brand',
+                'description',
+                'model_number',
             ])
             ->apply()
             ->paginate($perPage)

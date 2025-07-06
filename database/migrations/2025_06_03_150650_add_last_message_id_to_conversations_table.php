@@ -12,7 +12,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('conversations', function (Blueprint $table) {
-            $table->foreignId('last_message_id')->nullable()->index()->after('participant_ids');
+            $table->foreignId('last_message_id')->nullable()->index()->after('title');
             $table->foreign('last_message_id')
                 ->references('id')
                 ->on('messages')

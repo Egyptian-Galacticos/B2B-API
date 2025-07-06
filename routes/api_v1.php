@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\v1\AuthController;
 use App\Http\Controllers\Api\v1\CategoryController;
+use App\Http\Controllers\Api\v1\ChatController;
 use App\Http\Controllers\Api\v1\CompanyController;
 use App\Http\Controllers\Api\v1\EmailVerificationController;
 use App\Http\Controllers\Api\v1\ProductController;
@@ -150,7 +151,43 @@ Route::prefix('v1')->group(function () {
                 Route::resource('cart', CartController::class);
             });
             */
+
+            // =====================================
+            // CHAT ROUTES
+            // =====================================
+            Route::prefix('chat')->group(function () {
+                // Get user's conversations
+                Route::get('conversations', [ChatController::class, 'conversations'])->name('chat.conversations');
+
+                // Start a new conversation
+                Route::post('conversations', [ChatController::class, 'startConversation'])->name('chat.conversations.start');
+
+                // Search conversations
+                Route::get('conversations/search', [ChatController::class, 'searchConversations'])->name('chat.conversations.search');
+
+                // Get unread message count
+                Route::get('unread-count', [ChatController::class, 'unreadCount'])->name('chat.unread.count');
+
+                // Conversation-specific routes
+                Route::prefix('conversations/{conversationId}')->group(function () {
+                    // Get messages for a conversation
+                    Route::get('messages', [ChatController::class, 'messages'])->name('chat.messages');
+
+                    // Send a message
+                    Route::post('messages', [ChatController::class, 'sendMessage'])->name('chat.messages.send');
+
+                    // Mark messages as read
+                    Route::patch('read', [ChatController::class, 'markAsRead'])->name('chat.messages.read');
+
+                    // Archive/deactivate conversation
+                    Route::patch('archive', [ChatController::class, 'archiveConversation'])->name('chat.conversations.archive');
+
+                    // Reactivate conversation
+                    Route::patch('reactivate', [ChatController::class, 'reactivateConversation'])->name('chat.conversations.reactivate');
+                });
+            });
         });
     });
     require __DIR__.'/rfq.php';
+    require __DIR__.'/admin.php';
 });

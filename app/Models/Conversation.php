@@ -12,20 +12,35 @@ class Conversation extends Model
     use HasFactory, SoftDeletes;
     protected $fillable = [
         'type',
+        'seller_id',
+        'buyer_id',
         'title',
-        'participant_ids',
         'last_message_id',
         'last_activity_at',
         'is_active',
     ];
     protected $casts = [
-        'participant_ids'  => 'array',
         'last_activity_at' => 'datetime',
         'is_active'        => 'boolean',
         'created_at'       => 'datetime',
         'updated_at'       => 'datetime',
         'deleted_at'       => 'datetime',
     ];
+
+    public function seller()
+    {
+        return $this->belongsTo(User::class, 'seller_id');
+    }
+
+    public function buyer()
+    {
+        return $this->belongsTo(User::class, 'buyer_id');
+    }
+
+    public function participants()
+    {
+        return $this->seller()->union($this->buyer());
+    }
 
     public function messages()
     {
@@ -35,5 +50,27 @@ class Conversation extends Model
     public function lastMessage()
     {
         return $this->belongsTo(Message::class, 'last_message_id');
+    }
+
+    // Helper methods
+    public function isParticipant($userId)
+    {
+        return $this->seller_id == $userId || $this->buyer_id == $userId;
+    }
+
+    public function getOtherParticipant($userId)
+    {
+        if ($this->seller_id == $userId) {
+            return $this->buyer;
+        } elseif ($this->buyer_id == $userId) {
+            return $this->seller;
+        }
+
+        return null;
+    }
+
+    public function updateLastActivity()
+    {
+        $this->update(['last_activity_at' => now()]);
     }
 }

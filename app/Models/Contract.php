@@ -134,7 +134,7 @@ class Contract extends Model
         }
 
         $allowedTransitions = [
-            self::STATUS_PENDING_APPROVAL => [self::STATUS_APPROVED, self::STATUS_CANCELLED],
+            self::STATUS_PENDING_APPROVAL => [self::STATUS_APPROVED, self::STATUS_PENDING_PAYMENT, self::STATUS_CANCELLED],
             self::STATUS_APPROVED         => [self::STATUS_PENDING_PAYMENT, self::STATUS_CANCELLED],
             self::STATUS_PENDING_PAYMENT  => [self::STATUS_IN_PROGRESS, self::STATUS_CANCELLED],
             self::STATUS_IN_PROGRESS      => [self::STATUS_SHIPPED, self::STATUS_CANCELLED],

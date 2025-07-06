@@ -68,18 +68,6 @@ class Quote extends Model
         return $this->belongsTo(User::class, 'buyer_id');
     }
 
-    // Primary seller relationship - always returns a relationship instance
-    public function seller()
-    {
-        return $this->belongsTo(User::class, 'seller_id');
-    }
-
-    // Primary buyer relationship - always returns a relationship instance
-    public function buyer()
-    {
-        return $this->belongsTo(User::class, 'buyer_id');
-    }
-
     // Helper methods to get seller/buyer with fallback to RFQ
     public function getSellerAttribute()
     {
