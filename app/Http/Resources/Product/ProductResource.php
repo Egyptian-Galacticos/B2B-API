@@ -29,6 +29,8 @@ class ProductResource extends JsonResource
             'is_approved'      => $this->is_approved,
             'sample_available' => $this->sample_available,
             'sample_price'     => $this->sample_price,
+            'sku'              => $this->sku,
+            'created_at'      => $this->created_at,
             'category'         => $this->whenLoaded('category', function () {
                 return [
                     'name' => $this->category->name,
