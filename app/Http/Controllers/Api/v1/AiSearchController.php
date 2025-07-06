@@ -11,6 +11,7 @@ use Exception;
 use Gemini\Laravel\Facades\Gemini;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class AiSearchController extends Controller
@@ -114,9 +115,13 @@ class AiSearchController extends Controller
             $queryHandler = new QueryHandler($request);
             $perPage = (int) $request->get('size', 10);
 
+            // Get the current user for wishlist status
+            $user = Auth::user();
+
             // Set the base query to only include products found by the AI
             $baseQuery = Product::query()
                 ->with(['seller.company', 'category', 'tags', 'tiers']) // Eager load relationships
+                ->withWishlistStatus($user?->id) // Add wishlist status
                 ->whereIn('id', $productIds);
 
             // Apply all the allowed sorts and filters from your ProductController
@@ -124,12 +129,13 @@ class AiSearchController extends Controller
                 ->setBaseQuery($baseQuery)
                 ->setAllowedSorts([
                     'weight', 'created_at', 'name', 'brand', 'currency', 'is_active',
-                    'seller.name', 'is_approved', 'is_featured',
+                    'seller.name', 'is_approved', 'is_featured', 'in_wishlist',
                 ])
                 ->setAllowedFilters([
                     'name', 'brand', 'model_number', 'currency', 'weight', 'origin',
                     'is_active', 'is_approved', 'created_at', 'category.name',
                     'category.id', 'seller.company.name', 'seller_id', 'is_featured',
+                    'in_wishlist',
                 ])
                 ->apply()
                 ->paginate($perPage)

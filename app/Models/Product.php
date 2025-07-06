@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -174,5 +176,45 @@ class Product extends Model implements HasMedia
     public function isActive(): bool
     {
         return $this->is_active == true;
+    }
+
+    /**
+     * Scope to add wishlist status for a specific user
+     */
+    public function scopeWithWishlistStatus($query, $userId = null)
+    {
+        $userId = $userId ?? Auth::id();
+
+        if (! $userId) {
+            return $query->addSelect([
+                '*',
+                DB::raw('false as in_wishlist'),
+            ]);
+        }
+
+        return $query->addSelect([
+            '*',
+            DB::raw("EXISTS(
+                SELECT 1 FROM wishlist 
+                WHERE wishlist.product_id = products.id 
+                AND wishlist.user_id = {$userId}
+            ) as in_wishlist"),
+        ]);
+    }
+
+    /**
+     * Scope to filter only products in user's wishlist
+     */
+    public function scopeIsProductInWish($query, $userId = null)
+    {
+        $userId = $userId ?? Auth::id();
+
+        if (! $userId) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas('wishlistedBy', function ($subQuery) use ($userId) {
+            $subQuery->where('user_id', $userId);
+        });
     }
 }
