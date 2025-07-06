@@ -37,6 +37,7 @@ class ProductResource extends JsonResource
                     'id'   => $this->category->id,
                 ];
             }),
+
             'tags' => $this->whenLoaded('tags', function () {
                 return $this->tags->pluck('name');
             }),
