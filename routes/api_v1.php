@@ -83,7 +83,7 @@ Route::prefix('v1')->group(function () {
             Route::prefix('wishlist')->group(function () {
                 Route::get('/', [WishlistController::class, 'index'])->name('wishlist.index');
                 Route::post('/', [WishlistController::class, 'store'])->name('wishlist.store');
-                Route::delete('/{product}', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
+                Route::delete('/{product:id}', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
                 Route::post('/check', [WishlistController::class, 'check'])->name('wishlist.check');
                 Route::post('/clear', [WishlistController::class, 'clear'])->name('wishlist.clear');
                 Route::get('/summary', [WishlistController::class, 'summary'])->name('wishlist.summary');
