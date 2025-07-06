@@ -16,17 +16,19 @@ class ProductResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'               => $this->id,
-            'brand'            => $this->brand,
-            'model_number'     => $this->model_number,
-            'name'             => $this->name,
-            'slug'             => $this->slug,
-            'description'      => $this->description,
-            'weight'           => $this->weight,
-            'currency'         => $this->currency,
-            'is_featured'      => $this->is_featured,
-            'is_active'        => $this->is_active,
-            'is_approved'      => $this->is_approved,
+            'id'           => $this->id,
+            'brand'        => $this->brand,
+            'model_number' => $this->model_number,
+            'name'         => $this->name,
+            'slug'         => $this->slug,
+            'description'  => $this->description,
+            'weight'       => $this->weight,
+            'currency'     => $this->currency,
+            'is_featured'  => $this->is_featured,
+            'is_active'    => $this->is_active,
+            'is_approved'  => $this->is_approved,
+            // Use the scope result directly - much more efficient!
+            'in_wishlist'      => (bool) ($this->in_wishlist ?? false),
             'sample_available' => $this->sample_available,
             'sample_price'     => $this->sample_price,
             'category'         => $this->whenLoaded('category', function () {

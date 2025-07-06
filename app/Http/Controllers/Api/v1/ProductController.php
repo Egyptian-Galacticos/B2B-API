@@ -49,9 +49,16 @@ class ProductController extends Controller
     {
         $queryHandler = new QueryHandler($request);
         $perPage = (int) $request->get('size', 10);
+        $user = Auth::user(); // Get authenticated user
 
         $query = $queryHandler
-            ->setBaseQuery(Product::query()->with(['seller.company', 'category', 'tags', 'tiers'])->where('is_active', true)->where('is_approved', true))
+            ->setBaseQuery(
+                Product::query()
+                    ->with(['seller.company', 'category', 'tags', 'tiers'])
+                    ->withWishlistStatus($user?->id) // Add wishlist status
+                    ->where('is_active', true)
+                    ->where('is_approved', true)
+            )
             ->setAllowedSorts([
                 'weight',
                 'created_at',
@@ -64,6 +71,7 @@ class ProductController extends Controller
                 'is_approved',
                 'is_featured',
                 'created_at',
+                'in_wishlist', // Add wishlist sorting
             ])
             ->setAllowedFilters([
                 'name',
@@ -82,6 +90,7 @@ class ProductController extends Controller
                 'seller_id',
                 'is_featured',
                 'sample_available',
+                'in_wishlist', // Add wishlist filtering
             ])
             ->setSearchableFields([
                 'name',
@@ -196,7 +205,9 @@ class ProductController extends Controller
     public function show(string $slug): JsonResponse
     {
         try {
+            $user = Auth::user();
             $product = Product::with(['seller.company', 'category', 'tiers', 'media', 'tags'])
+                ->withWishlistStatus($user?->id) // Add wishlist status
                 ->where('slug', $slug)
                 ->firstOrFail();
         } catch (ModelNotFoundException $e) {
@@ -617,7 +628,7 @@ class ProductController extends Controller
     {
         $queryHandler = new QueryHandler($request);
         $perPage = (int) $request->get('size', 10);
-        $user = auth()->user();
+        $user = Auth::user(); // Fix auth issue
 
         $sellerId = null;
         if ($user->hasRole('admin')) {
@@ -657,6 +668,7 @@ class ProductController extends Controller
             ->setBaseQuery(
                 Product::query()
                     ->with(['seller.company', 'category', 'tags', 'media'])
+                    ->withWishlistStatus($user?->id) // Add wishlist status
                     ->where('seller_id', $sellerId)
             )
             ->setAllowedSorts([
@@ -669,6 +681,7 @@ class ProductController extends Controller
                 'is_featured',
                 'is_approved',
                 'category.name',
+                'in_wishlist', // Add wishlist sorting
             ])
             ->setAllowedFilters([
                 'name',
@@ -681,6 +694,7 @@ class ProductController extends Controller
                 'is_approved',
                 'is_featured',
                 'created_at',
+                'in_wishlist', // Add wishlist filtering
             ])
             ->apply()
             ->paginate($perPage)
