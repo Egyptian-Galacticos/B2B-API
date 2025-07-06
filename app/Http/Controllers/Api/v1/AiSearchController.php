@@ -99,7 +99,6 @@ class AiSearchController extends Controller
                 );
             }
 
-            // 👇 *** INTEGRATION: Use the QueryHandler to filter and sort the AI's results
             $queryHandler = new QueryHandler($request);
             $perPage = (int) $request->get('size', 10);
 
