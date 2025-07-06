@@ -71,7 +71,21 @@ class AiSearchController extends Controller
                 "2. The query should find products based on the user's request.\n".
                 "3. No markdown formatting or code blocks.\n".
                 "4. Use MySQL syntax.\n".
-                "5. Use CURDATE() for today's date if needed.\n\n".
+                "5. Use CURDATE() for today's date if needed.\n".
+                "6. When filtering by price, use proper JOIN with price_tiers table.\n".
+                "7. Use DISTINCT when joining with price_tiers to avoid duplicates.\n".
+                "8. Use table aliases for better readability (p for products, pt for price_tiers, c for categories).\n\n".
+                "Example queries:\n".
+                "- Text search: SELECT id FROM products WHERE name LIKE '%laptop%' OR description LIKE '%laptop%'\n".
+                "- Brand search: SELECT id FROM products WHERE brand LIKE '%Apple%'\n".
+                "- Price search: SELECT DISTINCT p.id FROM products p JOIN price_tiers pt ON p.id = pt.product_id WHERE pt.price < 100\n".
+                "- Category search: SELECT id FROM products WHERE category_id = 1\n".
+                "- Weight search: SELECT id FROM products WHERE weight < 5\n".
+                "- Origin search: SELECT id FROM products WHERE origin = 'Germany'\n".
+                "- Status search: SELECT id FROM products WHERE is_active = 1 AND is_approved = 1\n".
+                "- Featured search: SELECT id FROM products WHERE is_featured = 1\n".
+                "- Date search: SELECT id FROM products WHERE created_at >= CURDATE() - INTERVAL 7 DAY\n".
+                "- Complex search: SELECT DISTINCT p.id FROM products p JOIN price_tiers pt ON p.id = pt.product_id WHERE p.brand LIKE '%Apple%' AND pt.price < 500\n\n".
                 "User Request: \"$searchQuery\"";
 
             $queryResponse = Gemini::generativeModel('gemini-1.5-flash')
@@ -79,7 +93,7 @@ class AiSearchController extends Controller
 
             $cleanSql = trim($queryResponse->text());
 
-            if (! preg_match('/^SELECT .*`?id`?.* FROM `?products`?/i', $cleanSql)) {
+            if (! preg_match('/^SELECT\s+(DISTINCT\s+)?.*\bid\b.*\s+FROM\s+.*products/i', $cleanSql)) {
                 return $this->apiResponseErrors(
                     message: 'The AI have an error while search',
                 );
