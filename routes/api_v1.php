@@ -192,4 +192,5 @@ Route::prefix('v1')->group(function () {
         });
     });
     require __DIR__.'/rfq.php';
+    require __DIR__.'/admin.php';
 });
