@@ -28,7 +28,7 @@ class RfqService
             'status'             => Rfq::STATUS_PENDING,
         ]);
 
-        return $rfq->load(['buyer.company', 'seller.company', 'initialProduct']);
+        return $rfq->load(['buyer.company', 'seller.company', 'initialProduct.category']);
     }
 
     /**
@@ -103,9 +103,37 @@ class RfqService
 
         $query = $queryHandler
             ->setBaseQuery($query)
-            ->setAllowedSorts(['id', 'initial_quantity', 'shipping_country', 'status', 'created_at', 'updated_at', 'buyer.name', 'seller.name', 'initialProduct.name', 'initialProduct.brand', 'initialProduct.price',
+            ->setAllowedSorts([
+                'id',
+                'initial_quantity',
+                'shipping_country',
+                'status',
+                'created_at',
+                'updated_at',
+                'buyer.name',
+                'seller.name',
+                'initialProduct.name',
+                'initialProduct.brand',
+                'initialProduct.price',
             ])
-            ->setAllowedFilters(['id', 'initial_quantity', 'shipping_country', 'shipping_address', 'status', 'buyer_id', 'seller_id', 'initial_product_id', 'created_at', 'updated_at', 'buyer.name', 'buyer.email', 'seller.name', 'seller.email', 'initialProduct.name', 'initialProduct.brand', 'initialProduct.model_number',
+            ->setAllowedFilters([
+                'id',
+                'initial_quantity',
+                'shipping_country',
+                'shipping_address',
+                'status',
+                'buyer_id',
+                'seller_id',
+                'initial_product_id',
+                'created_at',
+                'updated_at',
+                'buyer.name',
+                'buyer.email',
+                'seller.name',
+                'seller.email',
+                'initialProduct.name',
+                'initialProduct.brand',
+                'initialProduct.model_number',
             ])
             ->apply();
 
