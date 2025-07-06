@@ -41,6 +41,7 @@ Route::prefix('admin')->middleware(['jwt.auth', 'role:admin'])->group(function (
     // Category Management Routes
     Route::prefix('categories')->name('admin.categories.')->group(function () {
         Route::get('/', [AdminCategoryController::class, 'index'])->name('index');
+        Route::get('/pending', [AdminCategoryController::class, 'pending'])->name('pending');
         Route::post('/', [AdminCategoryController::class, 'store'])->name('store');
         Route::get('/hierarchy', [AdminCategoryController::class, 'hierarchy'])->name('hierarchy');
         Route::get('/trashed', [AdminCategoryController::class, 'trashed'])->name('trashed');

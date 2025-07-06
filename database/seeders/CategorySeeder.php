@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Category;
+use App\Models\User;
 use Exception;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +15,14 @@ class CategorySeeder extends Seeder
      */
     public function run(): void
     {
+        $adminUserId = User::first()->id;
+
+        $sellerUsers = User::where('email', 'LIKE', 'seller%@example.com')->pluck('id')->toArray();
+
+        if (empty($sellerUsers)) {
+            $sellerUsers = [$adminUserId];
+        }
+
         $categories = [
             [
                 'name'        => 'Electronics',
@@ -103,6 +112,8 @@ class CategorySeeder extends Seeder
                 ],
             ],
         ];
+
+        $categoryIndex = 0;
         foreach ($categories as $categoryData) {
             $parentCategory = Category::create([
                 'name'        => $categoryData['name'],
@@ -113,11 +124,16 @@ class CategorySeeder extends Seeder
                 'level'       => 0,
                 'path'        => null,
                 'status'      => 'active',
+                'created_by'  => $adminUserId,
+                'updated_by'  => $adminUserId,
             ]);
 
             $this->addCategoryImage($parentCategory);
 
+            $childIndex = 0;
             foreach ($categoryData['children'] as $childName => $childData) {
+                $childSellerId = $sellerUsers[($categoryIndex * 10 + $childIndex) % count($sellerUsers)];
+
                 $childCategory = Category::create([
                     'name'        => $childName,
                     'slug'        => str()->slug($childName),
@@ -127,11 +143,16 @@ class CategorySeeder extends Seeder
                     'level'       => 1,
                     'path'        => $parentCategory->id,
                     'status'      => 'active',
+                    'created_by'  => $childSellerId,
+                    'updated_by'  => $childSellerId,
                 ]);
 
                 $this->addCategoryImage($childCategory);
 
+                $grandChildIndex = 0;
                 foreach ($childData['items'] as $grandChildName) {
+                    $grandChildSellerId = $sellerUsers[($categoryIndex * 100 + $childIndex * 10 + $grandChildIndex) % count($sellerUsers)];
+
                     $grandChildCategory = Category::create([
                         'name'        => $grandChildName,
                         'slug'        => str()->slug($grandChildName),
@@ -141,11 +162,16 @@ class CategorySeeder extends Seeder
                         'level'       => 2,
                         'path'        => $parentCategory->id.'/'.$childCategory->id,
                         'status'      => 'active',
+                        'created_by'  => $grandChildSellerId,
+                        'updated_by'  => $grandChildSellerId,
                     ]);
 
                     $this->addCategoryImage($grandChildCategory, $childCategory->name);
+                    $grandChildIndex++;
                 }
+                $childIndex++;
             }
+            $categoryIndex++;
         }
     }
 

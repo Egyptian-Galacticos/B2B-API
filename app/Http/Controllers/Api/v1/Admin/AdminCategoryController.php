@@ -47,6 +47,31 @@ class AdminCategoryController extends Controller
     }
 
     /**
+     * Display pending categories that need approval.
+     *
+     * @authenticated
+     */
+    public function pending(AdminCategoryFilterRequest $request): JsonResponse
+    {
+        try {
+            $categories = $this->categoryService->getPendingCategories($request);
+
+            return $this->apiResponse(
+                AdminCategoryResource::collection($categories->items()),
+                'Pending categories retrieved successfully',
+                200,
+                $this->getPaginationMeta($categories)
+            );
+        } catch (Exception $e) {
+            return $this->apiResponseErrors(
+                'Failed to retrieve pending categories',
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
      * Display the specified category details for admin.
      *
      * @authenticated

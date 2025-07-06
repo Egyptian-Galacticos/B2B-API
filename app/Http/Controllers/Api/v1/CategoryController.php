@@ -81,8 +81,8 @@ class CategoryController extends Controller
                 $category = new Category;
                 if (! $category->userIsAdmin($user)) {
                     return $this->apiResponseErrors(
-                        null,
                         'Only administrators can create root categories',
+                        null,
                         403
                     );
                 }
@@ -106,11 +106,19 @@ class CategoryController extends Controller
 
             DB::commit();
 
-            $category->load(['parent']);
+            $category->load([
+                'parent',
+                'creator:id,first_name,last_name,email',
+                'updater:id,first_name,last_name,email',
+            ]);
+
+            $message = $category->status === 'pending'
+                ? 'Category created successfully and is pending admin approval'
+                : 'Category created successfully';
 
             return $this->apiResponse(
                 new categoryResource($category),
-                'Category created successfully',
+                $message,
                 201
             );
         } catch (Exception $e) {
@@ -128,6 +136,8 @@ class CategoryController extends Controller
      * Display the specified category.
      *
      * This method retrieves a specific category by its ID,
+     *
+     * @unauthenticated
      */
     public function show(int $id): JsonResponse
     {
@@ -153,8 +163,8 @@ class CategoryController extends Controller
             );
         } catch (Exception $e) {
             return $this->apiResponseErrors(
-                null,
                 'Category not found',
+                null,
                 404
             );
         }
@@ -174,8 +184,8 @@ class CategoryController extends Controller
 
             if (! $category) {
                 return $this->apiResponseErrors(
-                    null,
                     'Category not found',
+                    null,
                     404
                 );
             }
@@ -186,8 +196,8 @@ class CategoryController extends Controller
             if (is_null($request->parent_id) && ! is_null($category->parent_id)) {
                 if (! $category->userIsAdmin($user)) {
                     return $this->apiResponseErrors(
-                        null,
                         'Only administrators can convert categories to root categories',
+                        null,
                         403
                     );
                 }
@@ -233,7 +243,11 @@ class CategoryController extends Controller
 
             DB::commit();
 
-            $category->load(['parent']);
+            $category->load([
+                'parent',
+                'creator:id,first_name,last_name,email',
+                'updater:id,first_name,last_name,email',
+            ]);
 
             return $this->apiResponse(
                 new CategoryResource($category),
@@ -243,8 +257,8 @@ class CategoryController extends Controller
             DB::rollBack();
 
             return $this->apiResponseErrors(
-                null,
                 'Error updating category: '.$e->getMessage(),
+                null,
                 500
             );
         }
@@ -275,8 +289,8 @@ class CategoryController extends Controller
             );
         } catch (Exception $e) {
             return $this->apiResponseErrors(
-                null,
                 'Category not found',
+                null,
                 500
             );
         }
