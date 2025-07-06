@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Wishlist\AddToWishlistRequest;
-use App\Http\Requests\Wishlist\RemoveFromWishlistRequest;
 use App\Http\Resources\Product\ProductResource;
 use App\Models\Product;
 use App\Traits\ApiResponse;
@@ -117,13 +116,12 @@ class WishlistController extends Controller
      *
      * @authenticated
      */
-    public function destroy(RemoveFromWishlistRequest $request): JsonResponse
+    public function destroy(Product $product): JsonResponse
     {
-        $productId = $request->validated()['product_id'];
         $user = auth()->user();
 
         // Check if product is in wishlist
-        if (! $user->wishlist()->where('product_id', $productId)->exists()) {
+        if (! $user->wishlist()->where('product_id', $product->id)->exists()) {
             return $this->apiResponseErrors(
                 message: 'Product not found in your wishlist.',
                 errors: ['product_id' => ['Product not found in your wishlist.']],
@@ -133,7 +131,7 @@ class WishlistController extends Controller
 
         try {
             // Remove product from wishlist
-            $user->wishlist()->detach($productId);
+            $user->wishlist()->detach($product->id);
 
             return $this->apiResponse(
                 message: 'Product removed from wishlist successfully.',

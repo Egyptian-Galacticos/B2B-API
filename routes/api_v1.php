@@ -64,13 +64,6 @@ Route::prefix('v1')->group(function () {
                 Route::get('status', [EmailVerificationController::class, 'status'])->name('email.status');
             });
 
-            Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
-            Route::post('/wishlist', [WishlistController::class, 'store'])->name('wishlist.store');
-            Route::delete('/wishlist', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
-            Route::post('/wishlist/check', [WishlistController::class, 'check'])->name('wishlist.check');
-            Route::post('/wishlist/clear', [WishlistController::class, 'clear'])->name('wishlist.clear');
-            Route::get('/wishlist/summary', [WishlistController::class, 'summary'])->name('wishlist.summary');
-
             // Company email verification management
             Route::prefix('company-email')->group(function () {
                 Route::post('send-verification', [EmailVerificationController::class, 'sendCompany'])->name('company-email.send');
@@ -87,6 +80,14 @@ Route::prefix('v1')->group(function () {
             Route::put('profile', [UserController::class, 'updateProfile'])->name('users.profile.update');
             Route::put('password', [UserController::class, 'updatePassword'])->name('users.password.update');
             Route::put('company', [CompanyController::class, 'update'])->name('company.update');
+            Route::prefix('wishlist')->group(function () {
+                Route::get('/', [WishlistController::class, 'index'])->name('wishlist.index');
+                Route::post('/', [WishlistController::class, 'store'])->name('wishlist.store');
+                Route::delete('/{product}', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
+                Route::post('/check', [WishlistController::class, 'check'])->name('wishlist.check');
+                Route::post('/clear', [WishlistController::class, 'clear'])->name('wishlist.clear');
+                Route::get('/summary', [WishlistController::class, 'summary'])->name('wishlist.summary');
+            });
         });
 
         // Company management
