@@ -108,8 +108,6 @@ class CategoryController extends Controller
 
             $category->load([
                 'parent',
-                'creator:id,first_name,last_name,email',
-                'updater:id,first_name,last_name,email',
             ]);
 
             $message = $category->status === 'pending'
@@ -192,7 +190,6 @@ class CategoryController extends Controller
 
             $user = Auth::user();
 
-            // Check if user is trying to make this a root category (parent_id is null)
             if (is_null($request->parent_id) && ! is_null($category->parent_id)) {
                 if (! $category->userIsAdmin($user)) {
                     return $this->apiResponseErrors(
@@ -245,8 +242,6 @@ class CategoryController extends Controller
 
             $category->load([
                 'parent',
-                'creator:id,first_name,last_name,email',
-                'updater:id,first_name,last_name,email',
             ]);
 
             return $this->apiResponse(
