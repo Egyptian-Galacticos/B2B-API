@@ -6,6 +6,7 @@ use App\Models\Conversation;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Rfq;
+use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -17,12 +18,8 @@ class QuoteService
 {
     /**
      * Get paginated quotes with filtering and sorting
-     *
-     * @param Request $request - The request containing filter and sort parameters
-     * @param int|null $userId - User ID to filter quotes (null for admin to see all)
-     * @param int $perPage - Number of items per page
      */
-    public function getWithFilters(Request $request, ?int $userId = null, int $perPage = 15): LengthAwarePaginator
+    public function getWithFilters(Request $request, ?int $userId = null, ?string $userType = null, int $perPage = 15): LengthAwarePaginator
     {
         $queryHandler = new QueryHandler($request);
 
@@ -35,9 +32,16 @@ class QuoteService
             'conversation',
             'items',
             'items.product',
+            'contract',
         ]);
 
-        if ($userId) {
+        if ($userId && $userType) {
+            if ($userType === 'buyer') {
+                $query->forBuyer($userId);
+            } elseif ($userType === 'seller') {
+                $query->forSeller($userId);
+            }
+        } elseif ($userId) {
             $query->where(function ($q) use ($userId) {
                 $q->where('seller_id', $userId)->orWhere('buyer_id', $userId);
             });
@@ -45,9 +49,35 @@ class QuoteService
 
         $query = $queryHandler
             ->setBaseQuery($query)
-            ->setAllowedSorts(['id', 'total_price', 'status', 'created_at', 'updated_at', 'seller_message', 'rfq.initial_quantity', 'rfq.shipping_country', 'rfq.status',
+            ->setAllowedSorts([
+                'id',
+                'total_price',
+                'status',
+                'created_at',
+                'updated_at',
+                'seller_message',
+                'rfq.initial_quantity',
+                'rfq.shipping_country',
+                'rfq.status',
             ])
-            ->setAllowedFilters(['id', 'total_price', 'status', 'seller_message', 'rfq_id', 'conversation_id', 'seller_id', 'buyer_id', 'created_at', 'updated_at', 'rfq.initial_quantity', 'rfq.shipping_country', 'rfq.status', 'rfq.buyer_id', 'rfq.seller_id', 'items.product.name', 'items.product.brand',
+            ->setAllowedFilters([
+                'id',
+                'total_price',
+                'status',
+                'seller_message',
+                'rfq_id',
+                'conversation_id',
+                'seller_id',
+                'buyer_id',
+                'created_at',
+                'updated_at',
+                'rfq.initial_quantity',
+                'rfq.shipping_country',
+                'rfq.status',
+                'rfq.buyer_id',
+                'rfq.seller_id',
+                'items.product.name',
+                'items.product.brand',
             ])
             ->apply();
 
@@ -87,9 +117,9 @@ class QuoteService
 
             if ($rfq) {
                 $rfq->transitionTo(Rfq::STATUS_QUOTED);
-                $quote->load(['buyer.company', 'seller.company', 'rfq.buyer', 'rfq.seller', 'items.product']);
+                $quote->load(['buyer.company', 'seller.company', 'rfq.buyer', 'rfq.seller', 'items.product', 'contract']);
             } else {
-                $quote->load(['buyer.company', 'seller.company', 'items.product', 'conversation']);
+                $quote->load(['buyer.company', 'seller.company', 'items.product', 'conversation', 'contract']);
             }
 
             return $quote;
@@ -101,7 +131,7 @@ class QuoteService
      */
     public function findWithAccess(int $quoteId, int $userId): Quote
     {
-        $quote = Quote::with(['buyer.company', 'seller.company', 'rfq', 'rfq.buyer', 'rfq.seller', 'rfq.initialProduct', 'conversation', 'items', 'items.product'])
+        $quote = Quote::with(['buyer.company', 'seller.company', 'rfq', 'rfq.buyer', 'rfq.seller', 'rfq.initialProduct', 'conversation', 'items', 'items.product', 'contract'])
             ->findOrFail($quoteId);
 
         if (! $this->canAccessQuote($quote, $userId)) {
@@ -116,16 +146,17 @@ class QuoteService
      */
     public function update(int $quoteId, array $data, int $userId, array $userRoles): Quote
     {
-        $quote = Quote::with(['buyer.company', 'seller.company', 'rfq', 'rfq.initialProduct', 'items'])->findOrFail($quoteId);
+        $quote = Quote::with(['buyer.company', 'seller.company', 'rfq', 'rfq.initialProduct', 'items', 'contract'])->findOrFail($quoteId);
 
         $this->validateUpdateAccess($quote, $userId, $userRoles);
 
-        return DB::transaction(function () use ($quote, $data, $userRoles) {
+        return DB::transaction(function () use ($quote, $data, $userRoles, $userId) {
             $updateData = [];
             $totalPrice = $quote->total_price;
 
-            $isBuyer = in_array('buyer', $userRoles);
-            $isSeller = in_array('seller', $userRoles);
+            $user = User::findOrFail($userId);
+            $isBuyer = $user->canActInRole('buyer', $quote);
+            $isSeller = $user->canActInRole('seller', $quote);
             $isAdmin = in_array('admin', $userRoles);
 
             if ($isBuyer && ! $isAdmin) {
@@ -136,7 +167,7 @@ class QuoteService
                     throw new AuthorizationException('Buyers cannot modify seller messages');
                 }
                 if (! empty($data['status'])) {
-                    $this->validateStatusTransition($quote, $data['status'], $userRoles);
+                    $this->validateStatusTransition($quote, $data['status'], $userRoles, $userId);
                     $updateData['status'] = $data['status'];
                     if ($data['status'] === Quote::STATUS_ACCEPTED) {
                         $updateData['accepted_at'] = now();
@@ -145,19 +176,19 @@ class QuoteService
             } else {
 
                 if (! empty($data['status'])) {
-                    $this->validateStatusTransition($quote, $data['status'], $userRoles);
+                    $this->validateStatusTransition($quote, $data['status'], $userRoles, $userId);
                     $updateData['status'] = $data['status'];
                     if ($data['status'] === Quote::STATUS_ACCEPTED) {
                         $updateData['accepted_at'] = now();
                     }
                 }
 
-                if (! empty($data['items']) && $this->canUpdateItems($userRoles)) {
+                if (! empty($data['items']) && $this->canUpdateItems($userRoles, $quote, $userId)) {
                     $totalPrice = $this->updateQuoteItems($quote, $data['items']);
                     $updateData['total_price'] = $totalPrice;
                 }
 
-                if (isset($data['seller_message']) && $this->canUpdateItems($userRoles)) {
+                if (isset($data['seller_message']) && $this->canUpdateItems($userRoles, $quote, $userId)) {
                     $updateData['seller_message'] = $data['seller_message'];
                 }
             }
@@ -215,7 +246,6 @@ class QuoteService
         };
     }
 
-    // Private helper methods
     private function validateAndGetRfq(int $rfqId, int $userId): Rfq
     {
         $rfq = Rfq::with('initialProduct')->find($rfqId);
@@ -224,8 +254,9 @@ class QuoteService
             throw new ModelNotFoundException('RFQ not found');
         }
 
-        if ($rfq->seller_id !== $userId) {
-            throw new AuthorizationException('You can only create quotes for RFQs assigned to you');
+        $user = User::findOrFail($userId);
+        if (! $user->canActInRole('seller', $rfq) || $rfq->seller_id !== $userId) {
+            throw new AuthorizationException('You can only create quotes for RFQs where you are the seller');
         }
 
         return $rfq;
@@ -295,15 +326,20 @@ class QuoteService
 
     private function validateUpdateAccess(Quote $quote, int $userId, array $userRoles): void
     {
-        $isSeller = in_array('seller', $userRoles);
-        $isBuyer = in_array('buyer', $userRoles);
+        $user = User::findOrFail($userId);
         $isAdmin = in_array('admin', $userRoles);
 
-        if ($isSeller) {
-            $canUpdate = false;
+        if ($isAdmin) {
+            return;
+        }
 
+        $canUpdate = false;
+        $contextRoles = [];
+
+        if ($user->canActInRole('seller', $quote)) {
             if ($quote->rfq && $quote->rfq->seller_id === $userId) {
                 $canUpdate = true;
+                $contextRoles[] = 'seller';
             }
 
             if ($quote->conversation_id && $quote->conversation) {
@@ -311,17 +347,16 @@ class QuoteService
                     $canUpdate = true;
                 }
             }
-
-            if (! $canUpdate) {
-                throw new AuthorizationException('You can only update your own quotes');
+            if ($quote->conversation_id && $quote->conversation && in_array($userId, $quote->conversation->participant_ids)) {
+                $canUpdate = true;
+                $contextRoles[] = 'seller';
             }
         }
 
-        if ($isBuyer) {
-            $canUpdate = false;
-
+        if ($user->canActInRole('buyer', $quote)) {
             if ($quote->rfq && $quote->rfq->buyer_id === $userId) {
                 $canUpdate = true;
+                $contextRoles[] = 'buyer';
             }
 
             if ($quote->conversation_id && $quote->conversation) {
@@ -329,39 +364,72 @@ class QuoteService
                     $canUpdate = true;
                 }
             }
-
-            if (! $canUpdate) {
-                throw new AuthorizationException('You can only accept/reject your own quotes');
+            if ($quote->conversation_id && $quote->conversation && in_array($userId, $quote->conversation->participant_ids)) {
+                $canUpdate = true;
+                $contextRoles[] = 'buyer';
             }
         }
 
-        if (! $isAdmin && ! $isSeller && ! $isBuyer) {
-            throw new AuthorizationException('You do not have permission to update quotes');
+        if (! $canUpdate) {
+            throw new AuthorizationException('You do not have permission to update this quote');
         }
     }
 
-    private function validateStatusTransition(Quote $quote, string $newStatus, array $userRoles): void
+    private function validateStatusTransition(Quote $quote, string $newStatus, array $userRoles, int $userId): void
     {
         if (! $quote->canTransitionTo($newStatus)) {
             throw new InvalidArgumentException("Quote cannot transition from '{$quote->status}' to '{$newStatus}'");
         }
 
-        $isBuyer = in_array('buyer', $userRoles);
-        $isSeller = in_array('seller', $userRoles);
+        $user = User::findOrFail($userId);
         $isAdmin = in_array('admin', $userRoles);
 
-        if (in_array($newStatus, [Quote::STATUS_ACCEPTED, Quote::STATUS_REJECTED]) && ! $isBuyer && ! $isAdmin) {
-            throw new AuthorizationException('Only buyers can accept or reject quotes');
+        if ($isAdmin) {
+            return;
         }
 
-        if ($newStatus === Quote::STATUS_SENT && ! $isSeller && ! $isAdmin) {
-            throw new AuthorizationException('Only sellers can send quotes');
+        if (in_array($newStatus, [Quote::STATUS_ACCEPTED, Quote::STATUS_REJECTED])) {
+            if (! $user->canActInRole('buyer', $quote)) {
+                throw new AuthorizationException('Only buyers can accept or reject quotes');
+            }
+
+            $isBuyerInContext = ($quote->rfq && $quote->rfq->buyer_id === $userId) ||
+                ($quote->buyer_id === $userId) ||
+                ($quote->conversation_id && $quote->conversation && in_array($userId, $quote->conversation->participant_ids));
+
+            if (! $isBuyerInContext) {
+                throw new AuthorizationException('You can only accept/reject quotes where you are the buyer');
+            }
+        }
+
+        if ($newStatus === Quote::STATUS_SENT) {
+            if (! $user->canActInRole('seller', $quote)) {
+                throw new AuthorizationException('Only sellers can send quotes');
+            }
+
+            $isSellerInContext = ($quote->rfq && $quote->rfq->seller_id === $userId) ||
+                ($quote->seller_id === $userId) ||
+                ($quote->conversation_id && $quote->conversation && in_array($userId, $quote->conversation->participant_ids));
+
+            if (! $isSellerInContext) {
+                throw new AuthorizationException('You can only send quotes where you are the seller');
+            }
         }
     }
 
-    private function canUpdateItems(array $userRoles): bool
+    private function canUpdateItems(array $userRoles, ?Quote $quote = null, ?int $userId = null): bool
     {
-        return in_array('seller', $userRoles) || in_array('admin', $userRoles);
+        if (in_array('admin', $userRoles)) {
+            return true;
+        }
+
+        if (! $quote || ! $userId) {
+            return in_array('seller', $userRoles);
+        }
+
+        $user = User::findOrFail($userId);
+
+        return $user && $user->canActInRole('seller', $quote);
     }
 
     private function updateQuoteItems(Quote $quote, array $items): float

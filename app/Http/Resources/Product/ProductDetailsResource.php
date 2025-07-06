@@ -55,6 +55,7 @@ class ProductDetailsResource extends JsonResource
             'is_active'        => $this->is_active,
             'is_approved'      => $this->is_approved,
             'is_featured'      => $this->is_featured,
+            'in_wishlist'      => (bool) ($this->in_wishlist ?? false),
             'sample_available' => $this->sample_available,
             'sample_price'     => $this->sample_price,
 

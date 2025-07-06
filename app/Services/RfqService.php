@@ -3,8 +3,11 @@
 namespace App\Services;
 
 use App\Models\Rfq;
+use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use InvalidArgumentException;
 
 class RfqService
 {
@@ -51,13 +54,14 @@ class RfqService
     public function updateStatus(int $rfqId, string $newStatus, int $userId): Rfq
     {
         $rfq = Rfq::findOrFail($rfqId);
+        $user = User::findOrFail($userId);
 
-        if ($rfq->seller_id !== $userId) {
-            throw new \Illuminate\Auth\Access\AuthorizationException('Only seller can update RFQ status');
+        if (! $user->canActInRole('seller', $rfq) || $rfq->seller_id !== $userId) {
+            throw new AuthorizationException('Only the seller can update RFQ status');
         }
 
         if (! $rfq->canTransitionTo($newStatus)) {
-            throw new \InvalidArgumentException("Cannot transition to {$newStatus} from current status '{$rfq->status}'");
+            throw new InvalidArgumentException("Cannot transition to {$newStatus} from current status '{$rfq->status}'");
         }
 
         $rfq->update(['status' => $newStatus]);

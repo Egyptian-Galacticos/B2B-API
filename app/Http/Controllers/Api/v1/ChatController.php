@@ -75,7 +75,7 @@ class ChatController extends Controller
 
         return $this->apiResponse(
             data: new ConversationResource($conversation->load(['seller', 'buyer', 'lastMessage.sender'])),
-            meta: $this->getPaginationMeta($conversation)
+            message: 'Conversation retrieved successfully'
         );
     }
 

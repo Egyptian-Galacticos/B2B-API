@@ -95,6 +95,16 @@ class Quote extends Model
         return $query->where('status', self::STATUS_REJECTED);
     }
 
+    public function scopeForBuyer($query, $buyerId)
+    {
+        return $query->where('buyer_id', $buyerId);
+    }
+
+    public function scopeForSeller($query, $sellerId)
+    {
+        return $query->where('seller_id', $sellerId);
+    }
+
     public function isSent(): bool
     {
         return $this->status === self::STATUS_SENT;
