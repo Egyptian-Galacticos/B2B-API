@@ -352,6 +352,6 @@ class User extends Authenticatable implements HasMedia, JWTSubject
 
     public function company(): HasOne
     {
-        return $this->hasOne(Company::class);
+        return $this->hasOne(Company::class)->withTrashed();
     }
 }
