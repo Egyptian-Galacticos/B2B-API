@@ -185,7 +185,7 @@ class ProductController extends Controller
             foreach ($request->file('specifications') as $document) {
                 $product
                     ->addMedia($document)
-                    ->usingName('Product Specification - '.$document->getClientOriginalName())
+                    ->usingName($product->name.' - '.$document->getClientOriginalName())
                     ->toMediaCollection('product_specifications');
             }
         }
@@ -288,7 +288,7 @@ class ProductController extends Controller
             foreach ($request->file('specifications') as $document) {
                 $product
                     ->addMedia($document)
-                    ->usingName('Product Specification - '.$document->getClientOriginalName())
+                    ->usingName($product->name.' - '.$document->getClientOriginalName())
                     ->toMediaCollection('product_specifications');
             }
         }
@@ -576,7 +576,7 @@ class ProductController extends Controller
                         if (filter_var($specificationUrl, FILTER_VALIDATE_URL)) {
                             $productModel
                                 ->addMediaFromUrl($specificationUrl)
-                                ->usingName('Product Specification - '.basename($specificationUrl))
+                                ->usingName($product->name.' - '.basename($specificationUrl))
                                 ->toMediaCollection('product_specifications');
                         }
                     }
