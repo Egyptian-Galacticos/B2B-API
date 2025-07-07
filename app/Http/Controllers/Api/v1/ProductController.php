@@ -157,7 +157,7 @@ class ProductController extends Controller
         if ($request->hasFile('main_image')) {
             $product
                 ->addMedia($request->file('main_image'))
-                ->usingName('Main Product Image - '.$request->file('main_image')->getClientOriginalName())
+                ->usingName($product->name.' - '.$request->file('main_image')->getClientOriginalName())
                 ->toMediaCollection('main_image');
         }
 
@@ -166,7 +166,7 @@ class ProductController extends Controller
             foreach ($request->file('images') as $image) {
                 $product
                     ->addMedia($image)
-                    ->usingName('Product Image - '.$image->getClientOriginalName())
+                    ->usingName($product->name.' - '.$image->getClientOriginalName())
                     ->toMediaCollection('product_images');
             }
         }
@@ -176,7 +176,7 @@ class ProductController extends Controller
             foreach ($request->file('documents') as $document) {
                 $product
                     ->addMedia($document)
-                    ->usingName('Product Document - '.$document->getClientOriginalName())
+                    ->usingName($product->name.' - '.$document->getClientOriginalName())
                     ->toMediaCollection('product_documents');
             }
         }
@@ -260,7 +260,7 @@ class ProductController extends Controller
             $product->clearMediaCollection('main_image');
             $product
                 ->addMedia($request->file('main_image'))
-                ->usingName('Main Product Image - '.$request->file('main_image')->getClientOriginalName())
+                ->usingName($product->name.' - '.$request->file('main_image')->getClientOriginalName())
                 ->toMediaCollection('main_image');
         }
 
@@ -269,7 +269,7 @@ class ProductController extends Controller
             foreach ($request->file('images') as $image) {
                 $product
                     ->addMedia($image)
-                    ->usingName('Product Image - '.$image->getClientOriginalName())
+                    ->usingName($product.' - '.$image->getClientOriginalName())
                     ->toMediaCollection('product_images');
             }
         }
@@ -279,7 +279,7 @@ class ProductController extends Controller
             foreach ($request->file('documents') as $document) {
                 $product
                     ->addMedia($document)
-                    ->usingName('Product Document - '.$document->getClientOriginalName())
+                    ->usingName($product.' - '.$document->getClientOriginalName())
                     ->toMediaCollection('product_documents');
             }
         }
@@ -544,7 +544,7 @@ class ProductController extends Controller
                 if (isset($product['main_image']) && filter_var($product['main_image'], FILTER_VALIDATE_URL)) {
                     $productModel
                         ->addMediaFromUrl($product['main_image'])
-                        ->usingName('Main Product Image - '.basename($product['main_image']))
+                        ->usingName($product->name.' - '.basename($product['main_image']))
                         ->toMediaCollection('main_image');
                 }
 
@@ -554,7 +554,7 @@ class ProductController extends Controller
                         if (filter_var($imageUrl, FILTER_VALIDATE_URL)) {
                             $productModel
                                 ->addMediaFromUrl($imageUrl)
-                                ->usingName('Product Image - '.basename($imageUrl))
+                                ->usingName($product->name.' - '.basename($imageUrl))
                                 ->toMediaCollection('product_images');
                         }
                     }
@@ -566,7 +566,7 @@ class ProductController extends Controller
                         if (filter_var($documentUrl, FILTER_VALIDATE_URL)) {
                             $productModel
                                 ->addMediaFromUrl($documentUrl)
-                                ->usingName('Product Document - '.basename($documentUrl))
+                                ->usingName($product->name.' - '.basename($documentUrl))
                                 ->toMediaCollection('product_documents');
                         }
                     }
