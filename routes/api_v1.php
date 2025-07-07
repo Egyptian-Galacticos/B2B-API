@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\v1\AiSearchController;
 use App\Http\Controllers\Api\v1\AuthController;
 use App\Http\Controllers\Api\v1\CategoryController;
 use App\Http\Controllers\Api\v1\ChatController;
@@ -37,6 +38,7 @@ Route::prefix('v1')->group(function () {
     Route::get('products/{slug}', [ProductController::class, 'show'])->name('products.public.show');
     Route::get('products/tags/all', [TagController::class, 'index'])->name('products.tags.index');
     Route::post('products/tags/clear-cache', [TagController::class, 'clearCache'])->name('products.tags.clear-cache');
+    Route::get('products/ai-search/{query}', [AiSearchController::class, 'index'])->name('products.ai-search');
 
     // Public category endpoints (browsing without auth)
     Route::get('categories', [CategoryController::class, 'index'])->name('categories.public.index');
@@ -62,13 +64,6 @@ Route::prefix('v1')->group(function () {
                 Route::get('status', [EmailVerificationController::class, 'status'])->name('email.status');
             });
 
-            Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
-            Route::post('/wishlist', [WishlistController::class, 'store'])->name('wishlist.store');
-            Route::delete('/wishlist', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
-            Route::post('/wishlist/check', [WishlistController::class, 'check'])->name('wishlist.check');
-            Route::post('/wishlist/clear', [WishlistController::class, 'clear'])->name('wishlist.clear');
-            Route::get('/wishlist/summary', [WishlistController::class, 'summary'])->name('wishlist.summary');
-
             // Company email verification management
             Route::prefix('company-email')->group(function () {
                 Route::post('send-verification', [EmailVerificationController::class, 'sendCompany'])->name('company-email.send');
@@ -85,6 +80,14 @@ Route::prefix('v1')->group(function () {
             Route::put('profile', [UserController::class, 'updateProfile'])->name('users.profile.update');
             Route::put('password', [UserController::class, 'updatePassword'])->name('users.password.update');
             Route::put('company', [CompanyController::class, 'update'])->name('company.update');
+            Route::prefix('wishlist')->group(function () {
+                Route::get('/', [WishlistController::class, 'index'])->name('wishlist.index');
+                Route::post('/', [WishlistController::class, 'store'])->name('wishlist.store');
+                Route::delete('/{product:id}', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
+                Route::post('/check', [WishlistController::class, 'check'])->name('wishlist.check');
+                Route::post('/clear', [WishlistController::class, 'clear'])->name('wishlist.clear');
+                Route::get('/summary', [WishlistController::class, 'summary'])->name('wishlist.summary');
+            });
         });
 
         // Company management

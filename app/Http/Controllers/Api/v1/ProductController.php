@@ -49,9 +49,16 @@ class ProductController extends Controller
     {
         $queryHandler = new QueryHandler($request);
         $perPage = (int) $request->get('size', 10);
+        $user = Auth::user(); // Get authenticated user
 
         $query = $queryHandler
-            ->setBaseQuery(Product::query()->with(['seller.company', 'category', 'tags', 'tiers'])->where('is_active', true)->where('is_approved', true))
+            ->setBaseQuery(
+                Product::query()
+                    ->with(['seller.company', 'category', 'tags', 'tiers'])
+                    ->withWishlistStatus($user?->id) // Add wishlist status
+                    ->where('is_active', true)
+                    ->where('is_approved', true)
+            )
             ->setAllowedSorts([
                 'weight',
                 'created_at',
@@ -64,6 +71,7 @@ class ProductController extends Controller
                 'is_approved',
                 'is_featured',
                 'created_at',
+                'in_wishlist', // Add wishlist sorting
             ])
             ->setAllowedFilters([
                 'name',
@@ -82,6 +90,7 @@ class ProductController extends Controller
                 'seller_id',
                 'is_featured',
                 'sample_available',
+                'in_wishlist', // Add wishlist filtering
             ])
             ->setSearchableFields([
                 'name',
@@ -148,7 +157,7 @@ class ProductController extends Controller
         if ($request->hasFile('main_image')) {
             $product
                 ->addMedia($request->file('main_image'))
-                ->usingName('Main Product Image - '.$request->file('main_image')->getClientOriginalName())
+                ->usingName($product->name.' - '.$request->file('main_image')->getClientOriginalName())
                 ->toMediaCollection('main_image');
         }
 
@@ -157,7 +166,7 @@ class ProductController extends Controller
             foreach ($request->file('images') as $image) {
                 $product
                     ->addMedia($image)
-                    ->usingName('Product Image - '.$image->getClientOriginalName())
+                    ->usingName($product->name.' - '.$image->getClientOriginalName())
                     ->toMediaCollection('product_images');
             }
         }
@@ -167,7 +176,7 @@ class ProductController extends Controller
             foreach ($request->file('documents') as $document) {
                 $product
                     ->addMedia($document)
-                    ->usingName('Product Document - '.$document->getClientOriginalName())
+                    ->usingName($product->name.' - '.$document->getClientOriginalName())
                     ->toMediaCollection('product_documents');
             }
         }
@@ -196,7 +205,9 @@ class ProductController extends Controller
     public function show(string $slug): JsonResponse
     {
         try {
+            $user = Auth::user();
             $product = Product::with(['seller.company', 'category', 'tiers', 'media', 'tags'])
+                ->withWishlistStatus($user?->id) // Add wishlist status
                 ->where('slug', $slug)
                 ->firstOrFail();
         } catch (ModelNotFoundException $e) {
@@ -249,7 +260,7 @@ class ProductController extends Controller
             $product->clearMediaCollection('main_image');
             $product
                 ->addMedia($request->file('main_image'))
-                ->usingName('Main Product Image - '.$request->file('main_image')->getClientOriginalName())
+                ->usingName($product->name.' - '.$request->file('main_image')->getClientOriginalName())
                 ->toMediaCollection('main_image');
         }
 
@@ -258,7 +269,7 @@ class ProductController extends Controller
             foreach ($request->file('images') as $image) {
                 $product
                     ->addMedia($image)
-                    ->usingName('Product Image - '.$image->getClientOriginalName())
+                    ->usingName($product.' - '.$image->getClientOriginalName())
                     ->toMediaCollection('product_images');
             }
         }
@@ -268,7 +279,7 @@ class ProductController extends Controller
             foreach ($request->file('documents') as $document) {
                 $product
                     ->addMedia($document)
-                    ->usingName('Product Document - '.$document->getClientOriginalName())
+                    ->usingName($product.' - '.$document->getClientOriginalName())
                     ->toMediaCollection('product_documents');
             }
         }
@@ -533,7 +544,7 @@ class ProductController extends Controller
                 if (isset($product['main_image']) && filter_var($product['main_image'], FILTER_VALIDATE_URL)) {
                     $productModel
                         ->addMediaFromUrl($product['main_image'])
-                        ->usingName('Main Product Image - '.basename($product['main_image']))
+                        ->usingName($product->name.' - '.basename($product['main_image']))
                         ->toMediaCollection('main_image');
                 }
 
@@ -543,7 +554,7 @@ class ProductController extends Controller
                         if (filter_var($imageUrl, FILTER_VALIDATE_URL)) {
                             $productModel
                                 ->addMediaFromUrl($imageUrl)
-                                ->usingName('Product Image - '.basename($imageUrl))
+                                ->usingName($product->name.' - '.basename($imageUrl))
                                 ->toMediaCollection('product_images');
                         }
                     }
@@ -555,7 +566,7 @@ class ProductController extends Controller
                         if (filter_var($documentUrl, FILTER_VALIDATE_URL)) {
                             $productModel
                                 ->addMediaFromUrl($documentUrl)
-                                ->usingName('Product Document - '.basename($documentUrl))
+                                ->usingName($product->name.' - '.basename($documentUrl))
                                 ->toMediaCollection('product_documents');
                         }
                     }
@@ -617,7 +628,7 @@ class ProductController extends Controller
     {
         $queryHandler = new QueryHandler($request);
         $perPage = (int) $request->get('size', 10);
-        $user = auth()->user();
+        $user = Auth::user(); // Fix auth issue
 
         $sellerId = null;
         if ($user->hasRole('admin')) {
@@ -657,6 +668,7 @@ class ProductController extends Controller
             ->setBaseQuery(
                 Product::query()
                     ->with(['seller.company', 'category', 'tags', 'media'])
+                    ->withWishlistStatus($user?->id) // Add wishlist status
                     ->where('seller_id', $sellerId)
             )
             ->setAllowedSorts([
@@ -669,6 +681,7 @@ class ProductController extends Controller
                 'is_featured',
                 'is_approved',
                 'category.name',
+                'in_wishlist', // Add wishlist sorting
             ])
             ->setAllowedFilters([
                 'name',
@@ -681,6 +694,7 @@ class ProductController extends Controller
                 'is_approved',
                 'is_featured',
                 'created_at',
+                'in_wishlist', // Add wishlist filtering
             ])
             ->apply()
             ->paginate($perPage)

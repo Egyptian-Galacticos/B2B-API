@@ -11,18 +11,20 @@
   },
   "lint-staged": {
     "*.php": [
-    "php vendor/bin/pint",
-    "php vendor/bin/pint --test",
-    "php vendor/bin/phpstan analyse --no-progress",
-    "git add"
-  ]
+      "php vendor/bin/pint",
+      "php vendor/bin/pint --test",
+      "php vendor/bin/phpstan analyse --no-progress",
+      "git add"
+    ]
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
     "axios": "^1.8.2",
     "concurrently": "^9.0.1",
     "husky": "^9.1.7",
+    "laravel-echo": "^2.1.6",
     "laravel-vite-plugin": "^1.2.0",
+    "pusher-js": "^8.4.0",
     "tailwindcss": "^4.0.0",
     "vite": "^6.2.4"
   }
