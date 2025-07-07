@@ -374,6 +374,7 @@ class UserService
         }
 
         $user->delete();
+        $user->company->delete();
     }
 
     /**
@@ -406,6 +407,7 @@ class UserService
         }
 
         $user->restore();
+        $user->company()->restore();
 
         return $user->fresh(['roles', 'company']);
     }

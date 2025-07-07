@@ -5,39 +5,14 @@ namespace App\Http\Controllers\Api\v1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateProfileCompanyRequest;
 use App\Http\Resources\CompanyResource;
-use App\Models\Company;
 use App\Services\EmailVerificationService;
 use App\Traits\ApiResponse;
-use Illuminate\Http\Request;
+use Exception;
 use Illuminate\Support\Facades\Auth;
 
 class CompanyController extends Controller
 {
     use ApiResponse;
-
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Company $company)
-    {
-        //
-    }
 
     /**
      * Update company information
@@ -49,7 +24,6 @@ class CompanyController extends Controller
         try {
             $user = Auth::user();
 
-            // Check if user has a company
             if (! $user->company) {
                 return $this->apiResponseErrors(
                     'Company not found',
@@ -83,21 +57,12 @@ class CompanyController extends Controller
             $companyData = new CompanyResource($user->company->fresh()->load('media'));
 
             return $this->apiResponse($companyData, 'Company information updated successfully.', 200);
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->apiResponseErrors(
                 'Server error',
                 ['An unexpected error occurred while updating the company information.', $e->getMessage()],
                 500
             );
         }
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Company $company)
-    {
-        //
     }
 }
