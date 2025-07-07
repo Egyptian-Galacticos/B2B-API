@@ -36,7 +36,6 @@ class Product extends Model implements HasMedia
         'minimum_order_quantity',
         'lead_time_days',
         'origin',
-        'specifications',
         'dimensions',
         'category_id',
         'sample_available',
@@ -195,8 +194,8 @@ class Product extends Model implements HasMedia
         return $query->addSelect([
             '*',
             DB::raw("EXISTS(
-                SELECT 1 FROM wishlist 
-                WHERE wishlist.product_id = products.id 
+                SELECT 1 FROM wishlist
+                WHERE wishlist.product_id = products.id
                 AND wishlist.user_id = {$userId}
             ) as in_wishlist"),
         ]);
