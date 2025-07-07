@@ -38,7 +38,7 @@ Route::prefix('v1')->group(function () {
     Route::get('products/{slug}', [ProductController::class, 'show'])->name('products.public.show');
     Route::get('products/tags/all', [TagController::class, 'index'])->name('products.tags.index');
     Route::post('products/tags/clear-cache', [TagController::class, 'clearCache'])->name('products.tags.clear-cache');
-    Route::get('products/ai-search/{query}', [AiSearchController::class, 'index'])->name('products.ai-search');
+    Route::get('products/ai/search', [AiSearchController::class, 'index'])->name('products.ai-search');
 
     // Public category endpoints (browsing without auth)
     Route::get('categories', [CategoryController::class, 'index'])->name('categories.public.index');
