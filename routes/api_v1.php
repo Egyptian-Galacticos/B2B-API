@@ -182,6 +182,9 @@ Route::prefix('v1')->group(function () {
                     // Mark messages as read
                     Route::patch('read', [ChatController::class, 'markAsRead'])->name('chat.messages.read');
 
+                    // Handle typing indicator
+                    Route::post('typing', [ChatController::class, 'typing'])->name('chat.typing');
+
                     // Archive/deactivate conversation
                     Route::patch('archive', [ChatController::class, 'archiveConversation'])->name('chat.conversations.archive');
 

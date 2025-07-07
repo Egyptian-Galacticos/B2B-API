@@ -198,6 +198,37 @@ class ChatController extends Controller
     }
 
     /**
+     * Handle typing indicator.
+     */
+    public function typing(Request $request, int $conversationId): JsonResponse
+    {
+        $request->validate([
+            'is_typing' => 'required|boolean',
+        ]);
+
+        try {
+            $this->chatService->handleTyping(
+                $conversationId,
+                auth()->user()->id,
+                $request->get('is_typing', true)
+            );
+
+            return $this->apiResponse(
+                message: 'Typing indicator updated',
+                status: 200
+            );
+        } catch (\Exception $e) {
+            return $this->apiResponseErrors(
+                message: 'Failed to update typing indicator',
+                errors: [
+                    'error' => $e->getMessage(),
+                ],
+                status: 403
+            );
+        }
+    }
+
+    /**
      * Archive a conversation.
      */
     public function archiveConversation(Request $request, int $conversationId): JsonResponse

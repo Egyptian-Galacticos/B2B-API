@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\Events\ConversationCreated;
+use App\Events\MessageRead;
 use App\Events\MessageSent;
+use App\Events\UserTyping;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
@@ -31,6 +34,9 @@ class ChatService
                 'last_activity_at' => now(),
                 'is_active'        => true,
             ]);
+
+            // Broadcast new conversation created event
+            broadcast(new ConversationCreated($conversation->load(['seller', 'buyer'])))->toOthers();
         }
 
         return $conversation;
@@ -119,6 +125,17 @@ class ChatService
             ->where('sender_id', '!=', $userId)
             ->where('is_read', false)
             ->update(['is_read' => true]);
+
+        // Get the messages that were marked as read to broadcast the event
+        $readMessages = Message::where('conversation_id', $conversationId)
+            ->where('sender_id', '!=', $userId)
+            ->where('is_read', true)
+            ->get();
+
+        // Broadcast message read events
+        foreach ($readMessages as $message) {
+            broadcast(new MessageRead($message, $userId))->toOthers();
+        }
     }
 
     /**
@@ -183,5 +200,24 @@ class ChatService
         }
 
         $conversation->update(['is_active' => true]);
+    }
+
+    /**
+     * Handle typing indicator broadcasting.
+     */
+    public function handleTyping(int $conversationId, int $userId, bool $isTyping = true): void
+    {
+        $conversation = Conversation::findOrFail($conversationId);
+
+        // Verify user is a participant
+        if (! $conversation->isParticipant($userId)) {
+            throw new \Exception('User is not a participant in this conversation');
+        }
+
+        $user = User::findOrFail($userId);
+        $userName = $user->first_name.' '.$user->last_name;
+
+        // Broadcast typing indicator
+        broadcast(new UserTyping($conversationId, $userId, $userName, $isTyping))->toOthers();
     }
 }
