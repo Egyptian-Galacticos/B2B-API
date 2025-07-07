@@ -5,7 +5,6 @@ use App\Http\Middleware\CheckProductOwnership;
 use App\Http\Middleware\CustomJWTAuthentication;
 use App\Http\Middleware\IsEmailVerified;
 use App\Http\Middleware\IsSuspended;
-use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -20,15 +19,21 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
+        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Enable CORS for all API routes
+        $middleware->api(prepend: [
+            \Illuminate\Http\Middleware\HandleCors::class,
+        ]);
+
+        // Middleware aliases
         $middleware->alias([
             'is_email_verified' => IsEmailVerified::class,
             'is_suspended'      => IsSuspended::class,
             'product.owner'     => CheckProductOwnership::class,
             'jwt.auth'          => CustomJWTAuthentication::class,
-            'role'              => RoleMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
