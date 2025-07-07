@@ -45,7 +45,7 @@ class UpdateProductRequest extends BaseRequest
             'weight'   => ['sometimes', 'required', 'numeric', 'min:0'],
             'currency' => ['sometimes', 'required', 'string', 'size:3', 'uppercase'],
 
-            'price_tiers'                 => ['sometimes', 'required', 'array'],
+            'price_tiers'                 => ['sometimes', 'required'],
             'price_tiers.*.from_quantity' => ['required', 'integer', 'min:1'], // These remain required if `price_tiers` is sent
             'price_tiers.*.to_quantity'   => ['required', 'integer', 'min:1', 'gte:price_tiers.*.from_quantity'],
             'price_tiers.*.price'         => ['required', 'numeric', 'min:0'],
