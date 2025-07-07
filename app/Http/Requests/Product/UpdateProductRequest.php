@@ -51,17 +51,16 @@ class UpdateProductRequest extends BaseRequest
             'price_tiers.*.price'         => ['required', 'numeric', 'min:0'],
 
             // --- Related Data (Arrays) ---
-            'certifications'   => ['sometimes', 'nullable', 'array'],
-            'certifications.*' => ['string', 'max:255'],
+            'certifications' => ['sometimes', 'nullable'],
 
-            'dimensions' => ['sometimes', 'nullable', 'array'],
+            'dimensions' => ['sometimes', 'nullable'],
 
-            'product_tags'   => ['sometimes', 'nullable', 'array'],
-            'product_tags.*' => ['integer', 'exists:tags,id'],
+            'product_tags' => ['sometimes', 'nullable'],
 
             'main_image' => ['sometimes', 'required', 'image', 'max:10240'],
-            'images'     => ['sometimes', 'required', 'array'],
-            'images.*'   => ['image', 'max:10240'],
+
+            'images'   => ['sometimes', 'required'],
+            'images.*' => ['image', 'max:10240'],
 
             'documents'   => ['sometimes', 'nullable', 'array'],
             'documents.*' => ['file', 'mimes:pdf,doc,docx', 'max:20480'],
