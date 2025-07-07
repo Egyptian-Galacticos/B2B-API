@@ -27,8 +27,20 @@ class CategoryResource extends JsonResource
             'image'       => ($firstMedia = $this->getFirstMedia('images')) ? new MediaResource($firstMedia) : null,
             'parent'      => $this->whenLoaded('parent', fn () => new CategoryResource($this->parent)),
             'children'    => CategoryResource::collection($this->whenLoaded('children')),
-            'created_at'  => $this->created_at,
-            'updated_at'  => $this->updated_at,
+            'creator'     => $this->whenLoaded('creator', fn () => [
+                'id'         => $this->creator->id,
+                'first_name' => $this->creator->first_name,
+                'last_name'  => $this->creator->last_name,
+                'email'      => $this->creator->email,
+            ]),
+            'updater' => $this->whenLoaded('updater', fn () => [
+                'id'         => $this->updater->id,
+                'first_name' => $this->updater->first_name,
+                'last_name'  => $this->updater->last_name,
+                'email'      => $this->updater->email,
+            ]),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

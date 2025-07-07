@@ -24,8 +24,8 @@ class StoreCategoryRequest extends BaseRequest
             'description' => 'nullable|string|max:1000',
             'parent_id'   => 'nullable|exists:categories,id',
             'icon'        => 'nullable|string|max:255',
-            'image_file'  => 'nullable|file|mimes:jpeg,png,gif,webp|max:2048',
-            'icon_file'   => 'nullable|file|mimes:svg,png,jpeg|max:1024',
+            'image_file'  => 'sometimes|file|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'icon_file'   => 'sometimes|file|image|mimes:jpeg,png,jpg,gif,svg|max:1024',
         ];
     }
 

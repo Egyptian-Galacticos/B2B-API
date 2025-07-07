@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\HasCreatorAndUpdater;
 use Database\Factories\CategoryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +17,7 @@ use Spatie\Sluggable\SlugOptions;
 
 class Category extends Model implements HasMedia
 {
-    use HasFactory, HasSlug, InteractsWithMedia, SoftDeletes;
+    use HasCreatorAndUpdater, HasFactory, HasSlug, InteractsWithMedia, SoftDeletes;
 
     /** @use HasFactory<CategoryFactory> */
     protected $fillable = [
@@ -28,6 +29,8 @@ class Category extends Model implements HasMedia
         'level',
         'status',
         'icon',
+        'created_by',
+        'updated_by',
     ];
     protected $casts = [
         'level' => 'integer',

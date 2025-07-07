@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Spatie\MediaLibrary\HasMedia;
@@ -23,6 +24,7 @@ class Product extends Model implements HasMedia
     use HasSlug;
     use HasTags;
     use InteractsWithMedia;
+    use SoftDeletes;
     protected $fillable = [
         'brand',
         'model_number',
@@ -113,7 +115,7 @@ class Product extends Model implements HasMedia
 
     public function seller(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'seller_id');
+        return $this->belongsTo(User::class, 'seller_id')->withTrashed();
     }
 
     public function category(): BelongsTo

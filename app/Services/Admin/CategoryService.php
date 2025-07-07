@@ -17,7 +17,7 @@ class CategoryService
     public function getAllCategoriesForAdmin(array $filters, Request $request): LengthAwarePaginator
     {
         $query = Category::with([
-            'parent:id,name,slug',
+            'parent:id,name,slug,level',
             'children:id,name,slug,parent_id',
             'creator:id,first_name,last_name,email',
             'updater:id,first_name,last_name,email',
@@ -53,6 +53,26 @@ class CategoryService
             ]);
 
         return $queryHandler->apply()->paginate($request->get('per_page', 15));
+    }
+
+    /**
+     * Get pending categories that need approval.
+     */
+    public function getPendingCategories(Request $request): LengthAwarePaginator
+    {
+        $perPage = $request->get('per_page', 15);
+
+        return Category::with([
+            'parent:id,name,slug,level',
+            'children:id,name,slug,parent_id',
+            'creator:id,first_name,last_name,email',
+            'updater:id,first_name,last_name,email',
+            'media',
+        ])
+            ->withCount(['products', 'children'])
+            ->where('status', 'pending')
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
     }
 
     /**
@@ -313,6 +333,7 @@ class CategoryService
 
                     switch ($action) {
                         case 'activate':
+                        case 'approve':
                             if ($category->status === 'active') {
                                 throw new Exception('Category is already active');
                             }

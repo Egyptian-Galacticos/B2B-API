@@ -22,7 +22,7 @@ class BulkCategoryActionRequest extends FormRequest
         return [
             'category_ids'   => 'required|array|min:1|max:100',
             'category_ids.*' => 'required|integer|exists:categories,id',
-            'action'         => 'required|string|in:activate,deactivate,delete,restore,force_delete',
+            'action'         => 'required|string|in:activate,approve,deactivate,delete,restore,force_delete',
             'reason'         => 'nullable|string|max:500',
         ];
     }
@@ -42,7 +42,7 @@ class BulkCategoryActionRequest extends FormRequest
             'category_ids.*.exists'   => 'One or more selected categories do not exist.',
             'action.required'         => 'Action is required.',
             'action.string'           => 'Action must be a string.',
-            'action.in'               => 'Action must be one of: activate, deactivate, delete, restore, force_delete.',
+            'action.in'               => 'Action must be one of: activate, approve, deactivate, delete, restore, force_delete.',
             'reason.string'           => 'Reason must be a string.',
             'reason.max'              => 'Reason cannot exceed 500 characters.',
         ];

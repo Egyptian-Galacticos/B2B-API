@@ -21,8 +21,8 @@ class BulkProductActionRequest extends FormRequest
     {
         return [
             'product_ids'   => 'required|array|min:1|max:100',
-            'product_ids.*' => 'required|integer|exists:products,id',
-            'action'        => 'required|string|in:approve,reject,activate,deactivate,feature,unfeature',
+            'product_ids.*' => 'required|integer',
+            'action'        => 'required|string|in:approve,reject,activate,deactivate,feature,unfeature,delete,restore',
         ];
     }
 
@@ -38,10 +38,10 @@ class BulkProductActionRequest extends FormRequest
             'product_ids.max'        => 'Cannot process more than 100 products at once.',
             'product_ids.*.required' => 'Each product ID is required.',
             'product_ids.*.integer'  => 'Each product ID must be an integer.',
-            'product_ids.*.exists'   => 'One or more selected products do not exist.',
+            'product_ids.*.exists'   => 'One or more selected products do not exist or are not available for this action.',
             'action.required'        => 'Action is required.',
             'action.string'          => 'Action must be a string.',
-            'action.in'              => 'Action must be one of: approve, reject, activate, deactivate, feature, unfeature.',
+            'action.in'              => 'Action must be one of: approve, reject, activate, deactivate, feature, unfeature, delete, restore.',
         ];
     }
 

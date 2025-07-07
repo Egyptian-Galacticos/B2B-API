@@ -131,6 +131,20 @@ class ProductService
                 $updateData = ['is_featured' => false];
                 $actionMessage = 'unfeatured';
                 break;
+            case 'delete':
+                $deletedCount = Product::whereIn('id', $productIds)->delete();
+
+                return [
+                    'success' => true,
+                    'message' => "{$deletedCount} products have been deleted successfully.",
+                ];
+            case 'restore':
+                $restoredCount = Product::onlyTrashed()->whereIn('id', $productIds)->restore();
+
+                return [
+                    'success' => true,
+                    'message' => "{$restoredCount} products have been restored successfully.",
+                ];
             default:
                 return [
                     'success' => false,
@@ -144,5 +158,72 @@ class ProductService
             'success' => true,
             'message' => "{$affectedCount} products have been {$actionMessage} successfully.",
         ];
+    }
+
+    /**
+     * Delete a specific product (admin only).
+     */
+    public function deleteProduct(int $id): array
+    {
+        try {
+            $product = Product::findOrFail($id);
+            $product->delete();
+
+            return [
+                'success' => true,
+                'message' => 'Product deleted successfully.',
+            ];
+        } catch (ModelNotFoundException $e) {
+            return [
+                'success' => false,
+                'message' => 'Product not found.',
+                'status'  => 404,
+            ];
+        }
+    }
+
+    /**
+     * Restore a soft-deleted product.
+     */
+    public function restoreProduct(int $id): array
+    {
+        try {
+            $product = Product::onlyTrashed()->findOrFail($id);
+            $product->restore();
+            if (! $product) {
+                return [
+                    'success' => false,
+                    'message' => 'Deleted product not found.',
+                    'status'  => 404,
+
+                ];
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Product restored successfully.',
+                'product' => $product->fresh(),
+            ];
+        } catch (ModelNotFoundException $e) {
+            return [
+                'success' => false,
+                'message' => 'Deleted product not found.',
+                'status'  => 404,
+                'error'   => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Get all trashed products.
+     */
+    public function getTrashedProducts(Request $request)
+    {
+        $perPage = (int) $request->get('size', 10);
+
+        $query = Product::onlyTrashed()
+            ->with(['seller.company', 'category', 'tags', 'media']);
+
+        return $query->paginate($perPage)->withQueryString();
     }
 }

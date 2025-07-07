@@ -14,8 +14,11 @@ Route::prefix('admin')->middleware(['jwt.auth', 'role:admin'])->group(function (
     Route::prefix('users')->name('admin.users.')->group(function () {
         Route::get('/', [AdminUserController::class, 'index'])->name('index');
         Route::post('/bulk-action', [AdminUserController::class, 'bulkAction'])->name('bulk-action');
+        Route::get('/trashed', [AdminUserController::class, 'trashed'])->name('trashed');
         Route::get('/{id}', [AdminUserController::class, 'show'])->name('show');
         Route::put('/{id}', [AdminUserController::class, 'update'])->name('update');
+        Route::delete('/{id}', [AdminUserController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/restore', [AdminUserController::class, 'restore'])->name('restore');
     });
 
     // Seller Registration Review Routes
@@ -27,14 +30,18 @@ Route::prefix('admin')->middleware(['jwt.auth', 'role:admin'])->group(function (
     // Product Management Routes
     Route::prefix('products')->name('admin.products.')->group(function () {
         Route::get('/', [AdminProductController::class, 'index'])->name('index');
+        Route::get('/trashed', [AdminProductController::class, 'trashed'])->name('trashed');
         Route::get('/{id}', [AdminProductController::class, 'show'])->name('show');
         Route::put('/{id}/status', [AdminProductController::class, 'updateStatus'])->name('update-status');
+        Route::delete('/{id}', [AdminProductController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/restore', [AdminProductController::class, 'restore'])->name('restore');
         Route::post('/bulk-action', [AdminProductController::class, 'bulkAction'])->name('bulk-action');
     });
 
     // Category Management Routes
     Route::prefix('categories')->name('admin.categories.')->group(function () {
         Route::get('/', [AdminCategoryController::class, 'index'])->name('index');
+        Route::get('/pending', [AdminCategoryController::class, 'pending'])->name('pending');
         Route::post('/', [AdminCategoryController::class, 'store'])->name('store');
         Route::get('/hierarchy', [AdminCategoryController::class, 'hierarchy'])->name('hierarchy');
         Route::get('/trashed', [AdminCategoryController::class, 'trashed'])->name('trashed');
@@ -70,5 +77,4 @@ Route::prefix('admin')->middleware(['jwt.auth', 'role:admin'])->group(function (
         Route::put('/{id}/status', [AdminContractController::class, 'updateStatus'])->name('update-status');
         Route::post('/bulk-action', [AdminContractController::class, 'bulkAction'])->name('bulk-action');
     });
-
 });
