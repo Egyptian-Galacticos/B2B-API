@@ -138,6 +138,7 @@ class StatisticsController extends Controller
 
         $rfqStats['total'] = array_sum(array_column($rfqStats, 'count'));
 
+
         // Quote Stats
         $quoteStats = Quote::query()
             ->where('quotes.buyer_id', $buyerId)
