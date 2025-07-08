@@ -90,7 +90,7 @@ class RfqService
     {
         $queryHandler = new QueryHandler($request);
 
-        $query = Rfq::with(['buyer.company', 'seller.company', 'initialProduct', 'quotes']);
+        $query = Rfq::with(['buyer.company', 'seller.company', 'initialProduct.category', 'quotes']);
 
         if ($userId && $userType) {
             if ($userType === 'buyer') {
