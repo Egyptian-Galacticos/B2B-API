@@ -12,6 +12,7 @@ class Contract extends Model
     const STATUS_APPROVED = 'approved';
     const STATUS_PENDING_PAYMENT = 'pending_payment';
     const STATUS_IN_PROGRESS = 'in_progress';
+    const STATUS_DELIVERED_AND_PAID = 'delivered_and_paid';
     const STATUS_SHIPPED = 'shipped';
     const STATUS_DELIVERED = 'delivered';
     const STATUS_COMPLETED = 'completed';
@@ -21,6 +22,7 @@ class Contract extends Model
         self::STATUS_APPROVED,
         self::STATUS_PENDING_PAYMENT,
         self::STATUS_IN_PROGRESS,
+        self::STATUS_DELIVERED_AND_PAID,
         self::STATUS_SHIPPED,
         self::STATUS_DELIVERED,
         self::STATUS_COMPLETED,
@@ -40,6 +42,8 @@ class Contract extends Model
         'billing_address',
         'terms_and_conditions',
         'metadata',
+        'buyer_transaction_id',
+        'seller_transaction_id',
     ];
     protected $casts = [
         'contract_date'      => 'datetime',
@@ -117,6 +121,11 @@ class Contract extends Model
         return $query->where('status', self::STATUS_DELIVERED);
     }
 
+    public function scopeDeliveredAndPaid($query)
+    {
+        return $query->where('status', self::STATUS_DELIVERED_AND_PAID);
+    }
+
     public function scopeCompleted($query)
     {
         return $query->where('status', self::STATUS_COMPLETED);
@@ -134,14 +143,15 @@ class Contract extends Model
         }
 
         $allowedTransitions = [
-            self::STATUS_PENDING_APPROVAL => [self::STATUS_APPROVED, self::STATUS_PENDING_PAYMENT, self::STATUS_CANCELLED],
-            self::STATUS_APPROVED         => [self::STATUS_PENDING_PAYMENT, self::STATUS_CANCELLED],
-            self::STATUS_PENDING_PAYMENT  => [self::STATUS_IN_PROGRESS, self::STATUS_CANCELLED],
-            self::STATUS_IN_PROGRESS      => [self::STATUS_SHIPPED, self::STATUS_CANCELLED],
-            self::STATUS_SHIPPED          => [self::STATUS_DELIVERED, self::STATUS_CANCELLED],
-            self::STATUS_DELIVERED        => [self::STATUS_COMPLETED],
-            self::STATUS_COMPLETED        => [],
-            self::STATUS_CANCELLED        => [],
+            self::STATUS_PENDING_APPROVAL   => [self::STATUS_APPROVED, self::STATUS_PENDING_PAYMENT, self::STATUS_CANCELLED],
+            self::STATUS_APPROVED           => [self::STATUS_PENDING_PAYMENT, self::STATUS_CANCELLED],
+            self::STATUS_PENDING_PAYMENT    => [self::STATUS_IN_PROGRESS, self::STATUS_CANCELLED],
+            self::STATUS_IN_PROGRESS        => [self::STATUS_DELIVERED_AND_PAID, self::STATUS_CANCELLED],
+            self::STATUS_DELIVERED_AND_PAID => [self::STATUS_SHIPPED, self::STATUS_CANCELLED],
+            self::STATUS_SHIPPED            => [self::STATUS_DELIVERED, self::STATUS_CANCELLED],
+            self::STATUS_DELIVERED          => [self::STATUS_COMPLETED],
+            self::STATUS_COMPLETED          => [],
+            self::STATUS_CANCELLED          => [],
         ];
 
         return in_array($status, $allowedTransitions[$this->status] ?? []);
@@ -186,6 +196,11 @@ class Contract extends Model
     public function isDelivered(): bool
     {
         return $this->status === self::STATUS_DELIVERED;
+    }
+
+    public function isDeliveredAndPaid(): bool
+    {
+        return $this->status === self::STATUS_DELIVERED_AND_PAID;
     }
 
     public function isCompleted(): bool
