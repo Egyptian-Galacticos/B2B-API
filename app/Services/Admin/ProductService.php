@@ -4,6 +4,7 @@ namespace App\Services\Admin;
 
 use App\Models\Product;
 use App\Services\QueryHandler;
+use DomainException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 
@@ -83,6 +84,11 @@ class ProductService
     {
         try {
             $product = Product::findOrFail($id);
+
+            if ($data['is_approved'] === true && ! $product->category->isPathApproved()) {
+                throw new DomainException('Cannot approve product as its category path is not approved.');
+            }
+
             $product->update($data);
 
             return [
@@ -95,7 +101,15 @@ class ProductService
                 'message' => 'Product not found.',
                 'status'  => 404,
             ];
+        } catch (DomainException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'errors'  => ['category_path' => [$e->getMessage()]],
+                'status'  => 400,
+            ];
         }
+
     }
 
     /**

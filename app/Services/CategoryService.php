@@ -66,7 +66,16 @@ class CategoryService
                 throw new \Exception('Invalid parent_id provided.');
             }
             if ($newCategory = Category::where('name', ucwords(strtolower($categoryData['name'])))->first()) {
-                return $newCategory->id;
+                $parent = $newCategory->parent;
+
+                if ($parent->isRoot()) {
+                    $path = $parent->name.' (Root Category)';
+                } else {
+                    $path = $parent->parent->name.' > '.$parent->name;
+                }
+
+                throw new \Exception("A category with the name $newCategory->name already exists under: $path.");
+
             }
             $hierarchyData = (new Category)->calculateHierarchyData($parentId);
 

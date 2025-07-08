@@ -74,7 +74,7 @@ class AdminProductController extends Controller
         if (! $result['success']) {
             return $this->apiResponseErrors(
                 $result['message'],
-                [],
+                $result['errors'] ?? [],
                 $result['status']
             );
         }
