@@ -137,6 +137,12 @@ Route::prefix('v1')->group(function () {
                 Route::delete('products/{product}/media/{collection}/{mediaId}', [ProductController::class, 'deleteProductMedia'])->name('products.documents.destroy');
             });
 
+            // User management
+            Route::prefix('users')->group(function () {
+                Route::patch('{user}/restore', [UserController::class, 'restore'])->name('users.restore');
+                Route::delete('{user}/force-delete', [UserController::class, 'forceDelete'])->name('users.force-delete');
+            });
+
             // =====================================
             // ROLE-BASED ROUTES (Add when needed)
             // =====================================

@@ -632,7 +632,7 @@ class ProductController extends Controller
     {
         $queryHandler = new QueryHandler($request);
         $perPage = (int) $request->get('size', 10);
-        $user = Auth::user(); // Fix auth issue
+        $user = Auth::user();
 
         $sellerId = null;
         if ($user->hasRole('admin')) {
@@ -668,11 +668,23 @@ class ProductController extends Controller
             );
         }
 
+        // Base query for statistics
+        $statsQuery = Product::query()->where('seller_id', $sellerId);
+
+        // Calculate statistics
+        $total_products = $statsQuery->clone()->count();
+        $featured_products = $statsQuery->clone()->where('is_featured', true)->count();
+        $approved_products = $statsQuery->clone()->where('is_approved', true)->count();
+        $pending_approval = $statsQuery->clone()->where('is_approved', false)->count();
+        $active_products = $statsQuery->clone()->where('is_active', true)->count();
+        $inactive_products = $statsQuery->clone()->where('is_active', false)->count();
+
+        // Main query for paginated results
         $query = $queryHandler
             ->setBaseQuery(
                 Product::query()
                     ->with(['seller.company', 'category', 'tags', 'media'])
-                    ->withWishlistStatus($user?->id) // Add wishlist status
+                    ->withWishlistStatus($user?->id)
                     ->where('seller_id', $sellerId)
             )
             ->setAllowedSorts([
@@ -685,7 +697,7 @@ class ProductController extends Controller
                 'is_featured',
                 'is_approved',
                 'category.name',
-                'in_wishlist', // Add wishlist sorting
+                'in_wishlist',
             ])
             ->setAllowedFilters([
                 'name',
@@ -698,17 +710,27 @@ class ProductController extends Controller
                 'is_approved',
                 'is_featured',
                 'created_at',
-                'in_wishlist', // Add wishlist filtering
+                'in_wishlist',
             ])
             ->apply()
             ->paginate($perPage)
             ->withQueryString();
 
+        $paginationMeta = $this->getPaginationMeta($query);
+        $statsMeta = [
+            'total_products'   => $total_products,
+            'featured'         => $featured_products,
+            'approved'         => $approved_products,
+            'pending_approval' => $pending_approval,
+            'active'           => $active_products,
+            'inactive'         => $inactive_products,
+        ];
+
         return $this->apiResponse(
             ProductResource::collection($query),
             'Seller products retrieved successfully.',
             200,
-            $this->getPaginationMeta($query)
+            array_merge($paginationMeta, $statsMeta)
         );
     }
 

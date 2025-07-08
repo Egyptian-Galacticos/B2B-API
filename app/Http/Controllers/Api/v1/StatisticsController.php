@@ -62,7 +62,6 @@ class StatisticsController extends Controller
                 ];
             })
             ->toArray();
-
         $rfqStats['total'] = array_sum(array_column($rfqStats, 'count'));
 
         // Quote Stats
@@ -135,9 +134,7 @@ class StatisticsController extends Controller
                 ];
             })
             ->toArray();
-
         $rfqStats['total'] = array_sum(array_column($rfqStats, 'count'));
-
 
         // Quote Stats
         $quoteStats = Quote::query()
