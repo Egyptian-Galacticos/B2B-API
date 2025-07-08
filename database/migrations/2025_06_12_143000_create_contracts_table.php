@@ -22,6 +22,7 @@ return new class extends Migration
                 'approved',
                 'pending_payment',
                 'in_progress',
+                'delivered_and_paid',
                 'shipped',
                 'delivered',
                 'completed',

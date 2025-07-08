@@ -25,7 +25,7 @@ class UpdateContractRequest extends FormRequest
     {
         return [
             'status' => [
-                'required',
+                'nullable',
                 'string',
                 Rule::in(Contract::VALID_STATUSES),
             ],
@@ -34,6 +34,7 @@ class UpdateContractRequest extends FormRequest
             'billing_address'      => 'nullable|string',
             'terms_and_conditions' => 'nullable|string',
             'metadata'             => 'nullable|array',
+            'buyer_transaction_id' => 'nullable|string|max:255',
         ];
     }
 
@@ -45,9 +46,10 @@ class UpdateContractRequest extends FormRequest
         $validStatuses = implode(', ', Contract::VALID_STATUSES);
 
         return [
-            'status.required'         => 'Status is required.',
-            'status.in'               => "Invalid status. Allowed values are: {$validStatuses}.",
-            'estimated_delivery.date' => 'Estimated delivery must be a valid date.',
+            'status.in'                   => "Invalid status. Allowed values are: {$validStatuses}.",
+            'estimated_delivery.date'     => 'Estimated delivery must be a valid date.',
+            'buyer_transaction_id.string' => 'Buyer transaction ID must be a string.',
+            'buyer_transaction_id.max'    => 'Buyer transaction ID must not exceed 255 characters.',
         ];
     }
 }

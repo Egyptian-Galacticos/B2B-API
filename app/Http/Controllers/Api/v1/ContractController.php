@@ -7,6 +7,7 @@ use App\Http\Requests\Contract\IndexContractRequest;
 use App\Http\Requests\Contract\StoreContractRequest;
 use App\Http\Requests\Contract\UpdateContractRequest;
 use App\Http\Resources\ContractResource;
+use App\Mail\ContractUpdatedByBuyerMail;
 use App\Models\Contract;
 use App\Models\Quote;
 use App\Models\User;
@@ -15,6 +16,8 @@ use App\Traits\ApiResponse;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class ContractController extends Controller
 {
@@ -180,10 +183,31 @@ class ContractController extends Controller
                 'billing_address',
                 'terms_and_conditions',
                 'metadata',
+                'buyer_transaction_id',
             ]);
 
             if (! empty($updateData)) {
                 $contract->update($updateData);
+
+                if ($user->id === $contract->buyer_id) {
+                    $companyEmail = config('mail.from.address');
+                    if ($companyEmail) {
+                        $updateType = 'Contract Details Updated';
+                        if ($request->has('buyer_transaction_id')) {
+                            $updateType = 'Payment Transaction ID Added';
+                        }
+
+                        try {
+                            $contract->load(['buyer', 'seller']);
+
+                            Mail::to($companyEmail)
+                                ->send(new ContractUpdatedByBuyerMail($contract, $updateType));
+                        } catch (Exception $mailException) {
+                            Log::error('Failed to send contract update email: '.$mailException->getMessage());
+
+                        }
+                    }
+                }
             }
 
             return $this->apiResponse(
