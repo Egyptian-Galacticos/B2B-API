@@ -4,6 +4,8 @@ namespace App\Services\Admin;
 
 use App\Models\Company;
 use App\Models\User;
+use App\Notifications\SellerRegistrationApprovedNotification;
+use App\Notifications\SellerRegistrationRejectedNotification;
 use App\Services\QueryHandler;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -314,6 +316,8 @@ class UserService
             $company->user->assignRole('seller');
         }
 
+        $company->user->notify(new SellerRegistrationApprovedNotification($company, $reason, $notes));
+
         return [
             'action'       => 'approved',
             'company_id'   => $company->id,
@@ -338,6 +342,8 @@ class UserService
         if (! $company->user->hasRole('buyer')) {
             $company->user->assignRole('buyer');
         }
+
+        $company->user->notify(new SellerRegistrationRejectedNotification($company, $reason, $notes));
 
         return [
             'action'       => 'rejected',
