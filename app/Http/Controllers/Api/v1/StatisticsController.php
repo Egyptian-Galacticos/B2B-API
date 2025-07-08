@@ -50,16 +50,7 @@ class StatisticsController extends Controller
             ->where('seller_id', $sellerId)
             ->selectRaw('
                 status,
-                count(*) as count,
-                sum(initial_quantity * (
-                    SELECT price
-                    FROM price_tiers
-                    WHERE product_id = rfqs.initial_product_id
-                    AND from_quantity <= rfqs.initial_quantity
-                    AND (to_quantity >= rfqs.initial_quantity OR to_quantity IS NULL)
-                    ORDER BY from_quantity DESC
-                    LIMIT 1
-                )) as value
+                count(*) as count
             ')
             ->groupBy('status')
             ->get()
@@ -67,11 +58,11 @@ class StatisticsController extends Controller
                 return [
                     $item->status => [
                         'count' => $item->count,
-                        'value' => (float) $item->value,
                     ],
                 ];
             })
             ->toArray();
+
         $rfqStats['total'] = array_sum(array_column($rfqStats, 'count'));
 
         // Quote Stats
@@ -132,16 +123,7 @@ class StatisticsController extends Controller
             ->where('buyer_id', $buyerId)
             ->selectRaw('
                 status,
-                count(*) as count,
-                sum(initial_quantity * (
-                    SELECT price
-                    FROM price_tiers
-                    WHERE product_id = rfqs.initial_product_id
-                    AND from_quantity <= rfqs.initial_quantity
-                    AND (to_quantity >= rfqs.initial_quantity OR to_quantity IS NULL)
-                    ORDER BY from_quantity DESC
-                    LIMIT 1
-                )) as value
+                count(*) as count
             ')
             ->groupBy('status')
             ->get()
@@ -149,12 +131,13 @@ class StatisticsController extends Controller
                 return [
                     $item->status => [
                         'count' => $item->count,
-                        'value' => (float) $item->value,
                     ],
                 ];
             })
             ->toArray();
+
         $rfqStats['total'] = array_sum(array_column($rfqStats, 'count'));
+
 
         // Quote Stats
         $quoteStats = Quote::query()
