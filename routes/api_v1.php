@@ -11,7 +11,126 @@ use App\Http\Controllers\Api\v1\SellerUpgradeController;
 use App\Http\Controllers\Api\v1\TagController;
 use App\Http\Controllers\Api\v1\UserController;
 use App\Http\Controllers\Api\v1\WishlistController;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
+
+// ========================================
+// BROADCASTING AUTHENTICATION ROUTES
+// ========================================
+// These routes handle WebSocket authentication for private channels
+Broadcast::routes(['middleware' => ['jwt.auth'], 'guard' => 'api']);
+
+// Debug broadcasting auth
+Route::post('/debug-broadcasting-auth', function (Illuminate\Http\Request $request) {
+    try {
+        $user = auth('api')->user();
+
+        return response()->json([
+            'authenticated' => $user ? true : false,
+            'user'          => $user ? [
+                'id'    => $user->id,
+                'email' => $user->email,
+                'roles' => $user->roles->pluck('name'),
+            ] : null,
+            'request_data' => [
+                'socket_id'    => $request->input('socket_id'),
+                'channel_name' => $request->input('channel_name'),
+                'headers'      => [
+                    'authorization' => $request->header('Authorization') ? 'Present' : 'Missing',
+                    'content_type'  => $request->header('Content-Type'),
+                    'accept'        => $request->header('Accept'),
+                ],
+            ],
+            'auth_guard' => [
+                'guard'   => 'api',
+                'user_id' => auth('api')->id(),
+                'check'   => auth('api')->check(),
+            ],
+        ]);
+    } catch (Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ], 500);
+    }
+})->middleware(['jwt.auth']);
+
+// Test broadcast endpoint for debugging real-time features
+Route::post('/test-broadcast', function (Illuminate\Http\Request $request) {
+    try {
+        $user = auth('api')->user();
+
+        if (! $user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $message = $request->input('message', 'Test message from '.$user->email);
+        $channel = $request->input('channel', 'test-channel');
+        $event = $request->input('event', 'TestEvent');
+
+        // Broadcast to the specified channel
+        broadcast(new class($message, $user, $channel, $event)
+        {
+            public $message;
+            public $user;
+            public $channel;
+            public $event;
+
+            public function __construct($message, $user, $channel, $event)
+            {
+                $this->message = $message;
+                $this->user = $user;
+                $this->channel = $channel;
+                $this->event = $event;
+            }
+
+            public function broadcastOn()
+            {
+                return new \Illuminate\Broadcasting\Channel($this->channel);
+            }
+
+            public function broadcastAs()
+            {
+                return $this->event;
+            }
+
+            public function broadcastWith()
+            {
+                return [
+                    'message' => $this->message,
+                    'user'    => [
+                        'id'    => $this->user->id,
+                        'email' => $this->user->email,
+                    ],
+                    'timestamp' => now()->toISOString(),
+                    'channel'   => $this->channel,
+                    'event'     => $this->event,
+                ];
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Broadcast sent successfully',
+            'data'    => [
+                'message' => $message,
+                'channel' => $channel,
+                'event'   => $event,
+                'user'    => [
+                    'id'    => $user->id,
+                    'email' => $user->email,
+                ],
+            ],
+        ]);
+
+    } catch (Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error'   => $e->getMessage(),
+            'trace'   => config('app.debug') ? $e->getTraceAsString() : null,
+        ], 500);
+    }
+})->middleware(['jwt.auth']);
 
 Route::prefix('v1')->group(function () {
 

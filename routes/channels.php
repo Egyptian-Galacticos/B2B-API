@@ -26,7 +26,8 @@ Broadcast::channel('chat.conversation.{conversationId}', function ($user, $conve
 
 // Private user notifications
 Broadcast::channel('user.{userId}.notifications', function ($user, $userId) {
-    return (int) $user->id === (int) $userId;
+
+    return $user && (int) $user->id === (int) $userId;
 });
 
 // Company-wide notifications (for company members)
