@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\v1\CompanyController;
 use App\Http\Controllers\Api\v1\EmailVerificationController;
 use App\Http\Controllers\Api\v1\ProductController;
 use App\Http\Controllers\Api\v1\SellerUpgradeController;
+use App\Http\Controllers\Api\v1\StatisticsController;
 use App\Http\Controllers\Api\v1\TagController;
 
 use App\Http\Controllers\Api\v1\UserController;
@@ -105,6 +106,8 @@ Route::prefix('v1')->group(function () {
         // VERIFIED & ACTIVE USER ROUTES (Full Restrictions)
         // ====================================================
         Route::middleware(['is_email_verified', 'is_suspended'])->group(function () {
+            Route::get('statistics', StatisticsController::class)->name('statistics');
+
             // category management (requires ownership)
             Route::apiResource('categories', CategoryController::class)->except(['index', 'show']);
 
