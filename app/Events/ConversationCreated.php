@@ -14,54 +14,44 @@ class ConversationCreated implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
     public Conversation $conversation;
 
-    /**
-     * Create a new event instance.
-     */
     public function __construct(Conversation $conversation)
     {
         $this->conversation = $conversation;
     }
 
-    /**
-     * Get the channels the event should broadcast on.
-     */
     public function broadcastOn(): array
     {
-        $channels = [];
-
-        // Broadcast to all conversation participants
-        foreach ($this->conversation->participants as $participant) {
-            $channels[] = new PrivateChannel('user.'.$participant->id.'.notifications');
-        }
-
-        return $channels;
+        return [
+            new PrivateChannel('user.'.$this->conversation->seller_id.'.notifications'),
+            new PrivateChannel('user.'.$this->conversation->buyer_id.'.notifications'),
+        ];
     }
 
-    /**
-     * The event's broadcast name.
-     */
     public function broadcastAs(): string
     {
         return 'conversation.created';
     }
 
-    /**
-     * Get the data to broadcast.
-     */
     public function broadcastWith(): array
     {
         return [
-            'id'           => $this->conversation->id,
-            'name'         => $this->conversation->name,
-            'type'         => $this->conversation->type,
-            'participants' => $this->conversation->participants->map(function ($participant) {
-                return [
-                    'id'         => $participant->id,
-                    'first_name' => $participant->first_name,
-                    'last_name'  => $participant->last_name,
-                    'avatar_url' => $participant->getFirstMediaUrl('profile_image'),
-                ];
-            }),
+            'id'     => $this->conversation->id,
+            'type'   => $this->conversation->type,
+            'title'  => $this->conversation->title,
+            'seller' => [
+                'id'         => $this->conversation->seller->id,
+                'first_name' => $this->conversation->seller->first_name,
+                'last_name'  => $this->conversation->seller->last_name,
+                'full_name'  => $this->conversation->seller->full_name,
+                'avatar_url' => $this->conversation->seller->getFirstMediaUrl('profile_image'),
+            ],
+            'buyer' => [
+                'id'         => $this->conversation->buyer->id,
+                'first_name' => $this->conversation->buyer->first_name,
+                'last_name'  => $this->conversation->buyer->last_name,
+                'full_name'  => $this->conversation->buyer->full_name,
+                'avatar_url' => $this->conversation->buyer->getFirstMediaUrl('profile_image'),
+            ],
             'created_at' => $this->conversation->created_at->toISOString(),
         ];
     }

@@ -33,7 +33,7 @@ class UserTyping implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('chat.conversation.'.$this->conversationId),
+            new PrivateChannel('conversation.'.$this->conversationId),
         ];
     }
 

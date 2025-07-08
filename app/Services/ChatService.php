@@ -74,7 +74,7 @@ class ChatService
         ]);
 
         // Broadcast the message
-        broadcast(new MessageSent($message))->toOthers();
+        broadcast(new MessageSent($message));
 
         return $message->load(['sender', 'conversation']);
     }
@@ -219,5 +219,63 @@ class ChatService
 
         // Broadcast typing indicator
         broadcast(new UserTyping($conversationId, $userId, $userName, $isTyping))->toOthers();
+    }
+
+    /**
+     * Mark a message as read.
+     */
+    public function markAsRead(int $messageId, int $userId): void
+    {
+        $message = Message::findOrFail($messageId);
+        $conversation = $message->conversation;
+
+        // Verify user is a participant
+        if (! $conversation->isParticipant($userId)) {
+            throw new \Exception('User is not a participant in this conversation');
+        }
+
+        // Don't mark own messages as read
+        if ($message->sender_id === $userId) {
+            return;
+        }
+
+        // Only mark as read if not already read
+        if (! $message->is_read) {
+            $message->update([
+                'is_read' => true,
+                'read_at' => now(),
+            ]);
+
+            // Broadcast message read event
+            broadcast(new MessageRead($message, $userId))->toOthers();
+        }
+    }
+
+    /**
+     * Mark all messages in a conversation as read for a user.
+     */
+    public function markConversationAsRead(int $conversationId, int $userId): void
+    {
+        $conversation = Conversation::findOrFail($conversationId);
+
+        // Verify user is a participant
+        if (! $conversation->isParticipant($userId)) {
+            throw new \Exception('User is not a participant in this conversation');
+        }
+
+        // Mark all unread messages from other participants as read
+        $messages = Message::where('conversation_id', $conversationId)
+            ->where('sender_id', '!=', $userId)
+            ->where('is_read', false)
+            ->get();
+
+        foreach ($messages as $message) {
+            $message->update([
+                'is_read' => true,
+            ]);
+
+            // Broadcast message read event
+            broadcast(new MessageRead($message, $userId))->toOthers();
+        }
     }
 }

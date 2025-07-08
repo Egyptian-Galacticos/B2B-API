@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'is_suspended'      => IsSuspended::class,
             'product.owner'     => CheckProductOwnership::class,
             'jwt.auth'          => CustomJWTAuthentication::class,
+            'broadcasting.auth' => \App\Http\Middleware\BroadcastingAuthMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

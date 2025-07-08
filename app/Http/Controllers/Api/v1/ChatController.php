@@ -198,60 +198,6 @@ class ChatController extends Controller
     }
 
     /**
-     * Handle typing indicator.
-     */
-    public function typing(Request $request, int $conversationId): JsonResponse
-    {
-        $request->validate([
-            'is_typing' => 'required|boolean',
-        ]);
-
-        try {
-            $this->chatService->handleTyping(
-                $conversationId,
-                auth()->user()->id,
-                $request->get('is_typing', true)
-            );
-
-            return $this->apiResponse(
-                message: 'Typing indicator updated',
-                status: 200
-            );
-        } catch (\Exception $e) {
-            return $this->apiResponseErrors(
-                message: 'Failed to update typing indicator',
-                errors: [
-                    'error' => $e->getMessage(),
-                ],
-                status: 403
-            );
-        }
-    }
-
-    /**
-     * Archive a conversation.
-     */
-    public function archiveConversation(Request $request, int $conversationId): JsonResponse
-    {
-        try {
-            $this->chatService->archiveConversation($conversationId, auth()->user()->id);
-
-            return $this->apiResponse(
-                message: 'Conversation archived',
-                status: 200
-            );
-        } catch (\Exception $e) {
-            return $this->apiResponseErrors(
-                message: 'Failed to archive conversation',
-                errors: [
-                    'error' => $e->getMessage(),
-                ],
-                status: 403
-            );
-        }
-    }
-
-    /**
      * Reactivate a conversation.
      */
     public function reactivateConversation(Request $request, int $conversationId): JsonResponse
@@ -266,6 +212,108 @@ class ChatController extends Controller
         } catch (\Exception $e) {
             return $this->apiResponseErrors(
                 message: 'Failed to reactivate conversation',
+                errors: [
+                    'error' => $e->getMessage(),
+                ],
+                status: 403
+            );
+        }
+    }
+
+    /**
+     * Handle typing indicator.
+     */
+    public function typing(Request $request, int $conversationId): JsonResponse
+    {
+        try {
+            $isTyping = $request->boolean('is_typing', true);
+
+            $this->chatService->handleTyping(
+                $conversationId,
+                auth()->user()->id,
+                $isTyping
+            );
+
+            return $this->apiResponse(
+                message: 'Typing indicator sent',
+                status: 200
+            );
+        } catch (\Exception $e) {
+            return $this->apiResponseErrors(
+                message: 'Failed to send typing indicator',
+                errors: [
+                    'error' => $e->getMessage(),
+                ],
+                status: 403
+            );
+        }
+    }
+
+    /**
+     * Handle stop typing indicator.
+     */
+    public function stopTyping(Request $request, int $conversationId): JsonResponse
+    {
+        try {
+            $this->chatService->handleTyping(
+                $conversationId,
+                auth()->user()->id,
+                false // Stop typing
+            );
+
+            return $this->apiResponse(
+                message: 'Stop typing indicator sent',
+                status: 200
+            );
+        } catch (\Exception $e) {
+            return $this->apiResponseErrors(
+                message: 'Failed to send stop typing indicator',
+                errors: [
+                    'error' => $e->getMessage(),
+                ],
+                status: 403
+            );
+        }
+    }
+
+    /**
+     * Mark a message as read.
+     */
+    public function markMessageAsRead(Request $request, int $messageId): JsonResponse
+    {
+        try {
+            $this->chatService->markAsRead($messageId, auth()->user()->id);
+
+            return $this->apiResponse(
+                message: 'Message marked as read',
+                status: 200
+            );
+        } catch (\Exception $e) {
+            return $this->apiResponseErrors(
+                message: 'Failed to mark message as read',
+                errors: [
+                    'error' => $e->getMessage(),
+                ],
+                status: 403
+            );
+        }
+    }
+
+    /**
+     * Mark all messages in a conversation as read.
+     */
+    public function markConversationAsRead(Request $request, int $conversationId): JsonResponse
+    {
+        try {
+            $this->chatService->markConversationAsRead($conversationId, auth()->user()->id);
+
+            return $this->apiResponse(
+                message: 'Conversation marked as read',
+                status: 200
+            );
+        } catch (\Exception $e) {
+            return $this->apiResponseErrors(
+                message: 'Failed to mark conversation as read',
                 errors: [
                     'error' => $e->getMessage(),
                 ],

@@ -4,16 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Conversation extends Model
 {
-    /** @use HasFactory<\Database\Factories\ConversationFactory> */
-    use HasFactory, SoftDeletes;
+    use HasFactory;
     protected $fillable = [
-        'type',
         'seller_id',
         'buyer_id',
+        'type',
         'title',
         'last_message_id',
         'last_activity_at',
@@ -22,55 +22,48 @@ class Conversation extends Model
     protected $casts = [
         'last_activity_at' => 'datetime',
         'is_active'        => 'boolean',
-        'created_at'       => 'datetime',
-        'updated_at'       => 'datetime',
-        'deleted_at'       => 'datetime',
     ];
 
-    public function seller()
+    public function seller(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'seller_id')->withTrashed();
+        return $this->belongsTo(User::class, 'seller_id');
     }
 
-    public function buyer()
+    public function buyer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'buyer_id')->withTrashed();
+        return $this->belongsTo(User::class, 'buyer_id');
     }
 
-    public function participants()
-    {
-        return $this->seller()->union($this->buyer());
-    }
-
-    public function messages()
+    public function messages(): HasMany
     {
         return $this->hasMany(Message::class);
     }
 
-    public function lastMessage()
+    public function lastMessage(): BelongsTo
     {
         return $this->belongsTo(Message::class, 'last_message_id');
     }
 
-    // Helper methods
-    public function isParticipant($userId)
+    public function participants()
     {
-        return $this->seller_id == $userId || $this->buyer_id == $userId;
+        return collect([$this->seller, $this->buyer])->filter();
     }
 
-    public function getOtherParticipant($userId)
+    public function isParticipant(int $userId): bool
     {
-        if ($this->seller_id == $userId) {
+        return $this->seller_id === $userId || $this->buyer_id === $userId;
+    }
+
+    public function getOtherParticipant(int $userId)
+    {
+        if ($this->seller_id === $userId) {
             return $this->buyer;
-        } elseif ($this->buyer_id == $userId) {
+        }
+
+        if ($this->buyer_id === $userId) {
             return $this->seller;
         }
 
         return null;
-    }
-
-    public function updateLastActivity()
-    {
-        $this->update(['last_activity_at' => now()]);
     }
 }

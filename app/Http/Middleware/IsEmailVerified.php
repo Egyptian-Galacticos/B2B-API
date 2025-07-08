@@ -25,14 +25,22 @@ class IsEmailVerified
             return $next($request);
         }
 
-        // Check if user's email is verified
-        if (! $user->is_email_verified) {
+        // Force refresh user data from database to get latest verification status
+        $user->refresh();
+
+        // Use the hasVerifiedEmail method which checks both fields properly
+        if (! $user->hasVerifiedEmail()) {
             return $this->apiResponseErrors(
                 'Email verification required',
                 [
                     'error'                 => 'Email not verified',
                     'message'               => 'You must verify your email before accessing this resource.',
                     'verification_required' => true,
+                    'debug_info'            => [
+                        'is_email_verified' => $user->is_email_verified,
+                        'email_verified_at' => $user->email_verified_at,
+                        'user_id'           => $user->id,
+                    ],
                 ],
                 403
             );

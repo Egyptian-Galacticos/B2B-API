@@ -51,7 +51,11 @@ class AuthController extends Controller
         if ($user->isSuspended()) {
             return $this->apiResponseErrors('User account is suspended', ['error' => 'Your account is suspended.'], 403);
         }
+
+        // Force refresh user data to get latest verification status
+        $user->refresh();
         $user->update(['last_login_at' => now()]);
+
         $refreshToken = RefreshToken::create([
             'user_id' => $user->id,
         ]);
@@ -164,6 +168,9 @@ class AuthController extends Controller
                 return $this->apiResponse(null, 'User not found', 404);
             }
 
+            // Force refresh user data to get latest verification status
+            $user->refresh();
+
             return $this->apiResponse(UserResource::make($user->load('company')), 'User retrieved successfully', 200);
         } catch (TokenExpiredException $e) {
             return $this->apiResponseErrors('Token has expired', ['token_error' => $e->getMessage()], 401);
@@ -219,6 +226,9 @@ class AuthController extends Controller
                     'user_error' => 'User associated with this token no longer exists',
                 ], 401);
             }
+
+            // Force refresh user data to get latest verification status
+            $user->refresh();
 
             // Generate new access token
             $newToken = JWTAuth::fromUser($user);
@@ -326,6 +336,36 @@ class AuthController extends Controller
 
         } catch (\Exception $e) {
             return $this->apiResponseErrors('Password reset failed', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Add method to refresh user data and get fresh token
+     */
+    public function refreshUserData(): JsonResponse
+    {
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+
+            if (! $user) {
+                return $this->apiResponseErrors('User not found', [], 404);
+            }
+
+            // Force refresh from database
+            $user->refresh();
+            $user->load('roles', 'company');
+
+            // Generate new token with fresh user data
+            $newToken = JWTAuth::fromUser($user);
+
+            return $this->apiResponse([
+                'user'         => new UserResource($user),
+                'access_token' => $newToken,
+                'expires_in'   => config('jwt.ttl') * 60,
+            ], 'User data refreshed successfully', 200);
+
+        } catch (\Exception $e) {
+            return $this->apiResponseErrors('Failed to refresh user data', ['error' => $e->getMessage()], 500);
         }
     }
 }
