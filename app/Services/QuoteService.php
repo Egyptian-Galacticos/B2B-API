@@ -117,9 +117,9 @@ class QuoteService
 
             if ($rfq) {
                 $rfq->transitionTo(Rfq::STATUS_QUOTED);
-                $quote->load(['buyer.company', 'seller.company', 'rfq.buyer', 'rfq.seller', 'items.product', 'contract']);
+                $quote->load(['directBuyer.company', 'directSeller.company', 'rfq.buyer', 'rfq.seller', 'items.product', 'contract']);
             } else {
-                $quote->load(['buyer.company', 'seller.company', 'items.product', 'conversation', 'contract']);
+                $quote->load(['directBuyer.company', 'directSeller.company', 'items.product', 'conversation', 'contract']);
             }
 
             return $quote;
