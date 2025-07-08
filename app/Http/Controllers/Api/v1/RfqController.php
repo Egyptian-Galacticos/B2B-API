@@ -41,16 +41,18 @@ class RfqController extends Controller
             $userType = $request->get('user_type');
 
             if ($user->isAdmin()) {
-                $rfqs = $this->rfqService->getWithFilters($request, null, null, $perPage);
+                $results = $this->rfqService->getWithFilters($request, null, null, $perPage);
             } else {
-                $rfqs = $this->rfqService->getWithFilters($request, $user->id, $userType, $perPage);
+                $results = $this->rfqService->getWithFilters($request, $user->id, $userType, $perPage);
             }
 
+            $paginationMeta = $this->getPaginationMeta($results['rfqs']);
+
             return $this->apiResponse(
-                RfqResource::collection($rfqs),
+                RfqResource::collection($results['rfqs']),
                 'RFQs retrieved successfully',
                 200,
-                $this->getPaginationMeta($rfqs)
+                array_merge($paginationMeta, $results['statistics'])
             );
         } catch (Exception $e) {
             return $this->apiResponseErrors('Failed to retrieve RFQs', ['error' => $e->getMessage()], 500);
