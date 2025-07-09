@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\v1\AiSearchController;
 use App\Http\Controllers\Api\v1\AuthController;
+use App\Http\Controllers\Api\v1\BroadcastingController;
+
 use App\Http\Controllers\Api\v1\CategoryController;
 use App\Http\Controllers\Api\v1\ChatController;
 use App\Http\Controllers\Api\v1\CompanyController;
@@ -9,6 +11,7 @@ use App\Http\Controllers\Api\v1\EmailVerificationController;
 use App\Http\Controllers\Api\v1\ProductController;
 use App\Http\Controllers\Api\v1\SellerUpgradeController;
 use App\Http\Controllers\Api\v1\TagController;
+
 use App\Http\Controllers\Api\v1\UserController;
 use App\Http\Controllers\Api\v1\WishlistController;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +21,11 @@ Route::prefix('v1')->group(function () {
     // ========================================
     // PUBLIC ROUTES (No Authentication Required)
     // ========================================
+
+    // Broadcasting authentication route (needs to be outside JWT auth group)
+    Route::post('/broadcasting/auth', [BroadcastingController::class, 'authenticate'])
+        ->middleware(['broadcasting.auth'])
+        ->name('broadcasting.auth');
 
     Route::prefix('auth')->group(function () {
         // Authentication endpoints
@@ -149,7 +157,6 @@ Route::prefix('v1')->group(function () {
             });
             */
 
-            // =====================================
             // CHAT ROUTES
             // =====================================
             Route::prefix('chat')->group(function () {
@@ -174,16 +181,25 @@ Route::prefix('v1')->group(function () {
                     Route::post('messages', [ChatController::class, 'sendMessage'])->name('chat.messages.send');
 
                     // Mark messages as read
-                    Route::patch('read', [ChatController::class, 'markAsRead'])->name('chat.messages.read');
+                    Route::patch('read', [ChatController::class, 'markConversationAsRead'])->name('chat.conversation.read');
 
                     // Handle typing indicator
                     Route::post('typing', [ChatController::class, 'typing'])->name('chat.typing');
+
+                    // Handle stop typing indicator
+                    Route::post('stop-typing', [ChatController::class, 'stopTyping'])->name('chat.stop-typing');
 
                     // Archive/deactivate conversation
                     Route::patch('archive', [ChatController::class, 'archiveConversation'])->name('chat.conversations.archive');
 
                     // Reactivate conversation
                     Route::patch('reactivate', [ChatController::class, 'reactivateConversation'])->name('chat.conversations.reactivate');
+                });
+
+                // Message-specific routes
+                Route::prefix('messages/{messageId}')->group(function () {
+                    // Mark a specific message as read
+                    Route::patch('read', [ChatController::class, 'markAsRead'])->name('chat.message.read');
                 });
             });
         });

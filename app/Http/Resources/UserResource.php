@@ -7,11 +7,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class UserResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
     public function toArray(Request $request): array
     {
         $roles = $this->roles->pluck('name');
@@ -34,8 +29,10 @@ class UserResource extends JsonResource
             'company'           => $this->whenLoaded('company', function () {
                 return CompanyResource::make($this->company);
             }),
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'created_at'   => $this->created_at,
+            'updated_at'   => $this->updated_at,
+            'company_name' => $this->company?->name ?? '',
+            'is_online'    => $this->is_online ?? false,
         ];
     }
 }

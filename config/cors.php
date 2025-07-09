@@ -19,6 +19,7 @@ return [
         'api/*',
         'broadcasting/auth',
         'sanctum/csrf-cookie',
+        'reverb/*',
     ],
 
     'allowed_methods' => ['*'],
