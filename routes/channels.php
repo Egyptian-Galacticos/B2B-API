@@ -85,7 +85,7 @@ Broadcast::channel('online-users', function ($user) {
             'id'         => $user->id,
             'name'       => $user->first_name.' '.$user->last_name,
             'email'      => $user->email,
-            'avatar_url' => $user->getFirstMediaUrl('profile_image'),
+            'avatar_url' => $user->company->getFirstMediaUrl('logo'),
         ];
     } catch (\Exception $e) {
         return false;

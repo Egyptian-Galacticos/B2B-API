@@ -53,7 +53,6 @@ class AuthController extends Controller
         }
 
         // Force refresh user data to get latest verification status
-        $user->refresh();
         $user->update(['last_login_at' => now()]);
 
         $refreshToken = RefreshToken::create([
@@ -169,7 +168,6 @@ class AuthController extends Controller
             }
 
             // Force refresh user data to get latest verification status
-            $user->refresh();
 
             return $this->apiResponse(UserResource::make($user->load('company')), 'User retrieved successfully', 200);
         } catch (TokenExpiredException $e) {
@@ -228,7 +226,6 @@ class AuthController extends Controller
             }
 
             // Force refresh user data to get latest verification status
-            $user->refresh();
 
             // Generate new access token
             $newToken = JWTAuth::fromUser($user);
@@ -352,7 +349,6 @@ class AuthController extends Controller
             }
 
             // Force refresh from database
-            $user->refresh();
             $user->load('roles', 'company');
 
             // Generate new token with fresh user data
