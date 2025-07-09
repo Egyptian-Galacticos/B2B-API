@@ -5,6 +5,7 @@ use App\Http\Middleware\CheckProductOwnership;
 use App\Http\Middleware\CustomJWTAuthentication;
 use App\Http\Middleware\IsEmailVerified;
 use App\Http\Middleware\IsSuspended;
+use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -34,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'is_suspended'      => IsSuspended::class,
             'product.owner'     => CheckProductOwnership::class,
             'jwt.auth'          => CustomJWTAuthentication::class,
+            'role'              => RoleMiddleware::class,
             'broadcasting.auth' => \App\Http\Middleware\BroadcastingAuthMiddleware::class,
         ]);
     })
