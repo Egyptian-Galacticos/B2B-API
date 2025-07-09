@@ -23,8 +23,7 @@ class CategoryService
             'updater:id,first_name,last_name,email',
             'media',
         ])
-            ->withCount(['products', 'children'])
-            ->withTrashed();
+            ->withCount(['products', 'children']);
 
         $queryHandler = new QueryHandler($request);
         $queryHandler->setBaseQuery($query)
@@ -39,6 +38,7 @@ class CategoryService
                 'products_count',
                 'children_count',
                 'parent.name',
+                'is_active',
             ])
             ->setAllowedFilters([
                 'name',
@@ -50,6 +50,7 @@ class CategoryService
                 'updated_by',
                 'created_at',
                 'updated_at',
+                'is_active',
             ]);
 
         return $queryHandler->apply()->paginate($request->get('per_page', 15));
@@ -106,7 +107,7 @@ class CategoryService
                 $parent = Category::findOrFail($data['parent_id']);
                 $hierarchyData = [
                     'level' => $parent->level + 1,
-                    'path'  => $parent->path ? $parent->path.'/'.$parent->id : (string) $parent->id,
+                    'path'  => $parent->path ? $parent->path . '/' . $parent->id : (string) $parent->id,
                 ];
 
                 if ($this->wouldCreateCircularReference($parent, null)) {
@@ -133,7 +134,6 @@ class CategoryService
                 'creator:id,first_name,last_name,email',
                 'media',
             ]);
-
         } catch (Exception $e) {
             DB::rollBack();
             throw $e;
@@ -162,7 +162,7 @@ class CategoryService
 
                     $hierarchyData = [
                         'level' => $parent->level + 1,
-                        'path'  => $parent->path ? $parent->path.'/'.$parent->id : (string) $parent->id,
+                        'path'  => $parent->path ? $parent->path . '/' . $parent->id : (string) $parent->id,
                     ];
                 } else {
                     $hierarchyData = [
@@ -194,7 +194,6 @@ class CategoryService
                 'updater:id,first_name,last_name,email',
                 'media',
             ]);
-
         } catch (Exception $e) {
             DB::rollBack();
             throw $e;
@@ -218,7 +217,6 @@ class CategoryService
             $category->delete();
 
             DB::commit();
-
         } catch (Exception $e) {
             DB::rollBack();
 
@@ -281,7 +279,6 @@ class CategoryService
                 'creator:id,first_name,last_name,email',
                 'updater:id,first_name,last_name,email',
             ]);
-
         } catch (Exception $e) {
             DB::rollBack();
 
@@ -309,7 +306,6 @@ class CategoryService
             $category->forceDelete();
 
             DB::commit();
-
         } catch (Exception $e) {
             DB::rollBack();
             throw $e;
@@ -378,7 +374,6 @@ class CategoryService
                         'id'   => $categoryId,
                         'name' => $category->name,
                     ];
-
                 } catch (Exception $e) {
                     $failed[] = [
                         'id'    => $categoryId,
@@ -393,7 +388,6 @@ class CategoryService
                 'successful' => $successful,
                 'failed'     => $failed,
             ];
-
         } catch (Exception $e) {
             DB::rollBack();
 
@@ -451,7 +445,7 @@ class CategoryService
                 continue;
             }
 
-            $newPath = $category->path ? $category->path.'/'.$category->id : (string) $category->id;
+            $newPath = $category->path ? $category->path . '/' . $category->id : (string) $category->id;
             $child->update([
                 'level' => $newLevel,
                 'path'  => $newPath,

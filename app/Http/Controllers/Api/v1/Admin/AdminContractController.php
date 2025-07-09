@@ -82,7 +82,11 @@ class AdminContractController extends Controller
     public function updateStatus(UpdateContractStatusRequest $request, int $id): JsonResponse
     {
         try {
-            $contract = $this->contractService->updateContractStatus($id, $request->status);
+            $contract = $this->contractService->updateContractStatus(
+                $id,
+                $request->status,
+                $request->seller_transaction_id
+            );
             $message = $this->contractService->getStatusMessage($request->status);
 
             return $this->apiResponse(

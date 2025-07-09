@@ -46,7 +46,7 @@ Route::prefix('v1')->group(function () {
     Route::get('products/{slug}', [ProductController::class, 'show'])->name('products.public.show');
     Route::get('products/tags/all', [TagController::class, 'index'])->name('products.tags.index');
     Route::post('products/tags/clear-cache', [TagController::class, 'clearCache'])->name('products.tags.clear-cache');
-    Route::get('products/ai-search/{query}', [AiSearchController::class, 'index'])->name('products.ai-search');
+    Route::get('products/ai/search', [AiSearchController::class, 'index'])->name('products.ai-search');
 
     // Public category endpoints (browsing without auth)
     Route::get('categories', [CategoryController::class, 'index'])->name('categories.public.index');
@@ -132,12 +132,6 @@ Route::prefix('v1')->group(function () {
                 // Product media management routes
                 //                Route::delete('products/{product}/images/{mediaId}', [ProductController::class, 'deleteImage'])->name('products.images.destroy');
                 Route::delete('products/{product}/media/{collection}/{mediaId}', [ProductController::class, 'deleteProductMedia'])->name('products.documents.destroy');
-            });
-
-            // User management
-            Route::prefix('users')->group(function () {
-                Route::patch('{user}/restore', [UserController::class, 'restore'])->name('users.restore');
-                Route::delete('{user}/force-delete', [UserController::class, 'forceDelete'])->name('users.force-delete');
             });
 
             // =====================================

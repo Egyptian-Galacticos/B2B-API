@@ -162,6 +162,20 @@ class Category extends Model implements HasMedia
         return is_null($this->parent_id);
     }
 
+    public function isPathApproved(): bool
+    {
+        // Check if the path is approved by checking all ancestors
+        $current = $this;
+        while ($current) {
+            if ($current->status !== 'active') {
+                return false;
+            }
+            $current = $current->parent;
+        }
+
+        return true;
+    }
+
     public function isChild(): bool
     {
         return $this->children()->count() === 0;

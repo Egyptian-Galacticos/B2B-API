@@ -4,6 +4,8 @@ namespace App\Services\Admin;
 
 use App\Http\Resources\Admin\AdminContractResource;
 use App\Models\Contract;
+use App\Notifications\ContractInProgressNotification;
+use App\Notifications\PaymentMadeToSellerNotification;
 use App\Services\QueryHandler;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -80,7 +82,7 @@ class ContractService
     /**
      * Update contract status for admin oversight.
      */
-    public function updateContractStatus(int $id, string $newStatus): Contract
+    public function updateContractStatus(int $id, string $newStatus, ?string $sellerTransactionId = null): Contract
     {
         $contract = Contract::findOrFail($id);
 
@@ -92,9 +94,22 @@ class ContractService
 
         if (! $contract->canTransitionTo($finalStatus)) {
             throw new InvalidArgumentException("Cannot transition from {$contract->status} to {$finalStatus}");
+        }        $updateData = ['status' => $finalStatus];
+
+        if ($finalStatus === Contract::STATUS_DELIVERED_AND_PAID && $sellerTransactionId) {
+            $updateData['seller_transaction_id'] = $sellerTransactionId;
         }
 
-        $contract->update(['status' => $finalStatus]);
+        $contract->update($updateData);
+
+        $contract->load(['buyer', 'seller']);
+
+        if ($finalStatus === Contract::STATUS_IN_PROGRESS) {
+            $contract->seller->notify(new ContractInProgressNotification($contract));
+        } elseif ($finalStatus === Contract::STATUS_DELIVERED_AND_PAID) {
+            $contract->seller->notify(new PaymentMadeToSellerNotification($contract));
+        }
+
         $contract->load([
             'buyer.company',
             'seller.company',
@@ -111,15 +126,16 @@ class ContractService
     public function getStatusMessage(string $status): string
     {
         return match ($status) {
-            Contract::STATUS_PENDING_APPROVAL => 'Contract is pending approval',
-            Contract::STATUS_APPROVED         => 'Contract approved successfully',
-            Contract::STATUS_PENDING_PAYMENT  => 'Contract approved and moved to pending payment',
-            Contract::STATUS_IN_PROGRESS      => 'Contract is now in progress',
-            Contract::STATUS_SHIPPED          => 'Contract items have been shipped',
-            Contract::STATUS_DELIVERED        => 'Contract items have been delivered',
-            Contract::STATUS_COMPLETED        => 'Contract completed successfully',
-            Contract::STATUS_CANCELLED        => 'Contract has been cancelled',
-            default                           => 'Contract updated successfully'
+            Contract::STATUS_PENDING_APPROVAL   => 'Contract is pending approval',
+            Contract::STATUS_APPROVED           => 'Contract approved successfully',
+            Contract::STATUS_PENDING_PAYMENT    => 'Contract approved and moved to pending payment',
+            Contract::STATUS_IN_PROGRESS        => 'Contract is now in progress',
+            Contract::STATUS_DELIVERED_AND_PAID => 'Contract delivered and payment made to seller',
+            Contract::STATUS_SHIPPED            => 'Contract items have been shipped',
+            Contract::STATUS_DELIVERED          => 'Contract items have been delivered',
+            Contract::STATUS_COMPLETED          => 'Contract completed successfully',
+            Contract::STATUS_CANCELLED          => 'Contract has been cancelled',
+            default                             => 'Contract updated successfully'
         };
     }
 
@@ -178,7 +194,21 @@ class ContractService
                             if (! $contract->canTransitionTo($finalStatus)) {
                                 $errors[] = "Contract {$contract->id}: Cannot transition from {$contract->status} to {$finalStatus}";
                             } else {
-                                $contract->update(['status' => $finalStatus]);
+                                $updateData = ['status' => $finalStatus];
+
+                                // For delivered_and_paid status, seller_transaction_id should be provided by admin
+                                // when they actually process the payment to the seller
+
+                                $contract->update($updateData);
+
+                                $contract->load(['buyer', 'seller']);
+
+                                if ($finalStatus === Contract::STATUS_IN_PROGRESS) {
+                                    $contract->seller->notify(new ContractInProgressNotification($contract));
+                                } elseif ($finalStatus === Contract::STATUS_DELIVERED_AND_PAID) {
+                                    $contract->seller->notify(new PaymentMadeToSellerNotification($contract));
+                                }
+
                                 $contract->load([
                                     'buyer.company',
                                     'seller.company',

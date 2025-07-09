@@ -18,11 +18,13 @@ use App\Services\CategoryService;
 use App\Services\QueryHandler;
 use App\Traits\ApiResponse;
 use App\Traits\BulkProductOwnership;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Exception;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -157,7 +159,7 @@ class ProductController extends Controller
         if ($request->hasFile('main_image')) {
             $product
                 ->addMedia($request->file('main_image'))
-                ->usingName($product->name.' - '.$request->file('main_image')->getClientOriginalName())
+                ->usingName(Str::limit($product->name.' - '.Carbon::now()->format('Y-m-d_H-i-s')), 200)
                 ->toMediaCollection('main_image');
         }
 
@@ -166,7 +168,7 @@ class ProductController extends Controller
             foreach ($request->file('images') as $image) {
                 $product
                     ->addMedia($image)
-                    ->usingName($product->name.' - '.$image->getClientOriginalName())
+                    ->usingName(Str::limit($product->name.' - '.Carbon::now()->format('Y-m-d_H-i-s')), 200)
                     ->toMediaCollection('product_images');
             }
         }
@@ -176,7 +178,7 @@ class ProductController extends Controller
             foreach ($request->file('documents') as $document) {
                 $product
                     ->addMedia($document)
-                    ->usingName($product->name.' - '.$document->getClientOriginalName())
+                    ->usingName(Str::limit($product->name.' - '.Carbon::now()->format('Y-m-d_H-i-s')), 200)
                     ->toMediaCollection('product_documents');
             }
         }
@@ -185,7 +187,7 @@ class ProductController extends Controller
             foreach ($request->file('specifications') as $document) {
                 $product
                     ->addMedia($document)
-                    ->usingName('Product Specification - '.$document->getClientOriginalName())
+                    ->usingName(Str::limit($product->name.' - '.Carbon::now()->format('Y-m-d_H-i-s')), 200)
                     ->toMediaCollection('product_specifications');
             }
         }
@@ -208,6 +210,8 @@ class ProductController extends Controller
             $user = Auth::user();
             $product = Product::with(['seller.company', 'category', 'tiers', 'media', 'tags'])
                 ->withWishlistStatus($user?->id) // Add wishlist status
+                ->where('is_active', true)
+                ->where('is_approved', true)
                 ->where('slug', $slug)
                 ->firstOrFail();
         } catch (ModelNotFoundException $e) {
@@ -260,7 +264,7 @@ class ProductController extends Controller
             $product->clearMediaCollection('main_image');
             $product
                 ->addMedia($request->file('main_image'))
-                ->usingName($product->name.' - '.$request->file('main_image')->getClientOriginalName())
+                ->usingName(Str::limit($product->name.' - '.Carbon::now()->format('Y-m-d_H-i-s')), 200)
                 ->toMediaCollection('main_image');
         }
 
@@ -269,7 +273,7 @@ class ProductController extends Controller
             foreach ($request->file('images') as $image) {
                 $product
                     ->addMedia($image)
-                    ->usingName($product.' - '.$image->getClientOriginalName())
+                    ->usingName(Str::limit($product->name.' - '.Carbon::now()->format('Y-m-d_H-i-s')), 200)
                     ->toMediaCollection('product_images');
             }
         }
@@ -279,7 +283,7 @@ class ProductController extends Controller
             foreach ($request->file('documents') as $document) {
                 $product
                     ->addMedia($document)
-                    ->usingName($product.' - '.$document->getClientOriginalName())
+                    ->usingName(Str::limit($product->name.' - '.Carbon::now()->format('Y-m-d_H-i-s')), 200)
                     ->toMediaCollection('product_documents');
             }
         }
@@ -288,7 +292,7 @@ class ProductController extends Controller
             foreach ($request->file('specifications') as $document) {
                 $product
                     ->addMedia($document)
-                    ->usingName('Product Specification - '.$document->getClientOriginalName())
+                    ->usingName(Str::limit($product->name.' - '.Carbon::now()->format('Y-m-d_H-i-s')), 200)
                     ->toMediaCollection('product_specifications');
             }
         }
@@ -544,7 +548,7 @@ class ProductController extends Controller
                 if (isset($product['main_image']) && filter_var($product['main_image'], FILTER_VALIDATE_URL)) {
                     $productModel
                         ->addMediaFromUrl($product['main_image'])
-                        ->usingName($product->name.' - '.basename($product['main_image']))
+                        ->usingName($productModel->name.' - '.basename($product['main_image']))
                         ->toMediaCollection('main_image');
                 }
 
@@ -553,8 +557,8 @@ class ProductController extends Controller
                     foreach ($product['images'] as $imageUrl) {
                         if (filter_var($imageUrl, FILTER_VALIDATE_URL)) {
                             $productModel
-                                ->addMediaFromUrl($imageUrl)
-                                ->usingName($product->name.' - '.basename($imageUrl))
+                                ->addMediaFromUrl(url: $imageUrl)
+                                ->usingName($productModel->name.' - '.basename($imageUrl))
                                 ->toMediaCollection('product_images');
                         }
                     }
@@ -565,8 +569,8 @@ class ProductController extends Controller
                     foreach ($product['documents'] as $documentUrl) {
                         if (filter_var($documentUrl, FILTER_VALIDATE_URL)) {
                             $productModel
-                                ->addMediaFromUrl($documentUrl)
-                                ->usingName($product->name.' - '.basename($documentUrl))
+                                ->addMediaFromUrl(url: $documentUrl)
+                                ->usingName($productModel->name.' - '.basename($documentUrl))
                                 ->toMediaCollection('product_documents');
                         }
                     }
@@ -576,7 +580,7 @@ class ProductController extends Controller
                         if (filter_var($specificationUrl, FILTER_VALIDATE_URL)) {
                             $productModel
                                 ->addMediaFromUrl($specificationUrl)
-                                ->usingName('Product Specification - '.basename($specificationUrl))
+                                ->usingName($productModel->name.' - '.basename($specificationUrl))
                                 ->toMediaCollection('product_specifications');
                         }
                     }

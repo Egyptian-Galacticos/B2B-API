@@ -117,6 +117,8 @@ class EmailVerificationController extends BaseController
      * Verify Email
      *
      * Verifies email address using provided token
+     *
+     * @unauthenticated
      */
     public function verify(Request $request): JsonResponse
     {

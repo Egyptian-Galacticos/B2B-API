@@ -9,7 +9,8 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\EmailVerificationService;
 use App\Traits\ApiResponse;
-use Illuminate\Http\Request;
+use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
@@ -18,42 +19,10 @@ class UserController extends Controller
     use ApiResponse;
 
     /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(User $user)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, User $user)
-    {
-        //
-    }
-
-    /**
      *  remove the specified user from storage.
      * Remove the specified resource from storage.
      */
-    public function destroy(User $user): \Illuminate\Http\JsonResponse
+    public function destroy(User $user): JsonResponse
     {
         try {
             if (! $user) {
@@ -72,18 +41,11 @@ class UserController extends Controller
                 );
             }
 
-            if ($user->company) {
-                return $this->apiResponseErrors(
-                    'Deletion not allowed',
-                    ['Users associated with a company cannot be deleted.'],
-                    403
-                );
-            }
-
             $user->delete();
+            $user->company->delete();
 
             return $this->apiResponse(null, 'User account deleted successfully.', 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->apiResponseErrors(
                 'Server error',
                 ['An unexpected error occurred while deleting the user account.', $e->getMessage()],
@@ -97,12 +59,11 @@ class UserController extends Controller
      *
      * @authenticated
      */
-    public function updateProfile(UpdateProfileRequest $request): \Illuminate\Http\JsonResponse
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
     {
         try {
             $user = Auth::user();
 
-            // Get validated data and remove file fields as they're handled separately
             $validated = $request->validated();
             $user->update($validated);
             $userData = new UserResource($user->fresh());
@@ -112,7 +73,7 @@ class UserController extends Controller
 
             return $this->apiResponse($userData, 'Profile updated successfully.', 200);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->apiResponseErrors(
                 'Server error',
                 ['An unexpected error occurred while updating the profile.', $e->getMessage()],
@@ -131,7 +92,6 @@ class UserController extends Controller
         try {
             $user = Auth::user();
 
-            // Verify current password
             if (! Hash::check($request->current_password, $user->password)) {
                 return $this->apiResponseErrors(
                     'Current password is incorrect',
@@ -147,99 +107,16 @@ class UserController extends Controller
                 );
             }
 
-            // Update password
             $user->update([
                 'password' => Hash::make($request->new_password),
             ]);
 
             return $this->apiResponse(null, 'Password updated successfully.', 200);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->apiResponseErrors(
                 'Server error',
                 ['An unexpected error occurred while updating the password.', $e->getMessage()],
-                500
-            );
-        }
-    }
-
-    public function restore($id): \Illuminate\Http\JsonResponse
-    {
-        try {
-            if (! auth()->user()->isAdmin()) {
-                return $this->apiResponseErrors(
-                    'Access denied',
-                    ['Only administrators can restore user accounts.'],
-                    403
-                );
-            }
-
-            $user = User::withTrashed()->find($id);
-
-            if (! $user) {
-                return $this->apiResponseErrors(
-                    'User not found',
-                    ['The requested user account could not be found.'],
-                    404
-                );
-            }
-
-            if (! $user->trashed()) {
-                return $this->apiResponseErrors(
-                    'Action not required',
-                    ['This user account is already active.'],
-                    400
-                );
-            }
-
-            $user->restore();
-
-            return $this->apiResponse(null, 'User account restored successfully.', 200);
-        } catch (\Exception $e) {
-            return $this->apiResponseErrors(
-                'Server error',
-                ['An unexpected error occurred while restoring the user account.', $e->getMessage()],
-                500
-            );
-        }
-    }
-
-    public function forceDelete($id): \Illuminate\Http\JsonResponse
-    {
-        try {
-            if (! auth()->user()->isAdmin()) {
-                return $this->apiResponseErrors(
-                    'Access denied',
-                    ['Only administrators can permanently delete user accounts.'],
-                    403
-                );
-            }
-
-            $user = User::withTrashed()->find($id);
-
-            if (! $user) {
-                return $this->apiResponseErrors(
-                    'User not found',
-                    ['The requested user account could not be found.'],
-                    404
-                );
-            }
-
-            if (! $user->trashed()) {
-                return $this->apiResponseErrors(
-                    'Deletion not allowed',
-                    ['Only soft-deleted user accounts can be permanently removed.'],
-                    400
-                );
-            }
-
-            $user->forceDelete();
-
-            return $this->apiResponse(null, 'User account permanently deleted.', 200);
-        } catch (\Exception $e) {
-            return $this->apiResponseErrors(
-                'Server error',
-                ['An unexpected error occurred while permanently deleting the user account.', $e->getMessage()],
                 500
             );
         }

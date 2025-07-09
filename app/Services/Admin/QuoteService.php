@@ -18,8 +18,10 @@ class QuoteService
     public function getAllQuotesWithFilters(array $filters, Request $request): LengthAwarePaginator
     {
         $query = Quote::with([
-            'buyer.company',
-            'seller.company',
+            'directBuyer.company',
+            'directSeller.company',
+            'rfq.buyer.company',
+            'rfq.seller.company',
             'rfq',
             'conversation',
             'items.product',
@@ -72,8 +74,10 @@ class QuoteService
     public function getQuoteById(int $id): Quote
     {
         return Quote::with([
-            'buyer.company',
-            'seller.company',
+            'directBuyer.company',
+            'directSeller.company',
+            'rfq.buyer.company',
+            'rfq.seller.company',
             'rfq',
             'conversation',
             'items.product',
@@ -94,8 +98,10 @@ class QuoteService
 
         $quote->update(['status' => $newStatus]);
         $quote->load([
-            'buyer.company',
-            'seller.company',
+            'directBuyer.company',
+            'directSeller.company',
+            'rfq.buyer.company',
+            'rfq.seller.company',
             'rfq',
             'conversation',
             'items.product',
@@ -169,8 +175,10 @@ class QuoteService
                             } else {
                                 $quote->update(['status' => $status]);
                                 $quote->load([
-                                    'buyer.company',
-                                    'seller.company',
+                                    'directBuyer.company',
+                                    'directSeller.company',
+                                    'rfq.buyer.company',
+                                    'rfq.seller.company',
                                     'rfq',
                                     'conversation',
                                     'items.product',

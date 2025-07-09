@@ -92,11 +92,34 @@ class User extends Authenticatable implements HasMedia, JWTSubject
     }
 
     /**
-     * Get the user's full name.
+     * Get the user's full name with proper null handling.
      */
     public function getFullNameAttribute(): string
     {
-        return "{$this->first_name} {$this->last_name}";
+        $firstName = trim($this->first_name ?? '');
+        $lastName = trim($this->last_name ?? '');
+
+        if (empty($firstName) && empty($lastName)) {
+            return '';
+        }
+
+        return trim("{$firstName} {$lastName}");
+    }
+
+    /**
+     * Get the user's name (alias for full name with fallback).
+     */
+    public function getNameAttribute(): string
+    {
+        $fullName = $this->getFullNameAttribute();
+
+        if (empty($fullName)) {
+            $emailPrefix = explode('@', $this->email)[0] ?? 'User';
+
+            return ucfirst($emailPrefix);
+        }
+
+        return $fullName;
     }
 
     /**
@@ -352,6 +375,6 @@ class User extends Authenticatable implements HasMedia, JWTSubject
 
     public function company(): HasOne
     {
-        return $this->hasOne(Company::class);
+        return $this->hasOne(Company::class)->withTrashed();
     }
 }

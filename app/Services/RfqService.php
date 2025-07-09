@@ -17,7 +17,7 @@ class RfqService
     public function create(array $data): Rfq
     {
         if ($data['buyer_id'] === $data['seller_id']) {
-            throw new \InvalidArgumentException('Cannot create RFQ to yourself');
+            throw new InvalidArgumentException('Cannot create RFQ to yourself');
         }
 
         $rfq = Rfq::create([
@@ -42,7 +42,7 @@ class RfqService
         $rfq = Rfq::findOrFail($rfqId);
 
         if ($rfq->buyer_id !== $userId && $rfq->seller_id !== $userId) {
-            throw new \Illuminate\Auth\Access\AuthorizationException('Unauthorized access to this RFQ');
+            throw new AuthorizationException('Unauthorized access to this RFQ');
         }
 
         return $rfq->load(['buyer.company', 'seller.company', 'initialProduct', 'quotes.items.product']);
@@ -90,7 +90,7 @@ class RfqService
     {
         $queryHandler = new QueryHandler($request);
 
-        $query = Rfq::with(['buyer.company', 'seller.company', 'initialProduct', 'quotes']);
+        $query = Rfq::with(['buyer.company', 'seller.company', 'initialProduct.category', 'quotes']);
 
         if ($userId && $userType) {
             if ($userType === 'buyer') {

@@ -11,8 +11,9 @@ use Exception;
 use Gemini\Laravel\Facades\Gemini;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class AiSearchController extends Controller
 {
@@ -24,9 +25,12 @@ class AiSearchController extends Controller
     public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'query' => 'required|string|max:255',
+            'search' => 'required|string|max:255',
         ]);
-        $searchQuery = $validated['query'];
+        $searchQuery = $validated['search'];
+
+        // Log the search query for debugging
+        Log::info('AI Search Query', ['query' => $searchQuery]);
 
         try {
             // Specify only the tables you want the AI to know about for context
@@ -34,27 +38,21 @@ class AiSearchController extends Controller
             $databaseStructure = [];
 
             foreach ($relevantTables as $tableName) {
-                if (DB::getSchemaBuilder()->hasTable($tableName)) {
-                    $columns = DB::getSchemaBuilder()->getColumnListing($tableName);
+                if (Schema::hasTable($tableName)) {
+                    $columns = Schema::getColumnListing($tableName);
                     $columnDetails = [];
-
                     foreach ($columns as $column) {
-                        $columnType = DB::getSchemaBuilder()->getColumnType($tableName, $column);
                         $columnDetails[] = (object) [
                             'Field' => $column,
-                            'Type'  => $columnType,
+                            'Type'  => Schema::getColumnType($tableName, $column),
                         ];
                     }
-
                     $databaseStructure[$tableName] = $columnDetails;
                 }
             }
 
             if (empty($databaseStructure)) {
-                return $this->apiResponseErrors(
-                    message: 'No relevant product tables found in the database.',
-
-                );
+                return $this->apiResponseErrors('No relevant product tables found in the database.');
             }
 
             // Convert to readable format
@@ -67,89 +65,145 @@ class AiSearchController extends Controller
                 $structureText .= "\n";
             }
 
+            // 👇 *** SIMPLIFIED PROMPT: Use LIKE searches instead of Full-Text Search
             $prompt = $structureText."\n\nRules:\n".
-                "1. Return ONLY the SQL query to select the `id` column from the 'products' table.\n".
-                "2. The query should find products based on the user's request.\n".
-                "3. No markdown formatting or code blocks.\n".
-                "4. Use MySQL syntax.\n".
-                "5. Use CURDATE() for today's date if needed.\n".
-                "6. When filtering by price, use proper JOIN with price_tiers table.\n".
-                "7. Use DISTINCT when joining with price_tiers to avoid duplicates.\n".
-                "8. Use table aliases for better readability (p for products, pt for price_tiers, c for categories).\n\n".
+                "1. You MUST return ONLY the SQL query, with no explanations or markdown.\n".
+                "2. The query MUST select only the `id` column from the products table.\n".
+                "3. If you cannot determine any filters, return: SELECT id FROM products WHERE 1=0\n".
+                "4. For text searches, use LIKE with wildcards (%word%) for each keyword.\n".
+                "5. Split search terms by spaces and search each word separately with OR.\n".
+                "6. Use LEFT JOIN on categories table to include category names.\n".
+                "7. Use table aliases: p for products, c for categories.\n".
+                "8. Use DISTINCT when joining tables.\n\n".
                 "Example queries:\n".
-                "- Text search: SELECT id FROM products WHERE name LIKE '%laptop%' OR description LIKE '%laptop%'\n".
-                "- Brand search: SELECT id FROM products WHERE brand LIKE '%Apple%'\n".
-                "- Price search: SELECT DISTINCT p.id FROM products p JOIN price_tiers pt ON p.id = pt.product_id WHERE pt.price < 100\n".
-                "- Category search: SELECT id FROM products WHERE category_id = 1\n".
-                "- Weight search: SELECT id FROM products WHERE weight < 5\n".
-                "- Origin search: SELECT id FROM products WHERE origin = 'Germany'\n".
-                "- Status search: SELECT id FROM products WHERE is_active = 1 AND is_approved = 1\n".
-                "- Featured search: SELECT id FROM products WHERE is_featured = 1\n".
-                "- Date search: SELECT id FROM products WHERE created_at >= CURDATE() - INTERVAL 7 DAY\n".
-                "- Complex search: SELECT DISTINCT p.id FROM products p JOIN price_tiers pt ON p.id = pt.product_id WHERE p.brand LIKE '%Apple%' AND pt.price < 500\n\n".
+                "- Text search 'smart phone': SELECT DISTINCT p.id FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE (p.name LIKE '%smart%' OR p.description LIKE '%smart%' OR c.name LIKE '%smart%') AND (p.name LIKE '%phone%' OR p.description LIKE '%phone%' OR c.name LIKE '%phone%')\n".
+                "- Single word 'laptop': SELECT DISTINCT p.id FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.name LIKE '%laptop%' OR p.description LIKE '%laptop%' OR c.name LIKE '%laptop%'\n".
+                "- Brand search 'Samsung phone': SELECT DISTINCT p.id FROM products p WHERE p.brand LIKE '%Samsung%' AND (p.name LIKE '%phone%' OR p.description LIKE '%phone%')\n".
+                "- Price with text: SELECT DISTINCT p.id FROM products p JOIN price_tiers pt ON p.id = pt.product_id WHERE pt.price BETWEEN 100 AND 500 AND (p.name LIKE '%electronics%' OR p.description LIKE '%electronics%')\n\n".
                 "User Request: \"$searchQuery\"";
 
             $queryResponse = Gemini::generativeModel('gemini-1.5-flash')
                 ->generateContent($prompt);
 
-            $cleanSql = trim($queryResponse->text());
+            $rawResponseText = $queryResponse->text();
 
-            if (! preg_match('/^SELECT\s+(DISTINCT\s+)?.*\bid\b.*\s+FROM\s+.*products/i', $cleanSql)) {
+            // Strip markdown code block if present
+            $cleanSql = preg_replace('/^```sql\s*|\s*```$/', '', $rawResponseText);
+            $cleanSql = trim($cleanSql);
+
+            // Validation: Check for valid SQL query format
+            if (
+                ! preg_match('/^SELECT\s+(DISTINCT\s+)?p\.id\b.*\s+FROM\s+products\s+p/i', $cleanSql) &&
+                ! preg_match('/^SELECT\s+(DISTINCT\s+)?id\b.*\s+FROM\s+products/i', $cleanSql)
+            ) {
+                Log::warning('Invalid AI query format', [
+                    'user_query'   => $searchQuery,
+                    'raw_response' => $rawResponseText,
+                    'clean_sql'    => $cleanSql,
+                ]);
+
                 return $this->apiResponseErrors(
-                    message: 'The AI have an error while search',
+                    'The AI generated an invalid query format.',
+                    errors: [
+                        'query'   => $rawResponseText,
+                        'cleaned' => $cleanSql,
+                    ]
                 );
             }
 
-            // Execute the AI query to get the initial list of matching product IDs
-            $rawResults = DB::select($cleanSql);
-            $productIds = array_column($rawResults, 'id');
+            // Safety check: Ensure query has filtering
+            if (! str_contains(strtoupper($cleanSql), 'WHERE')) {
+                Log::warning('AI query missing WHERE clause', [
+                    'user_query' => $searchQuery,
+                    'sql'        => $cleanSql,
+                ]);
 
-            // If the AI search returns no results, we can return an empty set immediately.
+                return $this->apiResponseErrors('The AI failed to apply search filters.');
+            }
+
+            // Execute the AI query to get the initial list of matching product IDs
+            Log::info('AI Search Executing Query', ['sql' => $cleanSql]);
+
+            try {
+                $rawResults = DB::select($cleanSql);
+                $productIds = array_column($rawResults, 'id');
+            } catch (\Exception $dbException) {
+                Log::error('Database query execution failed', [
+                    'user_query' => $searchQuery,
+                    'sql'        => $cleanSql,
+                    'error'      => $dbException->getMessage(),
+                ]);
+
+                return $this->apiResponseErrors(
+                    'Database query execution failed.',
+                    errors: [
+                        'sql_error'     => $dbException->getMessage(),
+                        'generated_sql' => $cleanSql,
+                    ]
+                );
+            }
+
+            Log::info('AI Search Query Results', [
+                'query'         => $searchQuery,
+                'sql'           => $cleanSql,
+                'results_count' => count($productIds),
+            ]);
+
             if (empty($productIds)) {
                 return $this->apiResponse(
-                    data: [],
-                    message: 'No products found.',
+                    data: [
+                        'debug_info' => [
+                            'query'          => $searchQuery,
+                            'generated_sql'  => $cleanSql,
+                            'total_products' => DB::table('products')->count(),
+                        ],
+                    ],
+                    message: 'No products found matching your specific query.',
                 );
             }
 
             $queryHandler = new QueryHandler($request);
             $perPage = (int) $request->get('size', 10);
 
-            // Get the current user for wishlist status
-            $user = Auth::user();
-
-            // Set the base query to only include products found by the AI
             $baseQuery = Product::query()
-                ->with(['seller.company', 'category', 'tags', 'tiers']) // Eager load relationships
-                ->withWishlistStatus($user?->id) // Add wishlist status
+                ->with(['seller.company', 'category', 'tags', 'tiers'])
                 ->whereIn('id', $productIds);
 
-            // Apply all the allowed sorts and filters from your ProductController
+            // Add ordering based on the order returned by the AI query
+            if (! empty($productIds)) {
+                $orderedIds = implode(',', $productIds);
+                // NOTE: FIELD() ensures our Eloquent results respect the order from the AI query
+                $baseQuery->orderByRaw("FIELD(id, $orderedIds)");
+            }
+
             $paginatedQuery = $queryHandler
                 ->setBaseQuery($baseQuery)
                 ->setAllowedSorts([
                     'weight', 'created_at', 'name', 'brand', 'currency', 'is_active',
-                    'seller.name', 'is_approved', 'is_featured', 'in_wishlist',
+                    'seller.name', 'is_approved', 'is_featured',
                 ])
                 ->setAllowedFilters([
                     'name', 'brand', 'model_number', 'currency', 'weight', 'origin',
                     'is_active', 'is_approved', 'created_at', 'category.name',
                     'category.id', 'seller.company.name', 'seller_id', 'is_featured',
-                    'in_wishlist',
                 ])
                 ->apply()
                 ->paginate($perPage)
                 ->withQueryString();
 
+            // Assuming you have a getPaginationMeta method in your ApiResponse trait
+            $meta = method_exists($this, 'getPaginationMeta') ? $this->getPaginationMeta($paginatedQuery) : [];
+            $meta['ai_query'] = $cleanSql; // Add the AI query to the meta for debugging
+
             return $this->apiResponse(
                 data: ProductResource::collection($paginatedQuery),
                 message: 'Products found.',
-                meta: $this->getPaginationMeta($paginatedQuery),
+                meta: $meta
             );
 
         } catch (Exception $e) {
             return $this->apiResponseErrors(
-                message: 'error on the server',
+                message: 'An error occurred on the server.',
                 errors: $e->getMessage()
             );
         }

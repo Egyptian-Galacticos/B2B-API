@@ -37,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'jwt.auth'          => CustomJWTAuthentication::class,
             'role'              => RoleMiddleware::class,
             'broadcasting.auth' => \App\Http\Middleware\BroadcastingAuthMiddleware::class,
+
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
