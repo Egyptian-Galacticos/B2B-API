@@ -131,8 +131,18 @@ class QuoteService
      */
     public function findWithAccess(int $quoteId, int $userId): Quote
     {
-        $quote = Quote::with(['buyer.company', 'seller.company', 'rfq', 'rfq.buyer', 'rfq.seller', 'rfq.initialProduct', 'conversation', 'items', 'items.product', 'contract'])
-            ->findOrFail($quoteId);
+        $quote = Quote::with([
+            'directBuyer.company',
+            'directSeller.company',
+            'rfq',
+            'rfq.buyer',
+            'rfq.seller',
+            'rfq.initialProduct',
+            'conversation',
+            'items',
+            'items.product',
+            'contract',
+        ])->findOrFail($quoteId);
 
         if (! $this->canAccessQuote($quote, $userId)) {
             throw new AuthorizationException('You do not have permission to view this quote');
@@ -146,7 +156,11 @@ class QuoteService
      */
     public function update(int $quoteId, array $data, int $userId, array $userRoles): Quote
     {
-        $quote = Quote::with(['buyer.company', 'seller.company', 'rfq', 'rfq.initialProduct', 'items', 'contract'])->findOrFail($quoteId);
+        $quote = Quote::with(['directBuyer.company',
+            'directSeller.company',
+            'rfq',
+            'rfq.buyer',
+            'rfq.seller', 'rfq', 'rfq.initialProduct', 'items', 'contract'])->findOrFail($quoteId);
 
         $this->validateUpdateAccess($quote, $userId, $userRoles);
 
@@ -208,7 +222,11 @@ class QuoteService
      */
     public function delete(int $quoteId, int $userId): void
     {
-        $quote = Quote::with(['buyer.company', 'seller.company', 'rfq', 'conversation'])->findOrFail($quoteId);
+        $quote = Quote::with(['directBuyer.company',
+            'directSeller.company',
+            'rfq',
+            'rfq.buyer',
+            'rfq.seller', 'rfq', 'conversation'])->findOrFail($quoteId);
 
         $canDelete = false;
 
