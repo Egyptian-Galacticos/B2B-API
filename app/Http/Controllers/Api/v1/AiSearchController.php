@@ -176,27 +176,63 @@ class AiSearchController extends Controller
                 $baseQuery->orderByRaw("FIELD(id, $orderedIds)");
             }
 
-            $paginatedQuery = $queryHandler
-                ->setBaseQuery($baseQuery)
+            $query = $queryHandler
+                ->setBaseQuery(
+                    Product::query()
+                        ->with(['seller.company', 'category', 'tags', 'tiers'])
+                        ->withWishlistStatus(auth()->id())
+                        ->where('is_active', true)
+                        ->where('is_approved', true)
+                )
                 ->setAllowedSorts([
-                    'weight', 'created_at', 'name', 'brand', 'currency', 'is_active',
-                    'seller.name', 'is_approved', 'is_featured',
+                    'weight',
+                    'created_at',
+                    'name',
+                    'brand',
+                    'currency',
+                    'is_active',
+                    'seller.name',
+                    'category.name',
+                    'is_approved',
+                    'is_featured',
+                    'created_at',
+                    'in_wishlist', // Add wishlist sorting
                 ])
                 ->setAllowedFilters([
-                    'name', 'brand', 'model_number', 'currency', 'weight', 'origin',
-                    'is_active', 'is_approved', 'created_at', 'category.name',
-                    'category.id', 'seller.company.name', 'seller_id', 'is_featured',
+                    'name',
+                    'brand',
+                    'model_number',
+                    'currency',
+                    'weight',
+                    'origin',
+                    'is_active',
+                    'price',
+                    'is_approved',
+                    'created_at',
+                    'category.name',
+                    'category.id',
+                    'seller.company.name',
+                    'seller_id',
+                    'is_featured',
+                    'sample_available',
+                    'in_wishlist', // Add wishlist filtering
+                ])
+                ->setSearchableFields([
+                    'name',
+                    'brand',
+                    'description',
+                    'model_number',
                 ])
                 ->apply()
                 ->paginate($perPage)
                 ->withQueryString();
 
             // Assuming you have a getPaginationMeta method in your ApiResponse trait
-            $meta = method_exists($this, 'getPaginationMeta') ? $this->getPaginationMeta($paginatedQuery) : [];
+            $meta = method_exists($this, 'getPaginationMeta') ? $this->getPaginationMeta($query) : [];
             $meta['ai_query'] = $cleanSql; // Add the AI query to the meta for debugging
 
             return $this->apiResponse(
-                data: ProductResource::collection($paginatedQuery),
+                data: ProductResource::collection($query),
                 message: 'Products found.',
                 meta: $meta
             );

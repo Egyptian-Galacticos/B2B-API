@@ -116,7 +116,7 @@ class RfqService
         ];
 
         $paginatedQuery = $queryHandler
-            ->setBaseQuery($baseQuery->with(['buyer.company', 'seller.company', 'initialProduct', 'quotes']))
+            ->setBaseQuery($baseQuery->with(['buyer.company', 'seller.company', 'initialProduct.category', 'quotes']))
             ->setAllowedSorts([
                 'id',
                 'initial_quantity',

@@ -85,18 +85,18 @@ Route::prefix('v1')->group(function () {
         // =====================================================
         Route::get('me', [AuthController::class, 'me'])->name('auth.me');
         Route::prefix('user')->group(function () {
-            Route::delete('{user}', [UserController::class, 'destroy'])->name('users.destroy');
             Route::put('profile', [UserController::class, 'updateProfile'])->name('users.profile.update');
             Route::put('password', [UserController::class, 'updatePassword'])->name('users.password.update');
             Route::put('company', [CompanyController::class, 'update'])->name('company.update');
             Route::prefix('wishlist')->group(function () {
                 Route::get('/', [WishlistController::class, 'index'])->name('wishlist.index');
                 Route::post('/', [WishlistController::class, 'store'])->name('wishlist.store');
-                Route::delete('/{product:id}', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
+                Route::delete('/', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
                 Route::post('/check', [WishlistController::class, 'check'])->name('wishlist.check');
                 Route::post('/clear', [WishlistController::class, 'clear'])->name('wishlist.clear');
                 Route::get('/summary', [WishlistController::class, 'summary'])->name('wishlist.summary');
             });
+            Route::delete('{user}', [UserController::class, 'destroy'])->name('users.destroy');
         });
 
         // Company management
