@@ -63,7 +63,7 @@ class UpdateProductRequest extends BaseRequest
             'images.*' => ['image', 'max:10240'],
 
             'documents'   => ['sometimes', 'nullable', 'array'],
-            'documents.*' => ['file', 'mimes:pdf,doc,docx', 'max:20480'],
+            'documents.*' => ['file', 'mimes:pdf,doc,docx,xlsx,xls,csv', 'max:20480'],
 
             'specifications'   => ['sometimes', 'required', 'array'],
             'specifications.*' => ['file', 'mimes:pdf,doc,docx,xlsx,xls,csv', 'max:20480'],
@@ -86,7 +86,7 @@ class UpdateProductRequest extends BaseRequest
             'main_image.max'                => 'The main image may not be larger than 10MB.',
             'images.*.max'                  => 'An uploaded image may not be larger than 10MB.',
             'documents.*.max'               => 'An uploaded document may not be larger than 20MB.',
-            'documents.*.mimes'             => 'Documents must be of type PDF, DOC, or DOCX.',
+            'documents.*.mimes'             => 'Documents must be of type PDF, DOC, DOCX, XLSX, XLS, or CSV.',
             'specifications.*.max'          => 'An uploaded specification file may not be larger than 20MB.',
             'specifications.*.mimes'        => 'Specification files must be of type PDF, DOC, DOCX, XLSX, XLS, or CSV.',
         ];

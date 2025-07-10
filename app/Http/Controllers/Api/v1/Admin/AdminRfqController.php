@@ -31,13 +31,19 @@ class AdminRfqController extends Controller
     {
         try {
             $filters = $request->validated();
-            $rfqs = $this->rfqService->getAllRfqsWithFilters($filters, $request);
+            $result = $this->rfqService->getAllRfqsWithFilters($filters, $request);
+
+            $rfqs = $result['rfqs'];
+            $statistics = $result['statistics'];
+
+            $paginationMeta = $this->getPaginationMeta($rfqs);
+            $meta = array_merge($paginationMeta, $statistics);
 
             return $this->apiResponse(
                 AdminRfqResource::collection($rfqs),
                 'RFQs retrieved successfully',
                 200,
-                $this->getPaginationMeta($rfqs)
+                $meta
             );
         } catch (Exception $e) {
             return $this->apiResponseErrors(

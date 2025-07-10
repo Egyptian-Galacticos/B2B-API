@@ -6,7 +6,6 @@ use App\Models\Rfq;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use InvalidArgumentException;
 
 class RfqService
@@ -86,27 +85,38 @@ class RfqService
     /**
      * Get paginated RFQs with filtering and sorting
      */
-    public function getWithFilters(Request $request, ?int $userId = null, ?string $userType = null, int $perPage = 15): LengthAwarePaginator
+    public function getWithFilters(Request $request, ?int $userId = null, ?string $userType = null, int $perPage = 15): array
     {
         $queryHandler = new QueryHandler($request);
 
-        $query = Rfq::with(['buyer.company', 'seller.company', 'initialProduct.category', 'quotes']);
+        $baseQuery = Rfq::query();
 
         if ($userId && $userType) {
             if ($userType === 'buyer') {
-                $query->forBuyer($userId);
+                $baseQuery->forBuyer($userId);
             } elseif ($userType === 'seller') {
-                $query->forSeller($userId);
+                $baseQuery->forSeller($userId);
             }
         } elseif ($userId) {
-
-            $query->where(function ($q) use ($userId) {
+            $baseQuery->where(function ($q) use ($userId) {
                 $q->where('buyer_id', $userId)->orWhere('seller_id', $userId);
             });
         }
 
-        $query = $queryHandler
-            ->setBaseQuery($query)
+        // Clone the base query for statistics calculation
+        $statsQuery = clone $baseQuery;
+
+        $statistics = [
+            'total'       => $statsQuery->clone()->count(),
+            'pending'     => $statsQuery->clone()->where('status', Rfq::STATUS_PENDING)->count(),
+            'seen'        => $statsQuery->clone()->where('status', Rfq::STATUS_SEEN)->count(),
+            'in_progress' => $statsQuery->clone()->where('status', Rfq::STATUS_IN_PROGRESS)->count(),
+            'quoted'      => $statsQuery->clone()->where('status', Rfq::STATUS_QUOTED)->count(),
+            'rejected'    => $statsQuery->clone()->where('status', Rfq::STATUS_REJECTED)->count(),
+        ];
+
+        $paginatedQuery = $queryHandler
+            ->setBaseQuery($baseQuery->with(['buyer.company', 'seller.company', 'initialProduct', 'quotes']))
             ->setAllowedSorts([
                 'id',
                 'initial_quantity',
@@ -141,6 +151,11 @@ class RfqService
             ])
             ->apply();
 
-        return $query->paginate($perPage)->withQueryString();
+        $rfqs = $paginatedQuery->paginate($perPage)->withQueryString();
+
+        return [
+            'rfqs'       => $rfqs,
+            'statistics' => $statistics,
+        ];
     }
 }

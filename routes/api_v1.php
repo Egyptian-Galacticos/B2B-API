@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\v1\CompanyController;
 use App\Http\Controllers\Api\v1\EmailVerificationController;
 use App\Http\Controllers\Api\v1\ProductController;
 use App\Http\Controllers\Api\v1\SellerUpgradeController;
+use App\Http\Controllers\Api\v1\StatisticsController;
 use App\Http\Controllers\Api\v1\TagController;
 
 use App\Http\Controllers\Api\v1\UserController;
@@ -105,6 +106,8 @@ Route::prefix('v1')->group(function () {
         // VERIFIED & ACTIVE USER ROUTES (Full Restrictions)
         // ====================================================
         Route::middleware(['is_email_verified', 'is_suspended'])->group(function () {
+            Route::get('statistics', StatisticsController::class)->name('statistics');
+
             // category management (requires ownership)
             Route::apiResource('categories', CategoryController::class)->except(['index', 'show']);
 
@@ -132,6 +135,12 @@ Route::prefix('v1')->group(function () {
                 // Product media management routes
                 //                Route::delete('products/{product}/images/{mediaId}', [ProductController::class, 'deleteImage'])->name('products.images.destroy');
                 Route::delete('products/{product}/media/{collection}/{mediaId}', [ProductController::class, 'deleteProductMedia'])->name('products.documents.destroy');
+            });
+
+            // User management
+            Route::prefix('users')->group(function () {
+                Route::patch('{user}/restore', [UserController::class, 'restore'])->name('users.restore');
+                Route::delete('{user}/force-delete', [UserController::class, 'forceDelete'])->name('users.force-delete');
             });
 
             // =====================================

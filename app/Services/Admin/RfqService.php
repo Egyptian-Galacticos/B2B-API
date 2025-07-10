@@ -6,7 +6,6 @@ use App\Http\Resources\Admin\AdminRfqResource;
 use App\Models\Rfq;
 use App\Services\QueryHandler;
 use Exception;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 
@@ -15,17 +14,30 @@ class RfqService
     /**
      * Get all RFQs with filtering and pagination for admin oversight.
      */
-    public function getAllRfqsWithFilters(array $filters, Request $request): LengthAwarePaginator
+    public function getAllRfqsWithFilters(array $filters, Request $request): array
     {
-        $query = Rfq::with([
+        $query = Rfq::query();
+
+        $this->applyCustomFilters($query, $filters);
+
+        $statsQuery = $query->clone();
+
+        $statistics = [
+            'total'       => $statsQuery->clone()->count(),
+            'pending'     => $statsQuery->clone()->where('status', Rfq::STATUS_PENDING)->count(),
+            'seen'        => $statsQuery->clone()->where('status', Rfq::STATUS_SEEN)->count(),
+            'in_progress' => $statsQuery->clone()->where('status', Rfq::STATUS_IN_PROGRESS)->count(),
+            'quoted'      => $statsQuery->clone()->where('status', Rfq::STATUS_QUOTED)->count(),
+            'rejected'    => $statsQuery->clone()->where('status', Rfq::STATUS_REJECTED)->count(),
+        ];
+
+        $queryHandler = new QueryHandler($request);
+        $queryHandler->setBaseQuery($query->with([
             'buyer.company',
             'seller.company',
             'initialProduct',
             'quotes',
-        ]);
-
-        $queryHandler = new QueryHandler($request);
-        $queryHandler->setBaseQuery($query)
+        ]))
             ->setAllowedSorts([
                 'id',
                 'initial_quantity',
@@ -55,11 +67,14 @@ class RfqService
                 'initialProduct.brand',
             ]);
 
-        $this->applyCustomFilters($query, $filters);
-
         $filteredQuery = $queryHandler->apply();
 
-        return $filteredQuery->paginate($request->per_page ?? 15);
+        $rfqs = $filteredQuery->paginate($request->per_page ?? 15);
+
+        return [
+            'rfqs'       => $rfqs,
+            'statistics' => $statistics,
+        ];
     }
 
     /**

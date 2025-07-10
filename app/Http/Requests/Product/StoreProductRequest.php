@@ -49,9 +49,9 @@ class StoreProductRequest extends BaseRequest
             'images'           => ['nullable', 'array'],
             'images.*'         => ['image', 'max:10240'], // 10MB max per image
             'documents'        => ['nullable', 'array'],
-            'documents.*'      => ['file', 'mimes:pdf,doc,docx', 'max:20480'], // 20MB max per document
+            'documents.*'      => ['file', 'mimes:pdf,doc,docx,xlsx,xls,csv', 'max:20480'], // 20MB max per document
             'specifications'   => ['nullable', 'array'],
-            'specifications.*' => ['file', 'mimes:pdf,doc,docx', 'max:20480'], // 20MB max per specification file
+            'specifications.*' => ['file', 'mimes:pdf,doc,docx,xlsx,xls,csv', 'max:20480'], // 20MB max per specification file
         ];
     }
 
@@ -77,7 +77,7 @@ class StoreProductRequest extends BaseRequest
             'images.*.max'         => 'Each image may not be greater than 10MB.',
             'documents.array'      => 'Documents must be an array.',
             'documents.*.file'     => 'Each document must be a valid file.',
-            'documents.*.mimes'    => 'Documents must be PDF, DOC, or DOCX files.',
+            'documents.*.mimes'    => 'Documents must be of type PDF, DOC, DOCX, XLSX, XLS, or CSV.',
             'documents.*.max'      => 'Each document may not be greater than 20MB.',
         ];
     }
