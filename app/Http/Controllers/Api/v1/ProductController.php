@@ -57,7 +57,7 @@ class ProductController extends Controller
             ->setBaseQuery(
                 Product::query()
                     ->with(['seller.company', 'category', 'tags', 'tiers'])
-                    ->withWishlistStatus($user?->id) // Add wishlist status
+                    ->withWishlistStatus($user?->id)
                     ->where('is_active', true)
                     ->where('is_approved', true)
             )
