@@ -29,42 +29,11 @@ class ContractResource extends JsonResource
             'created_at'           => $this->created_at?->toISOString(),
             'updated_at'           => $this->updated_at?->toISOString(),
 
-            'buyer' => $this->whenLoaded('buyer', function () {
-                return [
-                    'id'      => $this->buyer->id,
-                    'name'    => $this->buyer->first_name.' '.$this->buyer->last_name,
-                    'email'   => $this->buyer->email,
-                    'company' => $this->whenLoaded('buyer.company', function () {
-                        return [
-                            'id'   => $this->buyer->company->id,
-                            'name' => $this->buyer->company->name,
-                        ];
-                    }),
-                ];
-            }),
+            'buyer' => UserResource::make($this->whenLoaded('buyer')),
 
-            'seller' => $this->whenLoaded('seller', function () {
-                return [
-                    'id'      => $this->seller->id,
-                    'name'    => $this->seller->first_name.' '.$this->seller->last_name,
-                    'email'   => $this->seller->email,
-                    'company' => $this->whenLoaded('seller.company', function () {
-                        return [
-                            'id'   => $this->seller->company->id,
-                            'name' => $this->seller->company->name,
-                        ];
-                    }),
-                ];
-            }),
+            'seller' => UserResource::make($this->whenLoaded('seller')),
 
-            'quote' => $this->whenLoaded('quote', function () {
-                return [
-                    'id'          => $this->quote->id,
-                    'total_price' => $this->quote->total_price,
-                    'status'      => $this->quote->status,
-                    'accepted_at' => $this->quote->accepted_at?->toISOString(),
-                ];
-            }),
+            'quote' => QuoteResource::make($this->whenLoaded('quote')),
 
             'items' => $this->whenLoaded('items', function () {
                 return $this->items->map(function ($item) {
