@@ -45,7 +45,7 @@ class RfqService
             throw new AuthorizationException('Unauthorized access to this RFQ');
         }
 
-        return $rfq->load(['buyer.company', 'seller.company', 'initialProduct', 'quotes.items.product']);
+        return $rfq->load(['buyer.company', 'seller.company', 'initialProduct.category', 'quotes.items.product']);
     }
 
     /**
