@@ -41,7 +41,7 @@ class ContractController extends Controller
             $perPage = (int) $request->get('size', 15);
             $userType = $request->get('user_type');
 
-            $query = Contract::with(['buyer', 'seller', 'quote', 'items.product']);
+            $query = Contract::with(['buyer.comany', 'seller.company', 'quote', 'items.product']);
 
             if ($userType === 'buyer') {
                 $query->forBuyer($user->id);
@@ -54,12 +54,22 @@ class ContractController extends Controller
             $query = $this->queryHandler
                 ->setBaseQuery($query)
                 ->setAllowedSorts([
-                    'id', 'contract_number', 'status', 'total_amount',
-                    'contract_date', 'estimated_delivery', 'created_at',
+                    'id',
+                    'contract_number',
+                    'status',
+                    'total_amount',
+                    'contract_date',
+                    'estimated_delivery',
+                    'created_at',
                 ])
                 ->setAllowedFilters([
-                    'status', 'currency', 'buyer_id', 'seller_id',
-                    'contract_date', 'total_amount', 'quote_id',
+                    'status',
+                    'currency',
+                    'buyer_id',
+                    'seller_id',
+                    'contract_date',
+                    'total_amount',
+                    'quote_id',
                 ])
                 ->apply();
 
@@ -71,7 +81,6 @@ class ContractController extends Controller
                 200,
                 $this->getPaginationMeta($contracts)
             );
-
         } catch (Exception $e) {
             return $this->apiResponseErrors(
                 'Failed to retrieve contracts',
@@ -112,7 +121,6 @@ class ContractController extends Controller
                 new ContractResource($contract),
                 'Contract retrieved successfully'
             );
-
         } catch (Exception $e) {
             return $this->apiResponseErrors(
                 'Failed to retrieve contract',
@@ -203,8 +211,7 @@ class ContractController extends Controller
                             Mail::to($companyEmail)
                                 ->send(new ContractUpdatedByBuyerMail($contract, $updateType));
                         } catch (Exception $mailException) {
-                            Log::error('Failed to send contract update email: '.$mailException->getMessage());
-
+                            Log::error('Failed to send contract update email: ' . $mailException->getMessage());
                         }
                     }
                 }
@@ -214,7 +221,6 @@ class ContractController extends Controller
                 new ContractResource($contract->fresh()),
                 'Contract updated successfully'
             );
-
         } catch (Exception $e) {
             return $this->apiResponseErrors(
                 'Failed to update contract',
@@ -272,7 +278,7 @@ class ContractController extends Controller
                 );
             }
 
-            $contractNumber = 'CON-'.date('Y').'-'.str_pad(Contract::count() + 1, 6, '0', STR_PAD_LEFT);
+            $contractNumber = 'CON-' . date('Y') . '-' . str_pad(Contract::count() + 1, 6, '0', STR_PAD_LEFT);
 
             $buyer = User::with('company')->find($buyerId);
 
@@ -383,7 +389,6 @@ class ContractController extends Controller
                 'Contract created successfully and sent to buyer for approval',
                 201
             );
-
         } catch (Exception $e) {
             return $this->apiResponseErrors(
                 'Failed to create contract',
