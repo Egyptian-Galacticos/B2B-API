@@ -21,7 +21,7 @@ class SendMessageRequest extends BaseRequest
     {
         return [
             'content' => 'required|string|max:10000',
-            'type'    => 'sometimes|string|in:text,image,file',
+            'type'    => 'sometimes|string|in:text,image,file,rfq,quote,contract',
         ];
     }
 
