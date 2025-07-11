@@ -23,7 +23,7 @@ class AdminRfqFilterRequest extends FormRequest
             'date_to'            => 'nullable|date|after_or_equal:date_from',
             'quantity_min'       => 'nullable|integer|min:1',
             'quantity_max'       => 'nullable|integer|min:1|gte:quantity_min',
-            'per_page'           => 'nullable|integer|min:1|max:100',
+            'size'           => 'nullable|integer|min:1|max:100',
             'page'               => 'nullable|integer|min:1',
             'sort'               => 'nullable|string',
             'filter'             => 'nullable|array',
@@ -39,7 +39,7 @@ class AdminRfqFilterRequest extends FormRequest
             'initial_product_id.exists' => 'The selected product does not exist',
             'date_to.after_or_equal'    => 'End date must be after or equal to start date',
             'quantity_max.gte'          => 'Maximum quantity must be greater than or equal to minimum quantity',
-            'per_page.max'              => 'Items per page cannot exceed 100',
+            'size.max'              => 'Items per page cannot exceed 100',
         ];
     }
 }

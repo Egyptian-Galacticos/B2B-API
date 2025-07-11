@@ -53,7 +53,7 @@ class CategoryService
                 'is_active',
             ]);
 
-        return $queryHandler->apply()->paginate($request->get('per_page', 15));
+        return $queryHandler->apply()->paginate($request->get('size', 10));
     }
 
     /**
@@ -61,7 +61,7 @@ class CategoryService
      */
     public function getPendingCategories(Request $request): LengthAwarePaginator
     {
-        $perPage = $request->get('per_page', 15);
+        $perPage = $request->get('size', 10);
 
         return Category::with([
             'parent:id,name,slug,level',
@@ -258,7 +258,7 @@ class CategoryService
                 'deleted_at',
             ]);
 
-        return $queryHandler->apply()->paginate($request->get('per_page', 15));
+        return $queryHandler->apply()->paginate($request->get('size', 10));
     }
 
     /**

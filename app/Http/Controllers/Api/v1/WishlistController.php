@@ -25,7 +25,7 @@ class WishlistController extends Controller
     {
         try {
             $user = Auth::user();
-            $perPage = (int) $request->get('per_page', 15);
+            $perPage = (int) $request->get('size', 10);
 
             $products = $user->wishlist()
                 ->with([
@@ -101,7 +101,6 @@ class WishlistController extends Controller
                 message: 'Product added to wishlist successfully.',
                 status: 201
             );
-
         } catch (Exception $e) {
             return $this->apiResponseErrors(
                 message: 'Failed to add product to wishlist.',
@@ -154,7 +153,6 @@ class WishlistController extends Controller
                 message: 'Product removed from wishlist successfully.',
                 status: 200
             );
-
         } catch (Exception $e) {
             return $this->apiResponseErrors(
                 message: 'Failed to remove product from wishlist.',
@@ -182,7 +180,6 @@ class WishlistController extends Controller
                 message: 'Wishlist status checked successfully.',
                 status: 200
             );
-
         } catch (Exception $e) {
             return $this->apiResponseErrors(
                 message: 'Failed to check wishlist status.',
@@ -209,7 +206,6 @@ class WishlistController extends Controller
                 message: 'Wishlist cleared successfully.',
                 status: 200
             );
-
         } catch (Exception $e) {
             return $this->apiResponseErrors(
                 message: 'Failed to clear wishlist.',
@@ -244,7 +240,6 @@ class WishlistController extends Controller
                 message: 'Wishlist summary retrieved successfully.',
                 status: 200
             );
-
         } catch (Exception $e) {
             return $this->apiResponseErrors(
                 message: 'Failed to retrieve wishlist summary.',

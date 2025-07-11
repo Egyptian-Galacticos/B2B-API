@@ -28,7 +28,7 @@ class UserFilterRequest extends FormRequest
             'search'                 => 'nullable|string|max:255',
             'sort_by'                => 'nullable|string|in:first_name,last_name,email,created_at,last_login_at,status',
             'sort_direction'         => 'nullable|string|in:asc,desc',
-            'per_page'               => 'nullable|integer|min:1|max:100',
+            'size'               => 'nullable|integer|min:1|max:100',
         ];
     }
 
@@ -46,7 +46,7 @@ class UserFilterRequest extends FormRequest
             'registration_date_to.before_or_equal'   => 'Registration date to cannot be in the future',
             'sort_by.in'                             => 'Sort by must be one of: first_name, last_name, email, created_at, last_login_at, status',
             'sort_direction.in'                      => 'Sort direction must be asc or desc',
-            'per_page.max'                           => 'Per page cannot exceed 100 items',
+            'size.max'                           => 'Per page cannot exceed 100 items',
         ];
     }
 
@@ -57,7 +57,7 @@ class UserFilterRequest extends FormRequest
     {
         // Set default values if not provided
         $this->mergeIfMissing([
-            'per_page'       => 15,
+            'size'       => 10,
             'sort_by'        => 'created_at',
             'sort_direction' => 'desc',
         ]);
