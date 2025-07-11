@@ -28,6 +28,8 @@ class ContractResource extends JsonResource
             'metadata'             => $this->metadata,
             'created_at'           => $this->created_at?->toISOString(),
             'updated_at'           => $this->updated_at?->toISOString(),
+            "buyer_transaction_id" => $this->buyer_transaction_id,
+            "seller_transaction_id" => $this->seller_transaction_id,
 
             'buyer' => UserResource::make($this->whenLoaded('buyer')),
 
