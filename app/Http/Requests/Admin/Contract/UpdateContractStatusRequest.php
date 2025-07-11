@@ -29,13 +29,15 @@ class UpdateContractStatusRequest extends FormRequest
                     Contract::STATUS_DELIVERED,
                     Contract::STATUS_COMPLETED,
                     Contract::STATUS_CANCELLED,
+                    Contract::STATUS_PENDING_PAYMENT_CONFIRMATION,
+                    Contract::BUYER_PAYMENT_REJECTED,
                 ]),
             ],
             'seller_transaction_id' => [
                 'nullable',
                 'string',
                 'max:255',
-                'required_if:status,'.Contract::STATUS_DELIVERED_AND_PAID,
+                'required_if:status,' . Contract::STATUS_DELIVERED_AND_PAID,
             ],
         ];
     }
