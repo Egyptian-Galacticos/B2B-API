@@ -20,7 +20,7 @@ class UpdateUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => 'required|string|in:active,suspended',
+            'status' => 'required|string|in:active,suspended,pending',
             'reason' => 'nullable|string|max:500',
         ];
     }
