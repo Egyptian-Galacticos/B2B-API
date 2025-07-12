@@ -65,7 +65,7 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently \"php artisan serve\" \"php artisan queue:work --queue=default,emails,verification,seller-notifications\" --names=server,queue"
+            "npx concurrently \"php artisan serve\" \"php artisan reverb:start\" \"php artisan queue:work --queue=default,emails,verification,seller-notifications\" --names=server,queue"
         ],
         "test": [
             "@php artisan config:clear --ansi",
