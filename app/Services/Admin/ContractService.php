@@ -63,7 +63,7 @@ class ContractService
 
         $filteredQuery = $queryHandler->apply();
 
-        return $filteredQuery->paginate($request->per_page ?? 15);
+        return $filteredQuery->paginate($request->size ?? 10);
     }
 
     /**
@@ -126,16 +126,18 @@ class ContractService
     public function getStatusMessage(string $status): string
     {
         return match ($status) {
-            Contract::STATUS_PENDING_APPROVAL   => 'Contract is pending approval',
-            Contract::STATUS_APPROVED           => 'Contract approved successfully',
-            Contract::STATUS_PENDING_PAYMENT    => 'Contract approved and moved to pending payment',
-            Contract::STATUS_IN_PROGRESS        => 'Contract is now in progress',
-            Contract::STATUS_DELIVERED_AND_PAID => 'Contract delivered and payment made to seller',
-            Contract::STATUS_SHIPPED            => 'Contract items have been shipped',
-            Contract::STATUS_DELIVERED          => 'Contract items have been delivered',
-            Contract::STATUS_COMPLETED          => 'Contract completed successfully',
-            Contract::STATUS_CANCELLED          => 'Contract has been cancelled',
-            default                             => 'Contract updated successfully'
+            Contract::STATUS_PENDING_APPROVAL             => 'Contract is pending approval',
+            Contract::STATUS_APPROVED                     => 'Contract approved successfully',
+            Contract::STATUS_PENDING_PAYMENT              => 'Contract approved and moved to pending payment',
+            Contract::STATUS_PENDING_PAYMENT_CONFIRMATION => 'Payment confirmation is pending admin review',
+            Contract::STATUS_IN_PROGRESS                  => 'Contract is now in progress',
+            Contract::STATUS_DELIVERED_AND_PAID           => 'Contract delivered and payment made to seller',
+            Contract::STATUS_SHIPPED                      => 'Contract items have been shipped',
+            Contract::STATUS_DELIVERED                    => 'Contract items have been delivered',
+            Contract::STATUS_COMPLETED                    => 'Contract completed successfully',
+            Contract::STATUS_CANCELLED                    => 'Contract has been cancelled',
+            Contract::BUYER_PAYMENT_REJECTED              => 'Buyer payment has been rejected',
+            default                                       => 'Contract updated successfully'
         };
     }
 

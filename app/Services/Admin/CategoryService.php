@@ -53,7 +53,7 @@ class CategoryService
                 'is_active',
             ]);
 
-        return $queryHandler->apply()->paginate($request->get('per_page', 15));
+        return $queryHandler->apply()->paginate($request->get('size', 10));
     }
 
     /**
@@ -61,7 +61,7 @@ class CategoryService
      */
     public function getPendingCategories(Request $request): LengthAwarePaginator
     {
-        $perPage = $request->get('per_page', 15);
+        $perPage = $request->get('size', 10);
 
         return Category::with([
             'parent:id,name,slug,level',
@@ -107,7 +107,7 @@ class CategoryService
                 $parent = Category::findOrFail($data['parent_id']);
                 $hierarchyData = [
                     'level' => $parent->level + 1,
-                    'path'  => $parent->path ? $parent->path . '/' . $parent->id : (string) $parent->id,
+                    'path'  => $parent->path ? $parent->path.'/'.$parent->id : (string) $parent->id,
                 ];
 
                 if ($this->wouldCreateCircularReference($parent, null)) {
@@ -162,7 +162,7 @@ class CategoryService
 
                     $hierarchyData = [
                         'level' => $parent->level + 1,
-                        'path'  => $parent->path ? $parent->path . '/' . $parent->id : (string) $parent->id,
+                        'path'  => $parent->path ? $parent->path.'/'.$parent->id : (string) $parent->id,
                     ];
                 } else {
                     $hierarchyData = [
@@ -258,7 +258,7 @@ class CategoryService
                 'deleted_at',
             ]);
 
-        return $queryHandler->apply()->paginate($request->get('per_page', 15));
+        return $queryHandler->apply()->paginate($request->get('size', 10));
     }
 
     /**
@@ -445,7 +445,7 @@ class CategoryService
                 continue;
             }
 
-            $newPath = $category->path ? $category->path . '/' . $category->id : (string) $category->id;
+            $newPath = $category->path ? $category->path.'/'.$category->id : (string) $category->id;
             $child->update([
                 'level' => $newLevel,
                 'path'  => $newPath,

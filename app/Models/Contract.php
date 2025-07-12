@@ -17,6 +17,8 @@ class Contract extends Model
     const STATUS_DELIVERED = 'delivered';
     const STATUS_COMPLETED = 'completed';
     const STATUS_CANCELLED = 'cancelled';
+    const STATUS_PENDING_PAYMENT_CONFIRMATION = 'pending_payment_confirmation';
+    const BUYER_PAYMENT_REJECTED = 'buyer_payment_rejected';
     const VALID_STATUSES = [
         self::STATUS_PENDING_APPROVAL,
         self::STATUS_APPROVED,
@@ -27,6 +29,8 @@ class Contract extends Model
         self::STATUS_DELIVERED,
         self::STATUS_COMPLETED,
         self::STATUS_CANCELLED,
+        self::STATUS_PENDING_PAYMENT_CONFIRMATION,
+        self::BUYER_PAYMENT_REJECTED,
     ];
     protected $fillable = [
         'quote_id',
@@ -106,6 +110,11 @@ class Contract extends Model
         return $query->where('status', self::STATUS_PENDING_PAYMENT);
     }
 
+    public function scopePendingPaymentConfirmation($query)
+    {
+        return $query->where('status', self::STATUS_PENDING_PAYMENT_CONFIRMATION);
+    }
+
     public function scopeInProgress($query)
     {
         return $query->where('status', self::STATUS_IN_PROGRESS);
@@ -143,15 +152,17 @@ class Contract extends Model
         }
 
         $allowedTransitions = [
-            self::STATUS_PENDING_APPROVAL   => [self::STATUS_APPROVED, self::STATUS_PENDING_PAYMENT, self::STATUS_CANCELLED],
-            self::STATUS_APPROVED           => [self::STATUS_PENDING_PAYMENT, self::STATUS_CANCELLED],
-            self::STATUS_PENDING_PAYMENT    => [self::STATUS_IN_PROGRESS, self::STATUS_CANCELLED],
-            self::STATUS_IN_PROGRESS        => [self::STATUS_DELIVERED_AND_PAID, self::STATUS_CANCELLED],
-            self::STATUS_DELIVERED_AND_PAID => [self::STATUS_SHIPPED, self::STATUS_CANCELLED],
-            self::STATUS_SHIPPED            => [self::STATUS_DELIVERED, self::STATUS_CANCELLED],
-            self::STATUS_DELIVERED          => [self::STATUS_COMPLETED],
-            self::STATUS_COMPLETED          => [],
-            self::STATUS_CANCELLED          => [],
+            self::STATUS_PENDING_APPROVAL             => [self::STATUS_APPROVED, self::STATUS_PENDING_PAYMENT, self::STATUS_CANCELLED],
+            self::STATUS_APPROVED                     => [self::STATUS_PENDING_PAYMENT, self::STATUS_CANCELLED],
+            self::STATUS_PENDING_PAYMENT              => [self::STATUS_PENDING_PAYMENT_CONFIRMATION, self::STATUS_CANCELLED],
+            self::STATUS_PENDING_PAYMENT_CONFIRMATION => [self::STATUS_IN_PROGRESS, self::BUYER_PAYMENT_REJECTED, self::STATUS_CANCELLED],
+            self::BUYER_PAYMENT_REJECTED              => [self::STATUS_PENDING_PAYMENT_CONFIRMATION, self::STATUS_CANCELLED],
+            self::STATUS_IN_PROGRESS                  => [self::STATUS_DELIVERED_AND_PAID, self::STATUS_CANCELLED],
+            self::STATUS_DELIVERED_AND_PAID           => [self::STATUS_SHIPPED, self::STATUS_CANCELLED],
+            self::STATUS_SHIPPED                      => [self::STATUS_DELIVERED, self::STATUS_CANCELLED],
+            self::STATUS_DELIVERED                    => [self::STATUS_COMPLETED],
+            self::STATUS_COMPLETED                    => [],
+            self::STATUS_CANCELLED                    => [],
         ];
 
         return in_array($status, $allowedTransitions[$this->status] ?? []);
@@ -181,6 +192,11 @@ class Contract extends Model
     public function isPendingPayment(): bool
     {
         return $this->status === self::STATUS_PENDING_PAYMENT;
+    }
+
+    public function isPendingPaymentConfirmation(): bool
+    {
+        return $this->status === self::STATUS_PENDING_PAYMENT_CONFIRMATION;
     }
 
     public function isInProgress(): bool

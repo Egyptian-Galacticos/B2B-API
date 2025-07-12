@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources\Admin;
 
-use App\Http\Resources\CompanyResource;
+use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -21,43 +21,11 @@ class AdminQuoteResource extends JsonResource
             'total_price'     => $this->total_price,
             'seller_message'  => $this->seller_message,
             'conversation_id' => $this->conversation_id,
-            'seller'          => $this->whenLoaded('seller', function () {
-                return [
-                    'id'                => $this->seller->id,
-                    'first_name'        => $this->seller->first_name,
-                    'last_name'         => $this->seller->last_name,
-                    'full_name'         => $this->seller->getFullNameAttribute(),
-                    'email'             => $this->seller->email,
-                    'phone_number'      => $this->seller->phone_number,
-                    'is_email_verified' => $this->seller->is_email_verified,
-                    'status'            => $this->seller->status,
-                    'last_login_at'     => $this->seller->last_login_at,
-                    'roles'             => $this->seller->roles->pluck('name'),
-                    'company'           => $this->seller->company ? CompanyResource::make($this->seller->company) : null,
-                    'created_at'        => $this->seller->created_at,
-                    'updated_at'        => $this->seller->updated_at,
-                ];
-            }),
-            'buyer' => $this->whenLoaded('buyer', function () {
-                return [
-                    'id'                => $this->buyer->id,
-                    'first_name'        => $this->buyer->first_name,
-                    'last_name'         => $this->buyer->last_name,
-                    'full_name'         => $this->buyer->getFullNameAttribute(),
-                    'email'             => $this->buyer->email,
-                    'phone_number'      => $this->buyer->phone_number,
-                    'is_email_verified' => $this->buyer->is_email_verified,
-                    'status'            => $this->buyer->status,
-                    'last_login_at'     => $this->buyer->last_login_at,
-                    'roles'             => $this->buyer->roles->pluck('name'),
-                    'company'           => $this->buyer->company ? CompanyResource::make($this->buyer->company) : null,
-                    'created_at'        => $this->buyer->created_at,
-                    'updated_at'        => $this->buyer->updated_at,
-                ];
-            }),
-            'status'     => $this->status,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'seller'          => UserResource::make($this->seller),
+            'buyer'           => UserResource::make($this->buyer),
+            'status'          => $this->status,
+            'created_at'      => $this->created_at,
+            'updated_at'      => $this->updated_at,
 
             'rfq' => $this->whenLoaded('rfq', function () {
                 return [

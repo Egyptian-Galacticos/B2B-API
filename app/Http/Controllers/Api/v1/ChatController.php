@@ -30,7 +30,7 @@ class ChatController extends Controller
     {
         $conversations = $this->chatService->getUserConversations(
             auth()->user()->id,
-            $request->get('per_page', 15)
+            $request->get('size', 10)
         );
 
         return $this->apiResponse(
@@ -88,7 +88,7 @@ class ChatController extends Controller
             $messages = $this->chatService->getConversationMessages(
                 $conversationId,
                 auth()->user()->id,
-                $request->get('per_page', 50)
+                $request->get('size', 50)
             );
 
             return $this->apiResponse(
@@ -134,7 +134,6 @@ class ChatController extends Controller
                 ],
                 status: 403
             );
-
         }
     }
 
@@ -180,14 +179,14 @@ class ChatController extends Controller
     public function searchConversations(Request $request): JsonResponse
     {
         $request->validate([
-            'query'    => 'required|string|min:1',
-            'per_page' => 'integer|min:1|max:100',
+            'query' => 'required|string|min:1',
+            'size'  => 'integer|min:1|max:100',
         ]);
 
         $conversations = $this->chatService->searchConversations(
             auth()->user()->id,
             $request->get('query'),
-            $request->get('per_page', 15)
+            $request->get('size', 15)
         );
 
         return $this->apiResponse(
