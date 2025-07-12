@@ -34,7 +34,7 @@ class UpdateContractRequest extends FormRequest
             'billing_address'      => 'nullable|string',
             'terms_and_conditions' => 'nullable|string',
             'metadata'             => 'nullable|array',
-            'buyer_transaction_id' => 'nullable|string|max:255',
+            'buyer_transaction_id' => 'nullable|string|regex:/^[A-Z0-9]{10,25}$/|max:255',
         ];
     }
 
@@ -49,6 +49,7 @@ class UpdateContractRequest extends FormRequest
             'status.in'                   => "Invalid status. Allowed values are: {$validStatuses}.",
             'estimated_delivery.date'     => 'Estimated delivery must be a valid date.',
             'buyer_transaction_id.string' => 'Buyer transaction ID must be a string.',
+            'buyer_transaction_id.regex'  => 'Buyer transaction ID must be 10-25 characters long and contain only uppercase letters and numbers.',
             'buyer_transaction_id.max'    => 'Buyer transaction ID must not exceed 255 characters.',
         ];
     }
