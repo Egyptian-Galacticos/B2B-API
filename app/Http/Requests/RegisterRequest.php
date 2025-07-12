@@ -68,6 +68,12 @@ class RegisterRequest extends BaseRequest
             'company.address.country' => ['required', 'string', 'max:255'],
             // @example 12345
             'company.address.zip_code' => ['nullable', 'string', 'max:20'],
+
+            'company.tax_id_images'   => ['nullable', 'array'],
+            'company.tax_id_images.*' => ['file', 'image', 'mimes:jpeg,png,jpg', 'max:5120'],
+
+            'company.commercial_registration_images'   => ['nullable', 'array'],
+            'company.commercial_registration_images.*' => ['file', 'image', 'mimes:jpeg,png,jpg', 'max:5120'],
         ];
     }
 
