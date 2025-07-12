@@ -25,7 +25,7 @@ class AdminContractFilterRequest extends FormRequest
             'date_to'         => 'nullable|date|after_or_equal:date_from',
             'delivery_from'   => 'nullable|date',
             'delivery_to'     => 'nullable|date|after_or_equal:delivery_from',
-            'size'        => 'nullable|integer|min:1|max:100',
+            'size'            => 'nullable|integer|min:1|max:100',
             'page'            => 'nullable|integer|min:1',
             'sort'            => 'nullable|string',
             'filter'          => 'nullable|array',
@@ -42,7 +42,7 @@ class AdminContractFilterRequest extends FormRequest
             'amount_max.gte'             => 'Maximum amount must be greater than or equal to minimum amount',
             'date_to.after_or_equal'     => 'End date must be after or equal to start date',
             'delivery_to.after_or_equal' => 'Delivery end date must be after or equal to delivery start date',
-            'size.max'               => 'Items per page cannot exceed 100',
+            'size.max'                   => 'Items per page cannot exceed 100',
         ];
     }
 }

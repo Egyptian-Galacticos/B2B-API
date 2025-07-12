@@ -2,10 +2,8 @@
 
 namespace App\Http\Resources\Admin;
 
-use App\Http\Resources\CompanyResource;
 use App\Http\Resources\QuoteResource;
 use App\Http\Resources\UserResource;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -35,7 +33,6 @@ class AdminContractResource extends JsonResource
             'buyer' => UserResource::make($this->whenLoaded('buyer')),
 
             'seller' => UserResource::make($this->whenLoaded('seller')),
-
 
             'quote' => QuoteResource::make($this->whenLoaded('quote')),
 

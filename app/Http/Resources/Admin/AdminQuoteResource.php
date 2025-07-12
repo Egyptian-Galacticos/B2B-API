@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources\Admin;
 
-use App\Http\Resources\CompanyResource;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -23,10 +22,10 @@ class AdminQuoteResource extends JsonResource
             'seller_message'  => $this->seller_message,
             'conversation_id' => $this->conversation_id,
             'seller'          => UserResource::make($this->seller),
-            'buyer'         => UserResource::make($this->buyer),
-            'status'     => $this->status,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'buyer'           => UserResource::make($this->buyer),
+            'status'          => $this->status,
+            'created_at'      => $this->created_at,
+            'updated_at'      => $this->updated_at,
 
             'rfq' => $this->whenLoaded('rfq', function () {
                 return [

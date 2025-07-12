@@ -20,8 +20,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -47,7 +49,6 @@ class AuthController extends Controller
             if (! $token = JWTAuth::attempt($credentials)) {
                 return $this->apiResponseErrors('Invalid credentials', ['error' => 'Unauthorized'], 401);
             }
-
 
             $user = JWTAuth::user();
             if ($user->isSuspended()) {
@@ -112,7 +113,7 @@ class AuthController extends Controller
                 $user->update(['status' => 'pending']);
             }
 
-            Company::create([
+            $company = Company::create([
                 'user_id'                 => $user->id,
                 'name'                    => $validated['company']['name'],
                 'email'                   => $validated['company']['email'],
@@ -123,6 +124,29 @@ class AuthController extends Controller
                 'description'             => $validated['company']['description'] ?? null,
                 'address'                 => $validated['company']['address'],
             ]);
+
+            if ($request->hasFile('company.tax_id_images')) {
+                foreach ($request->file('company.tax_id_images') as $image) {
+                    Log::info('Uploading tax ID image', ['image' => $image->getClientOriginalName()]);
+                    $company
+                        ->addMedia($image)
+                        ->usingName(Str::limit($company->name.' - '.uniqid()), 200)
+                        ->toMediaCollection('tax_id_images');
+                }
+            }
+            Log::info('request files', [
+                'files' => $request->allFiles(),
+            ]);
+            if ($request->hasFile('company.commercial_registration_images')) {
+                foreach ($request->file('company.commercial_registration_images') as $image) {
+                    Log::info('Uploading commercial registratration image', ['image' => $image->getClientOriginalName()]);
+
+                    $company
+                        ->addMedia($image)
+                        ->usingName(Str::limit($company->name.' - '.uniqid()), 200)
+                        ->toMediaCollection('commercial_registration_images');
+                }
+            }
 
             $user->load('roles', 'company');
 

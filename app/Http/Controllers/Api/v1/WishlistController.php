@@ -115,39 +115,28 @@ class WishlistController extends Controller
      *
      * @authenticated
      */
-    public function destroy(Request $request): JsonResponse
+    public function destroy(Product $product): JsonResponse
     {
         try {
             $user = Auth::user();
-            $productId = $request->query('product_id');
 
-            if (! $productId) {
+            if (! $product) {
                 return $this->apiResponseErrors(
-                    message: 'Product ID is required.',
-                    errors: ['product_id' => ['The product_id parameter is required.']],
+                    message: 'Product not found.',
+                    errors: ['product' => ['The product does not exist.']],
                     status: 422
                 );
             }
 
-            // Check if the product exists
-            $product = Product::find($productId);
-            if (! $product) {
-                return $this->apiResponseErrors(
-                    message: 'Product not found.',
-                    errors: ['product_id' => ['The selected product does not exist.']],
-                    status: 404
-                );
-            }
-
-            if (! $user->wishlist()->where('product_id', $productId)->exists()) {
+            if (! $user->wishlist()->where('product_id', $product->id)->exists()) {
                 return $this->apiResponseErrors(
                     message: 'Product not found in your wishlist.',
-                    errors: ['product_id' => ['Product not found in your wishlist.']],
+                    errors: ['product' => ['Product not found in your wishlist.']],
                     status: 404
                 );
             }
 
-            $user->wishlist()->detach($productId);
+            $user->wishlist()->detach($product->id);
 
             return $this->apiResponse(
                 message: 'Product removed from wishlist successfully.',

@@ -179,8 +179,8 @@ class ChatController extends Controller
     public function searchConversations(Request $request): JsonResponse
     {
         $request->validate([
-            'query'    => 'required|string|min:1',
-            'size' => 'integer|min:1|max:100',
+            'query' => 'required|string|min:1',
+            'size'  => 'integer|min:1|max:100',
         ]);
 
         $conversations = $this->chatService->searchConversations(

@@ -23,7 +23,7 @@ class AdminQuoteFilterRequest extends FormRequest
             'price_max'       => 'nullable|numeric|min:0|gte:price_min',
             'date_from'       => 'nullable|date',
             'date_to'         => 'nullable|date|after_or_equal:date_from',
-            'size'        => 'nullable|integer|min:1|max:100',
+            'size'            => 'nullable|integer|min:1|max:100',
             'page'            => 'nullable|integer|min:1',
             'sort'            => 'nullable|string',
             'filter'          => 'nullable|array',
@@ -40,7 +40,7 @@ class AdminQuoteFilterRequest extends FormRequest
             'conversation_id.exists' => 'The selected conversation does not exist',
             'price_max.gte'          => 'Maximum price must be greater than or equal to minimum price',
             'date_to.after_or_equal' => 'End date must be after or equal to start date',
-            'size.max'           => 'Items per page cannot exceed 100',
+            'size.max'               => 'Items per page cannot exceed 100',
         ];
     }
 }

@@ -36,7 +36,7 @@ class RegisterRequest extends BaseRequest
             // @example Alhaj
             'user.last_name' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/'],
             // @example john.doe@gmail.com
-            'user.email' => ['required', 'email:rfc,dns', 'max:255', 'unique:users,email'],
+            'user.email' => ['required', 'email', 'max:255', 'unique:users,email'],
             // @example StrongPassword123!
             'user.password' => ['required', 'string', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&\-_#.])[A-Za-z\d@$!%*?&\-_#.]{8,}$/', 'confirmed'],
             // @example StrongPassword123!
@@ -49,7 +49,7 @@ class RegisterRequest extends BaseRequest
             // @example My Company
             'company.name' => ['required', 'string', 'max:255'],
             // @example info@techcorp.com
-            'company.email' => ['required', 'email:rfc,dns', 'max:255'],
+            'company.email' => ['required', 'email', 'max:255'],
             // @example 123456789
             'company.tax_id' => ['required_if:roles,seller', 'string', 'max:255'],
             // @example +1234567890
@@ -68,6 +68,12 @@ class RegisterRequest extends BaseRequest
             'company.address.country' => ['required', 'string', 'max:255'],
             // @example 12345
             'company.address.zip_code' => ['nullable', 'string', 'max:20'],
+
+            'company.tax_id_images'   => ['nullable', 'array'],
+            'company.tax_id_images.*' => ['file', 'image', 'mimes:jpeg,png,jpg', 'max:5120'],
+
+            'company.commercial_registration_images'   => ['nullable', 'array'],
+            'company.commercial_registration_images.*' => ['file', 'image', 'mimes:jpeg,png,jpg', 'max:5120'],
         ];
     }
 
