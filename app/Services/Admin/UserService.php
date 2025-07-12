@@ -121,10 +121,6 @@ class UserService
             'updated_at' => now(),
         ]);
 
-        if ($data['status'] === 'suspended' && $user->hasRole('seller')) {
-            $user->removeRole('seller');
-        }
-
         return $user->fresh(['roles', 'company']);
     }
 

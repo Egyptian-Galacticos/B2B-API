@@ -88,19 +88,28 @@ class ContractService
 
         if ($newStatus === Contract::STATUS_APPROVED && $contract->status === Contract::STATUS_PENDING_APPROVAL) {
             $finalStatus = Contract::STATUS_PENDING_PAYMENT;
+        } elseif ($newStatus === Contract::STATUS_SHIPPED && $contract->status === Contract::STATUS_VERIFY_SHIPMENT_URL) {
+            $result = $contract->verifyShipmentUrlByAdmin();
+            if (! $result) {
+                throw new InvalidArgumentException("Cannot verify shipment URL for contract in status {$contract->status}");
+            }
+            $finalStatus = Contract::STATUS_SHIPPED;
         } else {
             $finalStatus = $newStatus;
         }
 
-        if (! $contract->canTransitionTo($finalStatus)) {
+        if ($finalStatus !== $contract->status && ! $contract->canTransitionTo($finalStatus)) {
             throw new InvalidArgumentException("Cannot transition from {$contract->status} to {$finalStatus}");
-        }        $updateData = ['status' => $finalStatus];
+        }
+        $updateData = ['status' => $finalStatus];
 
         if ($finalStatus === Contract::STATUS_DELIVERED_AND_PAID && $sellerTransactionId) {
             $updateData['seller_transaction_id'] = $sellerTransactionId;
         }
 
-        $contract->update($updateData);
+        if ($newStatus !== Contract::STATUS_SHIPPED || $contract->status !== Contract::STATUS_VERIFY_SHIPMENT_URL) {
+            $contract->update($updateData);
+        }
 
         $contract->load(['buyer', 'seller']);
 
@@ -131,8 +140,9 @@ class ContractService
             Contract::STATUS_PENDING_PAYMENT              => 'Contract approved and moved to pending payment',
             Contract::STATUS_PENDING_PAYMENT_CONFIRMATION => 'Payment confirmation is pending admin review',
             Contract::STATUS_IN_PROGRESS                  => 'Contract is now in progress',
+            Contract::STATUS_VERIFY_SHIPMENT_URL          => 'Shipment URL is pending admin verification',
+            Contract::STATUS_SHIPPED                      => 'Shipment URL verified successfully. Contract items have been shipped',
             Contract::STATUS_DELIVERED_AND_PAID           => 'Contract delivered and payment made to seller',
-            Contract::STATUS_SHIPPED                      => 'Contract items have been shipped',
             Contract::STATUS_DELIVERED                    => 'Contract items have been delivered',
             Contract::STATUS_COMPLETED                    => 'Contract completed successfully',
             Contract::STATUS_CANCELLED                    => 'Contract has been cancelled',
@@ -197,9 +207,6 @@ class ContractService
                                 $errors[] = "Contract {$contract->id}: Cannot transition from {$contract->status} to {$finalStatus}";
                             } else {
                                 $updateData = ['status' => $finalStatus];
-
-                                // For delivered_and_paid status, seller_transaction_id should be provided by admin
-                                // when they actually process the payment to the seller
 
                                 $contract->update($updateData);
 

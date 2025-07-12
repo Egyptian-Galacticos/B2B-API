@@ -164,6 +164,29 @@ class ContractController extends Controller
                         );
                     }
                     $contract->updateStatus($newStatus);
+                } elseif ($newStatus === Contract::STATUS_DELIVERED) {
+                    if ($user->id !== $contract->buyer_id) {
+                        return $this->apiResponseErrors(
+                            'Unauthorized',
+                            ['Only the buyer can confirm delivery'],
+                            403
+                        );
+                    }
+                    if ($contract->status !== Contract::STATUS_SHIPPED) {
+                        return $this->apiResponseErrors(
+                            'Invalid status transition',
+                            ['Delivery can only be confirmed when contract is shipped'],
+                            400
+                        );
+                    }
+                    $result = $contract->confirmDeliveryByBuyer();
+                    if (! $result) {
+                        return $this->apiResponseErrors(
+                            'Failed to confirm delivery',
+                            ['Cannot confirm delivery for current contract status'],
+                            400
+                        );
+                    }
                 } elseif ($newStatus === Contract::STATUS_CANCELLED) {
                     if (! $user->canActInRole('buyer', $contract) || $user->id !== $contract->buyer_id) {
                         return $this->apiResponseErrors(
@@ -193,6 +216,25 @@ class ContractController extends Controller
                 'metadata',
                 'buyer_transaction_id',
             ]);
+
+            if ($request->has('shipment_url') && $user->id === $contract->seller_id) {
+                if ($contract->status === Contract::STATUS_IN_PROGRESS) {
+                    $result = $contract->setShipmentUrl($request->shipment_url);
+                    if (! $result) {
+                        return $this->apiResponseErrors(
+                            'Failed to set shipment URL',
+                            ['Cannot set shipment URL for current contract status'],
+                            400
+                        );
+                    }
+                } else {
+                    return $this->apiResponseErrors(
+                        'Invalid operation',
+                        ['Shipment URL can only be set when contract is in progress'],
+                        400
+                    );
+                }
+            }
 
             if (! empty($updateData)) {
                 $contract->update($updateData);
