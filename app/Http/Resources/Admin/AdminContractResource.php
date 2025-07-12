@@ -17,20 +17,22 @@ class AdminContractResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'                   => $this->id,
-            'contract_number'      => $this->contract_number,
-            'status'               => $this->status,
-            'total_amount'         => $this->total_amount,
-            'currency'             => $this->currency,
-            'contract_date'        => $this->contract_date,
-            'estimated_delivery'   => $this->estimated_delivery,
-            'shipping_address'     => $this->shipping_address,
-            'billing_address'      => $this->billing_address,
-            'terms_and_conditions' => $this->terms_and_conditions,
-            'created_at'           => $this->created_at,
-            'updated_at'           => $this->updated_at,
-
-            'buyer' => UserResource::make($this->whenLoaded('buyer')),
+            'id'                    => $this->id,
+            'contract_number'       => $this->contract_number,
+            'status'                => $this->status,
+            'total_amount'          => $this->total_amount,
+            'currency'              => $this->currency,
+            'contract_date'         => $this->contract_date,
+            'estimated_delivery'    => $this->estimated_delivery,
+            'shipping_address'      => $this->shipping_address,
+            'billing_address'       => $this->billing_address,
+            'terms_and_conditions'  => $this->terms_and_conditions,
+            'created_at'            => $this->created_at,
+            'updated_at'            => $this->updated_at,
+            'buyer_transaction_id'  => $this->buyer_transaction_id,
+            'seller_transaction_id' => $this->seller_transaction_id,
+            'shipment_url'          => $this->shipment_url,
+            'buyer'                 => UserResource::make($this->whenLoaded('buyer')),
 
             'seller' => UserResource::make($this->whenLoaded('seller')),
 

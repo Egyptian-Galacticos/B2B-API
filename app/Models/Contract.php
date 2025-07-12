@@ -14,6 +14,7 @@ class Contract extends Model
     const STATUS_IN_PROGRESS = 'in_progress';
     const STATUS_DELIVERED_AND_PAID = 'delivered_and_paid';
     const STATUS_SHIPPED = 'shipped';
+    const STATUS_VERIFY_SHIPMENT_URL = 'verify_shipment_url';
     const STATUS_DELIVERED = 'delivered';
     const STATUS_COMPLETED = 'completed';
     const STATUS_CANCELLED = 'cancelled';
@@ -23,14 +24,15 @@ class Contract extends Model
         self::STATUS_PENDING_APPROVAL,
         self::STATUS_APPROVED,
         self::STATUS_PENDING_PAYMENT,
-        self::STATUS_IN_PROGRESS,
-        self::STATUS_DELIVERED_AND_PAID,
-        self::STATUS_SHIPPED,
-        self::STATUS_DELIVERED,
-        self::STATUS_COMPLETED,
-        self::STATUS_CANCELLED,
         self::STATUS_PENDING_PAYMENT_CONFIRMATION,
         self::BUYER_PAYMENT_REJECTED,
+        self::STATUS_IN_PROGRESS,
+        self::STATUS_VERIFY_SHIPMENT_URL,
+        self::STATUS_SHIPPED,
+        self::STATUS_DELIVERED,
+        self::STATUS_DELIVERED_AND_PAID,
+        self::STATUS_COMPLETED,
+        self::STATUS_CANCELLED,
     ];
     protected $fillable = [
         'quote_id',
@@ -48,6 +50,7 @@ class Contract extends Model
         'metadata',
         'buyer_transaction_id',
         'seller_transaction_id',
+        'shipment_url',
     ];
     protected $casts = [
         'contract_date'      => 'datetime',
@@ -125,6 +128,11 @@ class Contract extends Model
         return $query->where('status', self::STATUS_SHIPPED);
     }
 
+    public function scopeVerifyShipmentUrl($query)
+    {
+        return $query->where('status', self::STATUS_VERIFY_SHIPMENT_URL);
+    }
+
     public function scopeDelivered($query)
     {
         return $query->where('status', self::STATUS_DELIVERED);
@@ -157,10 +165,11 @@ class Contract extends Model
             self::STATUS_PENDING_PAYMENT              => [self::STATUS_PENDING_PAYMENT_CONFIRMATION, self::STATUS_CANCELLED],
             self::STATUS_PENDING_PAYMENT_CONFIRMATION => [self::STATUS_IN_PROGRESS, self::BUYER_PAYMENT_REJECTED, self::STATUS_CANCELLED],
             self::BUYER_PAYMENT_REJECTED              => [self::STATUS_PENDING_PAYMENT_CONFIRMATION, self::STATUS_CANCELLED],
-            self::STATUS_IN_PROGRESS                  => [self::STATUS_DELIVERED_AND_PAID, self::STATUS_CANCELLED],
-            self::STATUS_DELIVERED_AND_PAID           => [self::STATUS_SHIPPED, self::STATUS_CANCELLED],
+            self::STATUS_IN_PROGRESS                  => [self::STATUS_VERIFY_SHIPMENT_URL, self::STATUS_CANCELLED],
+            self::STATUS_VERIFY_SHIPMENT_URL          => [self::STATUS_SHIPPED, self::STATUS_CANCELLED],
             self::STATUS_SHIPPED                      => [self::STATUS_DELIVERED, self::STATUS_CANCELLED],
-            self::STATUS_DELIVERED                    => [self::STATUS_COMPLETED],
+            self::STATUS_DELIVERED                    => [self::STATUS_DELIVERED_AND_PAID, self::STATUS_CANCELLED],
+            self::STATUS_DELIVERED_AND_PAID           => [self::STATUS_COMPLETED],
             self::STATUS_COMPLETED                    => [],
             self::STATUS_CANCELLED                    => [],
         ];
@@ -209,6 +218,11 @@ class Contract extends Model
         return $this->status === self::STATUS_SHIPPED;
     }
 
+    public function isVerifyShipmentUrl(): bool
+    {
+        return $this->status === self::STATUS_VERIFY_SHIPMENT_URL;
+    }
+
     public function isDelivered(): bool
     {
         return $this->status === self::STATUS_DELIVERED;
@@ -227,5 +241,91 @@ class Contract extends Model
     public function isCancelled(): bool
     {
         return $this->status === self::STATUS_CANCELLED;
+    }
+
+    /**
+     * Set the shipment URL and transition from in_progress to verify_shipment_url status
+     * This method is called by the seller when they provide a shipment URL
+     */
+    public function setShipmentUrl(string $shipmentUrl): bool
+    {
+        if ($this->status === self::STATUS_IN_PROGRESS && $this->canTransitionTo(self::STATUS_VERIFY_SHIPMENT_URL)) {
+            $this->update([
+                'shipment_url' => $shipmentUrl,
+                'status'       => self::STATUS_VERIFY_SHIPMENT_URL,
+            ]);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Verify shipment URL by admin (transition from verify_shipment_url to shipped)
+     * This method is called by the admin when they verify the shipment URL
+     */
+    public function verifyShipmentUrlByAdmin(): bool
+    {
+        if ($this->status === self::STATUS_VERIFY_SHIPMENT_URL && $this->canTransitionTo(self::STATUS_SHIPPED)) {
+            $this->update(['status' => self::STATUS_SHIPPED]);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Mark as delivered by buyer (transition from shipped to delivered)
+     * This method is called by the buyer when they confirm delivery
+     */
+    public function confirmDeliveryByBuyer(): bool
+    {
+        if ($this->status === self::STATUS_SHIPPED && $this->canTransitionTo(self::STATUS_DELIVERED)) {
+            $this->update(['status' => self::STATUS_DELIVERED]);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if contract is waiting for shipment URL verification
+     */
+    public function isWaitingForShipmentUrlVerification(): bool
+    {
+        return $this->status === self::STATUS_VERIFY_SHIPMENT_URL;
+    }
+
+    /**
+     * Confirm payment after delivery (transition from delivered to delivered_and_paid)
+     * This method is called when payment is confirmed after delivery
+     */
+    public function confirmPaymentAfterDelivery(): bool
+    {
+        if ($this->status === self::STATUS_DELIVERED && $this->canTransitionTo(self::STATUS_DELIVERED_AND_PAID)) {
+            $this->update(['status' => self::STATUS_DELIVERED_AND_PAID]);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Complete the contract (transition from delivered_and_paid to completed)
+     * This method is called to finalize the contract
+     */
+    public function completeContract(): bool
+    {
+        if ($this->status === self::STATUS_DELIVERED_AND_PAID && $this->canTransitionTo(self::STATUS_COMPLETED)) {
+            $this->update(['status' => self::STATUS_COMPLETED]);
+
+            return true;
+        }
+
+        return false;
     }
 }
