@@ -15,19 +15,21 @@ class CompanyResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'id'                      => $this->id,
-            'name'                    => $this->name,
-            'email'                   => $this->email,
-            'tax_id'                  => $this->tax_id,
-            'company_phone'           => $this->company_phone,
-            'commercial_registration' => $this->commercial_registration,
-            'website'                 => $this->website,
-            'description'             => $this->description,
-            'logo'                    => MediaResource::make($this->getFirstMedia('logo')),
-            'address'                 => $this->address,
-            'is_email_verified'       => $this->is_email_verified,
-            'created_at'              => $this->created_at,
-            'updated_at'              => $this->updated_at,
+            'id'                             => $this->id,
+            'name'                           => $this->name,
+            'email'                          => $this->email,
+            'tax_id'                         => $this->tax_id,
+            'company_phone'                  => $this->company_phone,
+            'commercial_registration'        => $this->commercial_registration,
+            'website'                        => $this->website,
+            'description'                    => $this->description,
+            'logo'                           => MediaResource::make($this->getFirstMedia('logo')),
+            'address'                        => $this->address,
+            'is_email_verified'              => $this->is_email_verified,
+            'created_at'                     => $this->created_at,
+            'updated_at'                     => $this->updated_at,
+            'tax_id_images'                  => MediaResource::collection($this->getMedia('tax_id_images')),
+            'commercial_regestration_images' => MediaResource::collection($this->getMedia('commercial_registration_images')),
         ];
     }
 }
