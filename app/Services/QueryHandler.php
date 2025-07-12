@@ -174,6 +174,13 @@ class QueryHandler
                 continue;
             }
 
+            // 🔹 HANDLE HIERARCHICAL CATEGORY FILTERING 🔹
+            if ($fullField === 'category.id' || $fullField === 'category.name') {
+                $this->applyHierarchicalCategoryFilter($fullField, $value, $mode);
+
+                continue;
+            }
+
             $parts = explode('.', $fullField);
 
             if ($mode === 'in') {
@@ -217,6 +224,81 @@ class QueryHandler
                     $q->where($field, $operator, $formattedValue);
                 });
             }
+        }
+    }
+
+    /**
+     * Apply hierarchical category filtering that includes products from child categories.
+     */
+    protected function applyHierarchicalCategoryFilter(string $fullField, string $value, string $mode): void
+    {
+        $operator = $this->getOperatorFromMode($mode);
+        $formattedValue = $this->formatValueByMode($value, $mode);
+
+        if ($fullField === 'category.id') {
+            // Get all descendant category IDs for the specified category
+            $categoryIds = $this->getCategoryDescendantIds($value);
+
+            if (! empty($categoryIds)) {
+                $this->query->whereIn('category_id', $categoryIds);
+            } else {
+                // If no descendants found (invalid category or leaf category), filter by the direct category
+                $this->query->where('category_id', $operator, $formattedValue);
+            }
+        } elseif ($fullField === 'category.name') {
+            // For category name filtering, we need to find the category by name first, then get descendants
+            $category = \App\Models\Category::where('name', $operator, $formattedValue)->first();
+
+            if ($category) {
+                $categoryIds = $this->getCategoryDescendantIds($category->id);
+                if (! empty($categoryIds)) {
+                    $this->query->whereIn('category_id', $categoryIds);
+                } else {
+                    // If no descendants, filter by the single category
+                    $this->query->where('category_id', $category->id);
+                }
+            } else {
+                // If category not found by name, use the original relationship filtering
+                $this->query->whereHas('category', function ($q) use ($operator, $formattedValue) {
+                    $q->where('name', $operator, $formattedValue);
+                });
+            }
+        }
+    }
+
+    /**
+     * Get all descendant category IDs including the parent category itself.
+     */
+    protected function getCategoryDescendantIds($categoryId): array
+    {
+        try {
+            // Ensure we have a valid integer category ID
+            $categoryId = (int) $categoryId;
+
+            if ($categoryId <= 0) {
+                return [];
+            }
+
+            $category = \App\Models\Category::find($categoryId);
+
+            if (! $category) {
+                return [];
+            }
+
+            // Start with the parent category itself
+            $categoryIds = [$categoryId];
+
+            // Get all descendant categories
+            $descendants = $category->getDescendants();
+
+            foreach ($descendants as $descendant) {
+                $categoryIds[] = $descendant->id;
+            }
+
+            return $categoryIds;
+        } catch (\Exception $e) {
+            // If there's any error, return empty array to fall back to normal filtering
+            return [];
         }
     }
 

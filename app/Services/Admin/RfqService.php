@@ -69,7 +69,7 @@ class RfqService
 
         $filteredQuery = $queryHandler->apply();
 
-        $rfqs = $filteredQuery->paginate($request->per_page ?? 15);
+        $rfqs = $filteredQuery->paginate($request->size ?? 10);
 
         return [
             'rfqs'       => $rfqs,

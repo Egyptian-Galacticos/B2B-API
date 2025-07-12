@@ -41,7 +41,7 @@ class ContractController extends Controller
             $perPage = (int) $request->get('size', 15);
             $userType = $request->get('user_type');
 
-            $query = Contract::with(['buyer.comany', 'seller.company', 'quote', 'items.product']);
+            $query = Contract::with(['buyer.company', 'seller.company', 'quote', 'items.product']);
 
             if ($userType === 'buyer') {
                 $query->forBuyer($user->id);
@@ -197,6 +197,14 @@ class ContractController extends Controller
             if (! empty($updateData)) {
                 $contract->update($updateData);
 
+                if ($request->has('buyer_transaction_id') &&
+                    ! empty($request->buyer_transaction_id) &&
+                    $contract->status === Contract::STATUS_PENDING_PAYMENT &&
+                    $user->id === $contract->buyer_id) {
+
+                    $contract->updateStatus(Contract::STATUS_PENDING_PAYMENT_CONFIRMATION);
+                }
+
                 if ($user->id === $contract->buyer_id) {
                     $companyEmail = config('mail.from.address');
                     if ($companyEmail) {
@@ -211,7 +219,7 @@ class ContractController extends Controller
                             Mail::to($companyEmail)
                                 ->send(new ContractUpdatedByBuyerMail($contract, $updateType));
                         } catch (Exception $mailException) {
-                            Log::error('Failed to send contract update email: ' . $mailException->getMessage());
+                            Log::error('Failed to send contract update email: '.$mailException->getMessage());
                         }
                     }
                 }
@@ -278,7 +286,7 @@ class ContractController extends Controller
                 );
             }
 
-            $contractNumber = 'CON-' . date('Y') . '-' . str_pad(Contract::count() + 1, 6, '0', STR_PAD_LEFT);
+            $contractNumber = 'CON-'.date('Y').'-'.str_pad(Contract::count() + 1, 6, '0', STR_PAD_LEFT);
 
             $buyer = User::with('company')->find($buyerId);
 

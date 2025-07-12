@@ -65,7 +65,7 @@ class QuoteService
 
         $filteredQuery = $queryHandler->apply();
 
-        return $filteredQuery->paginate($request->per_page ?? 15);
+        return $filteredQuery->paginate($request->size ?? 10);
     }
 
     /**
