@@ -196,7 +196,7 @@ Route::prefix('v1')->group(function () {
                 // Message-specific routes
                 Route::prefix('messages/{messageId}')->group(function () {
                     // Mark a specific message as read
-                    Route::patch('read', [ChatController::class, 'markAsRead'])->name('chat.message.read');
+                    Route::patch('read', [ChatController::class, 'markMessageAsRead'])->name('chat.message.read');
                 });
             });
         });
