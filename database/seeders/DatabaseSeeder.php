@@ -6,7 +6,6 @@ use App\Models\Contract;
 use App\Models\Conversation;
 use App\Models\Escrow;
 use App\Models\Message;
-use App\Models\MessageAttachment;
 use App\Models\Payment;
 use Illuminate\Database\Seeder;
 
@@ -52,6 +51,5 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        MessageAttachment::factory()->count(3)->create();
     }
 }
