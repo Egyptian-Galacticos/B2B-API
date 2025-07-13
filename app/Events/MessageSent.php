@@ -56,7 +56,7 @@ class MessageSent implements ShouldBroadcastNow
                 'id'         => $this->message->sender->id,
                 'first_name' => $this->message->sender->first_name,
                 'last_name'  => $this->message->sender->last_name,
-                'avatar_url' => $this->message->sender->getFirstMediaUrl('profile_image'),
+                'logo'       => $this->message->sender->company->getFirstMediaUrl('logo'),
             ],
             'created_at' => $this->message->created_at->toISOString(),
         ];

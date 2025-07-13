@@ -220,62 +220,6 @@ class ChatController extends Controller
     }
 
     /**
-     * Handle typing indicator.
-     */
-    public function typing(Request $request, int $conversationId): JsonResponse
-    {
-        try {
-            $isTyping = $request->boolean('is_typing', true);
-
-            $this->chatService->handleTyping(
-                $conversationId,
-                auth()->user()->id,
-                $isTyping
-            );
-
-            return $this->apiResponse(
-                message: 'Typing indicator sent',
-                status: 200
-            );
-        } catch (\Exception $e) {
-            return $this->apiResponseErrors(
-                message: 'Failed to send typing indicator',
-                errors: [
-                    'error' => $e->getMessage(),
-                ],
-                status: 403
-            );
-        }
-    }
-
-    /**
-     * Handle stop typing indicator.
-     */
-    public function stopTyping(Request $request, int $conversationId): JsonResponse
-    {
-        try {
-            $this->chatService->handleTyping(
-                $conversationId,
-                auth()->user()->id,
-                false // Stop typing
-            );
-
-            return $this->apiResponse(
-                message: 'Stop typing indicator sent',
-                status: 200
-            );
-        } catch (\Exception $e) {
-            return $this->apiResponseErrors(
-                message: 'Failed to send stop typing indicator',
-                errors: [
-                    'error' => $e->getMessage(),
-                ],
-                status: 403
-            );
-        }
-    }
-
-    /**
      * Mark a message as read.
      */
     public function markMessageAsRead(Request $request, int $messageId): JsonResponse

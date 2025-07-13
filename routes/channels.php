@@ -82,10 +82,10 @@ Broadcast::channel('online-users', function ($user) {
     try {
         // Return user info for presence channel
         return [
-            'id'         => $user->id,
-            'name'       => $user->first_name.' '.$user->last_name,
-            'email'      => $user->email,
-            'avatar_url' => $user->company->getFirstMediaUrl('logo'),
+            'id'    => $user->id,
+            'name'  => $user->first_name.' '.$user->last_name,
+            'email' => $user->email,
+            'logo'  => $user->seller->company->getFirstMediaUrl('logo'),
         ];
     } catch (\Exception $e) {
         return false;

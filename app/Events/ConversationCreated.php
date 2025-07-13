@@ -43,14 +43,14 @@ class ConversationCreated implements ShouldBroadcast
                 'first_name' => $this->conversation->seller->first_name,
                 'last_name'  => $this->conversation->seller->last_name,
                 'full_name'  => $this->conversation->seller->full_name,
-                'avatar_url' => $this->conversation->seller->getFirstMediaUrl('profile_image'),
+                'logo'       => $this->conversation->seller->company->getFirstMediaUrl('logo'),
             ],
             'buyer' => [
                 'id'         => $this->conversation->buyer->id,
                 'first_name' => $this->conversation->buyer->first_name,
                 'last_name'  => $this->conversation->buyer->last_name,
                 'full_name'  => $this->conversation->buyer->full_name,
-                'avatar_url' => $this->conversation->buyer->getFirstMediaUrl('profile_image'),
+                'logo'       => $this->conversation->seller->company->getFirstMediaUrl('logo'),
             ],
             'created_at' => $this->conversation->created_at->toISOString(),
         ];

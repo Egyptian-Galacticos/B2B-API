@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Events\ConversationCreated;
 use App\Events\MessageRead;
 use App\Events\MessageSent;
-use App\Events\UserTyping;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
@@ -200,25 +199,6 @@ class ChatService
         }
 
         $conversation->update(['is_active' => true]);
-    }
-
-    /**
-     * Handle typing indicator broadcasting.
-     */
-    public function handleTyping(int $conversationId, int $userId, bool $isTyping = true): void
-    {
-        $conversation = Conversation::findOrFail($conversationId);
-
-        // Verify user is a participant
-        if (! $conversation->isParticipant($userId)) {
-            throw new \Exception('User is not a participant in this conversation');
-        }
-
-        $user = User::findOrFail($userId);
-        $userName = $user->first_name.' '.$user->last_name;
-
-        // Broadcast typing indicator
-        broadcast(new UserTyping($conversationId, $userId, $userName, $isTyping))->toOthers();
     }
 
     /**
