@@ -114,11 +114,27 @@ class ChatController extends Controller
     public function sendMessage(SendMessageRequest $request, int $conversationId): JsonResponse
     {
         try {
+            $attachments = [];
+
+            $allFiles = $request->allFiles();
+
+            if (isset($allFiles['attachments'])) {
+                foreach ($allFiles['attachments'] as $index => $attachmentData) {
+                    if (isset($attachmentData['file']) && $attachmentData['file']->isValid()) {
+                        $attachments[] = [
+                            'file'      => $attachmentData['file'],
+                            'file_name' => $request->input("attachments.{$index}.file_name") ?? $attachmentData['file']->getClientOriginalName(),
+                        ];
+                    }
+                }
+            }
+
             $message = $this->chatService->sendMessage(
                 $conversationId,
                 auth()->user()->id,
-                $request->validated('content'),
-                $request->validated('type', 'text')
+                $request->validated('content') ?? '',
+                $request->validated('type', 'text'),
+                $attachments
             );
 
             return $this->apiResponse(
