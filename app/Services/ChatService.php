@@ -48,7 +48,8 @@ class ChatService
         int $conversationId,
         int $senderId,
         string $content,
-        string $type = 'text'
+        string $type = 'text',
+        array $attachments = []
     ): Message {
         $conversation = Conversation::findOrFail($conversationId);
 
@@ -65,6 +66,17 @@ class ChatService
             'sent_at'         => now(),
             'is_read'         => false,
         ]);
+
+        // Handle file attachments using Media Library
+        if (! empty($attachments)) {
+            foreach ($attachments as $attachment) {
+                if (isset($attachment['file']) && $attachment['file']->isValid()) {
+                    $message->addMedia($attachment['file'])
+                        ->usingName($attachment['file_name'] ?? $attachment['file']->getClientOriginalName())
+                        ->toMediaCollection('attachments');
+                }
+            }
+        }
 
         // Update conversation's last message and activity
         $conversation->update([
@@ -103,8 +115,8 @@ class ChatService
         }
 
         return Message::where('conversation_id', $conversationId)
-            ->with(['sender', 'attachments'])
-            ->orderBy('created_at', 'desc')
+            ->with(['sender', 'media'])
+            ->orderBy('created_at', 'asc')
             ->paginate($perPage);
     }
 
