@@ -191,18 +191,6 @@ Route::prefix('v1')->group(function () {
 
                     // Mark messages as read
                     Route::patch('read', [ChatController::class, 'markConversationAsRead'])->name('chat.conversation.read');
-
-                    // Handle typing indicator
-                    Route::post('typing', [ChatController::class, 'typing'])->name('chat.typing');
-
-                    // Handle stop typing indicator
-                    Route::post('stop-typing', [ChatController::class, 'stopTyping'])->name('chat.stop-typing');
-
-                    // Archive/deactivate conversation
-                    Route::patch('archive', [ChatController::class, 'archiveConversation'])->name('chat.conversations.archive');
-
-                    // Reactivate conversation
-                    Route::patch('reactivate', [ChatController::class, 'reactivateConversation'])->name('chat.conversations.reactivate');
                 });
 
                 // Message-specific routes
