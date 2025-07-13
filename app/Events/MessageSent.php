@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\MediaResource;
 use App\Models\Message;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -58,7 +59,9 @@ class MessageSent implements ShouldBroadcastNow
                 'last_name'  => $this->message->sender->last_name,
                 'logo'       => $this->message->sender->company->getFirstMediaUrl('logo'),
             ],
-            'created_at' => $this->message->created_at->toISOString(),
+            'attachments' => MediaResource::collection($this->message->getMedia('attachments')),
+            'is_read'     => $this->message->is_read,
+            'created_at'  => $this->message->created_at->toISOString(),
         ];
     }
 }
