@@ -247,6 +247,8 @@ class ProductController extends Controller
         $productData = collect($validated)->except(['main_image', 'images', 'documents', 'price_tiers'])->toArray();
 
         $product->update($productData);
+        $product->is_approved = false;
+        $product->save();
 
         // Handle product tiers if provided
         if (isset($validated['price_tiers'])) {
