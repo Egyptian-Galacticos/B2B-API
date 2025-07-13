@@ -19,6 +19,7 @@ class MessageResource extends JsonResource
             'is_read'         => $this->is_read,
             'sender_id'       => $this->sender_id,
             'sender'          => new UserResource($this->sender),
+            'attachments'     => MediaResource::collection($this->getMedia('attachments')),
         ];
     }
 }
