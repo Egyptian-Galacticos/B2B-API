@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Auth;
 
+use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 
 /**
@@ -19,7 +20,7 @@ class RegisterRequest extends BaseRequest
      */
     public function authorize(): bool
     {
-        return true; // Anyone can register
+        return true;
     }
 
     public function rules(): array

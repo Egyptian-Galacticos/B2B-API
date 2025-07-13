@@ -35,7 +35,8 @@ class UpdateContractRequest extends FormRequest
             'terms_and_conditions' => 'nullable|string',
             'metadata'             => 'nullable|array',
             'buyer_transaction_id' => 'nullable|string|regex:/^[A-Z0-9]{10,25}$/|max:255',
-            'shipment_url'         => 'nullable|string|url|max:255',
+            // @example https://www.fedex.com/apps/fedextrack/?tracknumbers=123456789012
+            'shipment_url' => 'nullable|string|url|max:255',
         ];
     }
 

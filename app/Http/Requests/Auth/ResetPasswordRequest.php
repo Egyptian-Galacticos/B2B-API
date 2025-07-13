@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Auth;
+
+use App\Http\Requests\BaseRequest;
 
 class ResetPasswordRequest extends BaseRequest
 {
@@ -9,7 +11,7 @@ class ResetPasswordRequest extends BaseRequest
      */
     public function authorize(): bool
     {
-        return true; // Anyone with a valid reset token can reset password
+        return true;
     }
 
     /**
@@ -34,7 +36,7 @@ class ResetPasswordRequest extends BaseRequest
                 'required',
                 'string',
                 'min:8',
-                'regex: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&\-_#.])[A-Za-z\d@$!%*?&\-_#.]{8,}$/', // Strong password
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&\-_#.])[A-Za-z\d@$!%*?&\-_#.]{8,}$/', // Strong password
                 'confirmed',
             ],
         ];

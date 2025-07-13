@@ -1,6 +1,9 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Auth;
+
+use App\Http\Requests\BaseRequest;
+use Illuminate\Support\Facades\Auth;
 
 class UpdatePasswordRequest extends BaseRequest
 {
@@ -9,7 +12,7 @@ class UpdatePasswordRequest extends BaseRequest
      */
     public function authorize(): bool
     {
-        return auth()->check();
+        return Auth::check();
     }
 
     /**
