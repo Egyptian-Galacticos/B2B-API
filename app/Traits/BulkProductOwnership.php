@@ -11,13 +11,11 @@ trait BulkProductOwnership
      */
     protected function verifyBulkOwnership(array $productIds, int $userId): array
     {
-        // Get products owned by the user
         $userProducts = Product::whereIn('id', $productIds)
             ->where('seller_id', $userId)
             ->pluck('id')
             ->toArray();
 
-        // Find unauthorized products
         $unauthorizedIds = array_diff($productIds, $userProducts);
 
         return [
