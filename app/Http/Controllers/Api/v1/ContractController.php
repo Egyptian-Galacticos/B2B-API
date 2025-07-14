@@ -11,6 +11,7 @@ use App\Mail\ContractUpdatedByBuyerMail;
 use App\Models\Contract;
 use App\Models\Quote;
 use App\Models\User;
+use App\Notifications\NewContractCreatedNotification;
 use App\Services\QueryHandler;
 use App\Traits\ApiResponse;
 use Exception;
@@ -435,6 +436,7 @@ class ContractController extends Controller
                 'quote',
                 'items.product',
             ]);
+            $contract->buyer->notify(new NewContractCreatedNotification($contract));
 
             return $this->apiResponse(
                 new ContractResource($contract),
