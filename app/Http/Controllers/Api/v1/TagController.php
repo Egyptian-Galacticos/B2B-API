@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\v1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\TagResource;
 use App\Traits\ApiResponse;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Spatie\Tags\Tag;
@@ -28,7 +29,7 @@ class TagController extends Controller
                 message: 'Tags retrieved successfully.',
                 status: 200
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->apiResponseErrors(
                 message: 'Failed to retrieve tags.',
                 errors: [$e->getMessage()],

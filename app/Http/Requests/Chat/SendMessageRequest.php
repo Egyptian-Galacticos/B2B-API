@@ -11,7 +11,7 @@ class SendMessageRequest extends BaseRequest
      */
     public function authorize(): bool
     {
-        return true; // Authorization handled by middleware
+        return true;
     }
 
     /**

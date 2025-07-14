@@ -80,8 +80,6 @@ class Company extends Model implements HasMedia
         if (! $this->website) {
             return null;
         }
-
-        // Add protocol if missing
         if (! str_starts_with($this->website, 'http://') && ! str_starts_with($this->website, 'https://')) {
             return 'https://'.$this->website;
         }

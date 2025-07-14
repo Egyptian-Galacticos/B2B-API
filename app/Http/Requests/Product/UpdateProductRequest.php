@@ -97,7 +97,6 @@ class UpdateProductRequest extends BaseRequest
      */
     protected function prepareForValidation(): void
     {
-        // Convert currency to uppercase if provided and not empty
         if ($this->has('currency') && ! empty($this->currency)) {
             $this->merge([
                 'currency' => strtoupper($this->currency),

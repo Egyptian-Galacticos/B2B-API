@@ -33,10 +33,8 @@ class RoleMiddleware
             $roles = explode(',', $roles[0]);
         }
 
-        // Clean up any whitespace
         $roles = array_map('trim', $roles);
 
-        // Check if user has any of the required roles
         $hasRequiredRole = $user->hasAnyRole($roles);
 
         if (! $hasRequiredRole) {

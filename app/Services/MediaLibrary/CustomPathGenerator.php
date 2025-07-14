@@ -37,14 +37,11 @@ class CustomPathGenerator implements PathGenerator
      */
     protected function getBasePath(Media $media): string
     {
-        // Create a consistent hash using media ID and creation date (won't change)
         $hash = md5($media->id.$media->created_at->timestamp);
 
-        // Get model information for organization
         $modelType = class_basename($media->model_type);
         $collectionName = $media->collection_name ?: 'default';
 
-        // Create organized path: model/collection/hash
         return strtolower($modelType).'/'.$collectionName.'/'.$hash;
     }
 }

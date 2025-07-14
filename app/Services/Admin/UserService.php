@@ -45,7 +45,6 @@ class UserService
                 'last_login_at',
             ]);
 
-        // temp
         $this->applyCustomFilters($query, $request);
 
         $filteredQuery = $queryHandler->apply();

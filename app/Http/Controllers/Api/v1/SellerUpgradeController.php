@@ -7,6 +7,7 @@ use App\Http\Requests\SellerUpgradeRequest;
 use App\Http\Resources\SellerUpgradeResource;
 use App\Models\User;
 use App\Traits\ApiResponse;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -59,11 +60,11 @@ class SellerUpgradeController extends Controller
                     'Successfully upgraded to seller. Your account is now pending admin approval.',
                     201
                 );
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 DB::rollBack();
                 throw $e;
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->apiResponse(null, 'Failed to upgrade to seller', 500);
         }
     }

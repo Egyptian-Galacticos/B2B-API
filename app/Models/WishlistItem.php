@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class WishlistItem extends Model
 {
-    /** @use HasFactory<\Database\Factories\WishlistItemFactory> */
     use HasFactory, SoftDeletes;
     protected $fillable = [
         'wishlist_id',

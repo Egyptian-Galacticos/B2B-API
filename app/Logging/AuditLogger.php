@@ -36,7 +36,7 @@ class AuditLogger
         'billing_address',
         'terms_and_conditions',
         'specifications',
-    ]; // List of sensitive keys to redact, to be updated as needed
+    ];
 
     /**
      * Sanitize metadata by replacing sensitive fields with [REDACTED].
