@@ -8,6 +8,7 @@ use App\Http\Requests\Rfq\IndexRfqRequest;
 use App\Http\Requests\Rfq\UpdateRfqRequest;
 use App\Http\Resources\RfqResource;
 use App\Models\User;
+use App\Notifications\NewRfqCreatedNotification;
 use App\Services\RfqService;
 use App\Traits\ApiResponse;
 use Exception;
@@ -76,6 +77,9 @@ class RfqController extends Controller
                 'shipping_address'   => $request->shipping_address,
                 'buyer_message'      => $request->buyer_message,
             ]);
+            if ($rfq->seller) {
+                $rfq->seller->notify(new NewRfqCreatedNotification($rfq));
+            }
 
             return $this->apiResponse(
                 new RfqResource($rfq),
