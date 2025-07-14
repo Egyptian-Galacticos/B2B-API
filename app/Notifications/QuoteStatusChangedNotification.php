@@ -35,7 +35,7 @@ class QuoteStatusChangedNotification extends Notification implements ShouldQueue
         $this->title = 'Quote '.Str::title($this->newStatus);
 
         // Directly define the message in the constructor
-        $$this->message = "Your quote #{$this->quote->id} has been {$this->newStatus}.";
+        $this->message = "Your quote #{$this->quote->id} has been {$this->newStatus}.";
 
         $this->onQueue('default');
     }
@@ -75,5 +75,10 @@ class QuoteStatusChangedNotification extends Notification implements ShouldQueue
     public function toBroadcast(object $notifiable): array
     {
         return $this->toArray($notifiable);
+    }
+
+    public function broadcastType(): string
+    {
+        return $this->type; // This will override the default class name
     }
 }

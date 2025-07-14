@@ -215,15 +215,7 @@ class QuoteService
 
                 // Dispatch notification if status changed
                 if (isset($updateData['status']) && $updateData['status'] !== $originalStatus) {
-                    if ($isAdmin) {
-                        // Admin made the change, notify both buyer and seller
-                        if ($quote->buyer) {
-                            $quote->buyer->notify(new QuoteStatusChangedNotification($quote));
-                        }
-                        if ($quote->seller) {
-                            $quote->seller->notify(new QuoteStatusChangedNotification($quote));
-                        }
-                    } elseif ($isBuyer) {
+                    if ($isBuyer) {
                         // Buyer made the change, notify the seller
                         if ($quote->seller) {
                             $quote->seller->notify(new QuoteStatusChangedNotification($quote));
