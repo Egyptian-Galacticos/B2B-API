@@ -41,7 +41,7 @@ class ContractStatusChangedNotification extends Notification implements ShouldQu
         $changedByPart = $this->changedBy ? " Changed by {$this->changedBy}." : '';
         $this->message = $messagePart.$changedByPart;
         $this->read_at = null;
-        $this->created_at = now()->toDateTimeString();
+        $this->created_at = now()->toISOString();
 
         $this->onQueue('default');
     }
