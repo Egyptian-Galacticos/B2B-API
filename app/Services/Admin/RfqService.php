@@ -4,6 +4,7 @@ namespace App\Services\Admin;
 
 use App\Http\Resources\Admin\AdminRfqResource;
 use App\Models\Rfq;
+use App\Notifications\RFQStatusChangedNotification;
 use App\Services\QueryHandler;
 use Exception;
 use Illuminate\Http\Request;
@@ -101,7 +102,20 @@ class RfqService
             throw new InvalidArgumentException("Cannot transition to {$newStatus} from current status '{$rfq->status}'");
         }
 
+        $originalStatus = $rfq->status;
         $rfq->update(['status' => $newStatus]);
+
+        // Dispatch notification if status changed
+        if ($newStatus !== $originalStatus) {
+            $rfq->load(['buyer', 'seller']); // Ensure buyer and seller are loaded
+
+            if ($rfq->buyer) {
+                $rfq->buyer->notify(new RFQStatusChangedNotification($rfq));
+            }
+            if ($rfq->seller) {
+                $rfq->seller->notify(new RFQStatusChangedNotification($rfq));
+            }
+        }
 
         return $rfq->load(['buyer.company', 'seller.company', 'initialProduct', 'quotes']);
     }
@@ -169,7 +183,21 @@ class RfqService
                             if (! $rfq->canTransitionTo($status)) {
                                 $errors[] = "RFQ {$rfq->id}: Cannot transition from {$rfq->status} to {$status}";
                             } else {
+                                $originalStatus = $rfq->status;
                                 $rfq->update(['status' => $status]);
+
+                                // Dispatch notification if status changed
+                                if ($status !== $originalStatus) {
+                                    $rfq->load(['buyer', 'seller']); // Ensure buyer and seller are loaded
+
+                                    if ($rfq->buyer) {
+                                        $rfq->buyer->notify(new RFQStatusChangedNotification($rfq));
+                                    }
+                                    if ($rfq->seller) {
+                                        $rfq->seller->notify(new RFQStatusChangedNotification($rfq));
+                                    }
+                                }
+
                                 $rfq->load(['buyer.company', 'seller.company', 'initialProduct', 'quotes']);
                                 $updatedRfqs[] = $rfq;
                                 $successCount++;

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Rfq;
 use App\Models\User;
+use App\Notifications\RFQStatusChangedNotification;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
@@ -63,7 +64,29 @@ class RfqService
             throw new InvalidArgumentException("Cannot transition to {$newStatus} from current status '{$rfq->status}'");
         }
 
+        $originalStatus = $rfq->status;
         $rfq->update(['status' => $newStatus]);
+
+        // Dispatch notification if status changed
+        if ($newStatus !== $originalStatus) {
+            $rfq->load(['buyer', 'seller']); // Ensure buyer and seller are loaded
+
+            // Determine if the user is the buyer or seller
+            $isBuyer = ($rfq->buyer_id === $userId);
+            $isSeller = ($rfq->seller_id === $userId);
+
+            if ($isBuyer) {
+                // If buyer made the change, notify the seller
+                if ($rfq->seller) {
+                    $rfq->seller->notify(new RFQStatusChangedNotification($rfq));
+                }
+            } elseif ($isSeller) {
+                // If seller made the change, notify the buyer
+                if ($rfq->buyer) {
+                    $rfq->buyer->notify(new RFQStatusChangedNotification($rfq));
+                }
+            }
+        }
 
         return $rfq->load(['buyer.company', 'seller.company', 'initialProduct', 'quotes']);
     }
