@@ -3,6 +3,7 @@
 namespace App\Services\Admin;
 
 use App\Models\Product;
+use App\Notifications\ProductStatusChangedNotification;
 use App\Services\QueryHandler;
 use DomainException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -90,6 +91,7 @@ class ProductService
             }
 
             $product->update($data);
+            $product->seller->notify(new ProductStatusChangedNotification($product, $data['is_approved'] ? 'approved' : 'rejected'));
 
             return [
                 'success' => true,
