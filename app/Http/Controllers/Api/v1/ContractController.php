@@ -239,10 +239,12 @@ class ContractController extends Controller
             if (! empty($updateData)) {
                 $contract->update($updateData);
 
-                if ($request->has('buyer_transaction_id') &&
+                if (
+                    $request->has('buyer_transaction_id') &&
                     ! empty($request->buyer_transaction_id) &&
                     $contract->status === Contract::STATUS_PENDING_PAYMENT &&
-                    $user->id === $contract->buyer_id) {
+                    $user->id === $contract->buyer_id
+                ) {
 
                     $contract->updateStatus(Contract::STATUS_PENDING_PAYMENT_CONFIRMATION);
                 }
@@ -366,7 +368,7 @@ class ContractController extends Controller
                 $shippingAddress = $parseAddress($quote->rfq->shipping_address);
             }
             if (! $shippingAddress && ! empty($buyer?->company?->address)) {
-                $shippingAddress = $buyer->company->address; // Already an array
+                $shippingAddress = $buyer->company->address;
             }
 
             // billing address priority:request > buyer's company

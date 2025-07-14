@@ -191,8 +191,6 @@ class AuthController extends Controller
                 return $this->apiResponseErrors('User not found', ['error' => 'Authenticated user not found'], 404);
             }
 
-            // Force refresh user data to get latest verification status
-
             return $this->apiResponse(UserResource::make($user->load('company')), 'User retrieved successfully', 200);
 
         } catch (TokenExpiredException $e) {
@@ -258,10 +256,6 @@ class AuthController extends Controller
                     'user_error' => 'User associated with this token no longer exists',
                 ], 401);
             }
-
-            // Force refresh user data to get latest verification status
-
-            // Generate new access token
             $newToken = JWTAuth::fromUser($user);
 
             return $this->apiResponse([
@@ -277,7 +271,7 @@ class AuthController extends Controller
             return $this->apiResponseErrors('Token has expired', [
                 'token_error' => $e->getMessage(),
             ], 401);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->apiResponseErrors('Token refresh failed', [
                 'error' => $e->getMessage(),
             ], 500);
@@ -310,7 +304,6 @@ class AuthController extends Controller
                 return $this->apiResponse(null, 'Reset link sent to your email', 200);
             }
 
-            // Handle different password reset statuses
             $message = match ($status) {
                 Password::INVALID_USER    => 'User not found with that email address',
                 Password::RESET_THROTTLED => 'Please wait before requesting another reset link',
@@ -356,7 +349,6 @@ class AuthController extends Controller
                 return $this->apiResponse(null, 'Password has been successfully reset', 200);
             }
 
-            // Handle different password reset statuses
             $message = match ($status) {
                 Password::INVALID_TOKEN => 'Invalid reset token',
                 Password::INVALID_USER  => 'User not found',
@@ -382,10 +374,8 @@ class AuthController extends Controller
                 return $this->apiResponseErrors('User not found', [], 404);
             }
 
-            // Force refresh from database
             $user->load('roles', 'company');
 
-            // Generate new token with fresh user data
             $newToken = JWTAuth::fromUser($user);
 
             return $this->apiResponse([
@@ -394,7 +384,7 @@ class AuthController extends Controller
                 'expires_in'   => config('jwt.ttl') * 60,
             ], 'User data refreshed successfully', 200);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->apiResponseErrors('Failed to refresh user data', ['error' => $e->getMessage()], 500);
         }
     }

@@ -133,7 +133,6 @@ Route::prefix('v1')->group(function () {
                 Route::patch('products/{product}', [ProductController::class, 'updateStatus'])->name('products.status');
 
                 // Product media management routes
-                //                Route::delete('products/{product}/images/{mediaId}', [ProductController::class, 'deleteImage'])->name('products.images.destroy');
                 Route::delete('products/{product}/media/{collection}/{mediaId}', [ProductController::class, 'deleteProductMedia'])->name('products.documents.destroy');
             });
 

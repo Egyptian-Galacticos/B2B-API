@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -13,7 +14,6 @@ class BroadcastingController extends Controller
      */
     public function authenticate(Request $request)
     {
-        // Validate required parameters
         $request->validate([
             'channel_name' => 'required|string',
             'socket_id'    => 'required|string',
@@ -21,7 +21,7 @@ class BroadcastingController extends Controller
 
         try {
             return Broadcast::auth($request);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'error'   => 'Broadcasting authentication failed',
                 'message' => $e->getMessage(),
