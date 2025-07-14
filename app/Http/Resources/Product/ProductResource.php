@@ -16,23 +16,22 @@ class ProductResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'           => $this->id,
-            'brand'        => $this->brand,
-            'model_number' => $this->model_number,
-            'name'         => $this->name,
-            'slug'         => $this->slug,
-            'description'  => $this->description,
-            'weight'       => $this->weight,
-            'currency'     => $this->currency,
-            'is_featured'  => $this->is_featured,
-            'is_active'    => $this->is_active,
-            'is_approved'  => $this->is_approved,
-            // Use the scope result directly - much more efficient!
+            'id'               => $this->id,
+            'brand'            => $this->brand,
+            'model_number'     => $this->model_number,
+            'name'             => $this->name,
+            'slug'             => $this->slug,
+            'description'      => $this->description,
+            'weight'           => $this->weight,
+            'currency'         => $this->currency,
+            'is_featured'      => $this->is_featured,
+            'is_active'        => $this->is_active,
+            'is_approved'      => $this->is_approved,
             'in_wishlist'      => (bool) ($this->in_wishlist ?? false),
             'sample_available' => $this->sample_available,
             'sample_price'     => $this->sample_price,
             'sku'              => $this->sku,
-            'created_at'      => $this->created_at,
+            'created_at'       => $this->created_at,
             'category'         => $this->whenLoaded('category', function () {
                 return [
                     'name' => $this->category->name,
@@ -53,7 +52,6 @@ class ProductResource extends JsonResource
                 });
             }),
 
-            // Relationships
             'seller' => $this->whenLoaded('seller', function () {
 
                 if ($this->seller->relationLoaded('company') && $this->seller->company) {
