@@ -103,7 +103,6 @@ class RfqService
             });
         }
 
-        // Clone the base query for statistics calculation
         $statsQuery = clone $baseQuery;
 
         $statistics = [
