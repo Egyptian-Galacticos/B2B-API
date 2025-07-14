@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Category;
 
+use App\Models\Category;
 use Illuminate\Foundation\Http\FormRequest;
 
 class BulkCategoryActionRequest extends FormRequest
@@ -69,11 +70,9 @@ class BulkCategoryActionRequest extends FormRequest
             $action = $this->input('action');
             $categoryIds = $this->input('category_ids', []);
 
-            // Additional validation based on action type
             switch ($action) {
                 case 'force_delete':
-                    // Only allow force delete on trashed categories
-                    $trashedCount = \App\Models\Category::onlyTrashed()
+                    $trashedCount = Category::onlyTrashed()
                         ->whereIn('id', $categoryIds)
                         ->count();
 
@@ -83,8 +82,7 @@ class BulkCategoryActionRequest extends FormRequest
                     break;
 
                 case 'restore':
-                    // Only allow restore on trashed categories
-                    $trashedCount = \App\Models\Category::onlyTrashed()
+                    $trashedCount = Category::onlyTrashed()
                         ->whereIn('id', $categoryIds)
                         ->count();
 
@@ -94,8 +92,7 @@ class BulkCategoryActionRequest extends FormRequest
                     break;
 
                 case 'delete':
-                    // Check if categories can be deleted (no children or products)
-                    $categoriesWithDependencies = \App\Models\Category::whereIn('id', $categoryIds)
+                    $categoriesWithDependencies = Category::whereIn('id', $categoryIds)
                         ->where(function ($query) {
                             $query->whereHas('children')
                                 ->orWhereHas('products');
