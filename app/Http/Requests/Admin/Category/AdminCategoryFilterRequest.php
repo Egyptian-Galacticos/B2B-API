@@ -82,7 +82,6 @@ class AdminCategoryFilterRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        // Convert string boolean values to actual booleans
         if ($this->has('has_products')) {
             $this->merge([
                 'has_products' => filter_var($this->has_products, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE),

@@ -33,9 +33,8 @@ class ChatService
                 'last_activity_at' => now(),
                 'is_active'        => true,
             ]);
-
             // Broadcast new conversation created event
-            broadcast(new ConversationCreated($conversation->load(['seller', 'buyer'])))->toOthers();
+            broadcast(new ConversationCreated($conversation->load(['seller.company', 'buyer.company'])));
         }
 
         return $conversation;
@@ -48,7 +47,8 @@ class ChatService
         int $conversationId,
         int $senderId,
         string $content,
-        string $type = 'text'
+        string $type = 'text',
+        array $attachments = []
     ): Message {
         $conversation = Conversation::findOrFail($conversationId);
 
@@ -65,6 +65,17 @@ class ChatService
             'sent_at'         => now(),
             'is_read'         => false,
         ]);
+
+        // Handle file attachments using Media Library
+        if (! empty($attachments)) {
+            foreach ($attachments as $attachment) {
+                if (isset($attachment['file']) && $attachment['file']->isValid()) {
+                    $message->addMedia($attachment['file'])
+                        ->usingName($attachment['file_name'] ?? $attachment['file']->getClientOriginalName())
+                        ->toMediaCollection('attachments');
+                }
+            }
+        }
 
         // Update conversation's last message and activity
         $conversation->update([
@@ -103,38 +114,9 @@ class ChatService
         }
 
         return Message::where('conversation_id', $conversationId)
-            ->with(['sender', 'attachments'])
-            ->orderBy('created_at', 'desc')
+            ->with(['sender', 'media'])
+            ->orderBy('created_at', 'asc')
             ->paginate($perPage);
-    }
-
-    /**
-     * Mark messages as read for a user in a conversation.
-     */
-    public function markMessagesAsRead(int $conversationId, int $userId): void
-    {
-        $conversation = Conversation::findOrFail($conversationId);
-
-        // Verify user is a participant
-        if (! $conversation->isParticipant($userId)) {
-            throw new \Exception('User is not a participant in this conversation');
-        }
-
-        Message::where('conversation_id', $conversationId)
-            ->where('sender_id', '!=', $userId)
-            ->where('is_read', false)
-            ->update(['is_read' => true]);
-
-        // Get the messages that were marked as read to broadcast the event
-        $readMessages = Message::where('conversation_id', $conversationId)
-            ->where('sender_id', '!=', $userId)
-            ->where('is_read', true)
-            ->get();
-
-        // Broadcast message read events
-        foreach ($readMessages as $message) {
-            broadcast(new MessageRead($message, $userId))->toOthers();
-        }
     }
 
     /**
@@ -172,9 +154,9 @@ class ChatService
     }
 
     /**
-     * Archive/deactivate a conversation.
+     * Mark all messages in a conversation as read for a user.
      */
-    public function archiveConversation(int $conversationId, int $userId): void
+    public function markConversationAsRead(int $conversationId, int $userId): void
     {
         $conversation = Conversation::findOrFail($conversationId);
 
@@ -183,26 +165,25 @@ class ChatService
             throw new \Exception('User is not a participant in this conversation');
         }
 
-        $conversation->update(['is_active' => false]);
-    }
+        // Mark all unread messages from other participants as read
+        $messages = Message::where('conversation_id', $conversationId)
+            ->where('sender_id', '!=', $userId)
+            ->where('is_read', false)
+            ->get();
 
-    /**
-     * Reactivate a conversation.
-     */
-    public function reactivateConversation(int $conversationId, int $userId): void
-    {
-        $conversation = Conversation::findOrFail($conversationId);
+        foreach ($messages as $message) {
+            $message->update([
+                'is_read' => true,
+                'read_at' => now(),
+            ]);
 
-        // Verify user is a participant
-        if (! $conversation->isParticipant($userId)) {
-            throw new \Exception('User is not a participant in this conversation');
+            // Broadcast message read event
+            broadcast(new MessageRead($message, $userId))->toOthers();
         }
-
-        $conversation->update(['is_active' => true]);
     }
 
     /**
-     * Mark a message as read.
+     * Mark a single message as read.
      */
     public function markAsRead(int $messageId, int $userId): void
     {
@@ -224,34 +205,6 @@ class ChatService
             $message->update([
                 'is_read' => true,
                 'read_at' => now(),
-            ]);
-
-            // Broadcast message read event
-            broadcast(new MessageRead($message, $userId))->toOthers();
-        }
-    }
-
-    /**
-     * Mark all messages in a conversation as read for a user.
-     */
-    public function markConversationAsRead(int $conversationId, int $userId): void
-    {
-        $conversation = Conversation::findOrFail($conversationId);
-
-        // Verify user is a participant
-        if (! $conversation->isParticipant($userId)) {
-            throw new \Exception('User is not a participant in this conversation');
-        }
-
-        // Mark all unread messages from other participants as read
-        $messages = Message::where('conversation_id', $conversationId)
-            ->where('sender_id', '!=', $userId)
-            ->where('is_read', false)
-            ->get();
-
-        foreach ($messages as $message) {
-            $message->update([
-                'is_read' => true,
             ]);
 
             // Broadcast message read event

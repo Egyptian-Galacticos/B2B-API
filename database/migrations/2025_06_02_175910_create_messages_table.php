@@ -27,6 +27,7 @@ return new class extends Migration
             $table->enum('type', ['text', 'image', 'file'])->default('text')->index();
             $table->timestamp('sent_at')->useCurrent()->index();
             $table->boolean('is_read')->default(false)->index();
+            $table->timestamp('read_at')->nullable()->index();
             $table->timestamps();
             $table->softDeletes();
         });

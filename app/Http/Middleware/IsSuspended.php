@@ -20,17 +20,14 @@ class IsSuspended
     {
         $user = auth()->user();
 
-        // If no authenticated user, let auth middleware handle it
         if (! $user) {
             return $next($request);
         }
 
-        // If no statuses specified, default to 'active'
         if (empty($allowedStatuses)) {
             $allowedStatuses = ['active'];
         }
 
-        // Check if user's status is in allowed statuses
         if (! in_array($user->status, $allowedStatuses)) {
             return $this->getStatusErrorResponse($user->status);
         }

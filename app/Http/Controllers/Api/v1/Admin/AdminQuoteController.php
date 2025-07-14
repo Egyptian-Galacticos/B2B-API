@@ -12,6 +12,7 @@ use App\Traits\ApiResponse;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
+use InvalidArgumentException;
 
 class AdminQuoteController extends Controller
 {
@@ -89,7 +90,7 @@ class AdminQuoteController extends Controller
                 $message,
                 200
             );
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return $this->apiResponseErrors($e->getMessage(), [], 400);
         } catch (ModelNotFoundException $e) {
             return $this->apiResponseErrors('Quote not found', [], 404);

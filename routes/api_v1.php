@@ -133,7 +133,6 @@ Route::prefix('v1')->group(function () {
                 Route::patch('products/{product}', [ProductController::class, 'updateStatus'])->name('products.status');
 
                 // Product media management routes
-                //                Route::delete('products/{product}/images/{mediaId}', [ProductController::class, 'deleteImage'])->name('products.images.destroy');
                 Route::delete('products/{product}/media/{collection}/{mediaId}', [ProductController::class, 'deleteProductMedia'])->name('products.documents.destroy');
             });
 
@@ -191,24 +190,12 @@ Route::prefix('v1')->group(function () {
 
                     // Mark messages as read
                     Route::patch('read', [ChatController::class, 'markConversationAsRead'])->name('chat.conversation.read');
-
-                    // Handle typing indicator
-                    Route::post('typing', [ChatController::class, 'typing'])->name('chat.typing');
-
-                    // Handle stop typing indicator
-                    Route::post('stop-typing', [ChatController::class, 'stopTyping'])->name('chat.stop-typing');
-
-                    // Archive/deactivate conversation
-                    Route::patch('archive', [ChatController::class, 'archiveConversation'])->name('chat.conversations.archive');
-
-                    // Reactivate conversation
-                    Route::patch('reactivate', [ChatController::class, 'reactivateConversation'])->name('chat.conversations.reactivate');
                 });
 
                 // Message-specific routes
                 Route::prefix('messages/{messageId}')->group(function () {
                     // Mark a specific message as read
-                    Route::patch('read', [ChatController::class, 'markAsRead'])->name('chat.message.read');
+                    Route::patch('read', [ChatController::class, 'markMessageAsRead'])->name('chat.message.read');
                 });
             });
         });

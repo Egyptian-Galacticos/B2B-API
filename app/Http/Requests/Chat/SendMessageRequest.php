@@ -11,7 +11,7 @@ class SendMessageRequest extends BaseRequest
      */
     public function authorize(): bool
     {
-        return true; // Authorization handled by middleware
+        return true;
     }
 
     /**
@@ -20,8 +20,11 @@ class SendMessageRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'content' => 'required|string|max:10000',
-            'type'    => 'sometimes|string|in:text,image,file,rfq,quote,contract',
+            'content'                 => 'required_without:attachments|string|max:10000',
+            'type'                    => 'sometimes|string|in:text,image,file,rfq,quote,contract',
+            'attachments'             => 'sometimes|array|max:5', // Max 5 files per message
+            'attachments.*.file'      => 'required_with:attachments|file|max:10240', // 10MB max per file
+            'attachments.*.file_name' => 'sometimes|string|max:255',
         ];
     }
 
@@ -31,9 +34,14 @@ class SendMessageRequest extends BaseRequest
     public function messages(): array
     {
         return [
-            'content.required' => 'Message content is required.',
-            'content.max'      => 'Message content cannot exceed 10,000 characters.',
-            'type.in'          => 'Message type must be text, image, or file.',
+            'content.required_without'         => 'Message content is required when no files are attached.',
+            'content.max'                      => 'Message content cannot exceed 10,000 characters.',
+            'type.in'                          => 'Message type must be text, image, file, rfq, quote, or contract.',
+            'attachments.max'                  => 'You can upload a maximum of 5 files per message.',
+            'attachments.*.file.required_with' => 'File is required when uploading attachments.',
+            'attachments.*.file.file'          => 'The uploaded file is invalid.',
+            'attachments.*.file.max'           => 'Each file cannot exceed 10MB.',
+            'attachments.*.file_name.max'      => 'File name cannot exceed 255 characters.',
         ];
     }
 }

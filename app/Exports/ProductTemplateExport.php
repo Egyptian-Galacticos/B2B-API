@@ -26,13 +26,10 @@ class ProductTemplateExport implements FromArray, WithColumnWidths, WithHeadings
 
     public function array(): array
     {
-        // Description row
         $descriptions = array_map(fn ($field) => $field['description'], $this->fields);
 
-        // Sample data row
         $sampleData = array_map(fn ($field) => $field['sample'], $this->fields);
 
-        // Empty row for user input
         $emptyRow = array_fill(0, count($this->fields), '');
 
         return [
@@ -44,20 +41,17 @@ class ProductTemplateExport implements FromArray, WithColumnWidths, WithHeadings
 
     protected function generateFieldsFromRequest(): array
     {
-        // Get validation rules from StoreProductRequest
         $request = new StoreProductRequest;
         $rules = $request->rules();
 
         $fields = [];
 
         foreach ($rules as $field => $fieldRules) {
-            // Skip nested fields and file uploads for template
             if (strpos($field, '.') !== false ||
                 in_array($field, ['main_image', 'images', 'documents'])) {
                 continue;
             }
 
-            // Replace category_id with category_name for easier import
             if ($field === 'category_id') {
                 $fields['category_name'] = [
                     'sample'      => 'Electronics',
@@ -67,9 +61,8 @@ class ProductTemplateExport implements FromArray, WithColumnWidths, WithHeadings
                 continue;
             }
 
-            // Replace seller_id (will be auto-filled during import)
             if ($field === 'seller_id') {
-                continue; // Skip - will be filled automatically
+                continue;
             }
 
             $fields[$field] = [
@@ -78,7 +71,6 @@ class ProductTemplateExport implements FromArray, WithColumnWidths, WithHeadings
             ];
         }
 
-        // Add product tier fields for bulk pricing
         $tierFields = [
             'tier_1_min_qty' => [
                 'sample'      => '1',
@@ -147,7 +139,6 @@ class ProductTemplateExport implements FromArray, WithColumnWidths, WithHeadings
             return $samples[$field];
         }
 
-        // Generate based on field type from validation rules
         $ruleString = is_array($rules) ? implode('|', $rules) : $rules;
 
         if (str_contains($ruleString, 'boolean')) {
@@ -174,7 +165,6 @@ class ProductTemplateExport implements FromArray, WithColumnWidths, WithHeadings
         $ruleString = is_array($rules) ? implode('|', $rules) : $rules;
         $description = ucfirst(str_replace('_', ' ', $field));
 
-        // Add validation info
         if (str_contains($ruleString, 'required')) {
             $description .= ' (Required)';
         }
@@ -194,7 +184,6 @@ class ProductTemplateExport implements FromArray, WithColumnWidths, WithHeadings
     public function styles(Worksheet $sheet)
     {
         return [
-            // Header row styling
             1 => [
                 'font' => [
                     'bold'  => true,
@@ -205,7 +194,6 @@ class ProductTemplateExport implements FromArray, WithColumnWidths, WithHeadings
                     'startColor' => ['rgb' => '4472C4'],
                 ],
             ],
-            // Description row styling
             2 => [
                 'font' => [
                     'italic' => true,
@@ -217,7 +205,6 @@ class ProductTemplateExport implements FromArray, WithColumnWidths, WithHeadings
                     'startColor' => ['rgb' => 'F8F9FA'],
                 ],
             ],
-            // Sample data row styling
             3 => [
                 'fill' => [
                     'fillType'   => Fill::FILL_SOLID,
@@ -233,7 +220,6 @@ class ProductTemplateExport implements FromArray, WithColumnWidths, WithHeadings
         $column = 'A';
 
         foreach (array_keys($this->fields) as $field) {
-            // Set appropriate width based on field type
             $width = match ($field) {
                 'name', 'description' => 30,
                 'sku', 'brand', 'model_number' => 20,

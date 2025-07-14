@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Category;
+use Exception;
 use Illuminate\Support\Str;
 
 class CategoryService
@@ -14,23 +15,21 @@ class CategoryService
      */
     public function resolveCategoryId(int $categoryId, ?array $categoryData): int
     {
-        // Case 1: Existing category
         if ($categoryId > 0) {
             $category = Category::findOrFail($categoryId);
 
             return $category->id;
         }
 
-        // Case 2: New category
         if ($categoryId === -1) {
             if (! isset($categoryData) || ! is_array($categoryData)) {
-                throw new \Exception('Category data is required when category_id is -1.');
+                throw new Exception('Category data is required when category_id is -1.');
             }
 
             return $this->processCategory($categoryData);
         }
 
-        throw new \Exception('Invalid category_id provided.');
+        throw new Exception('Invalid category_id provided.');
     }
 
     /**
@@ -40,30 +39,25 @@ class CategoryService
      */
     protected function processCategory(array $categoryData): int
     {
-        // Case 1: Existing category
         if ($categoryData['id'] > 0) {
             $category = Category::findOrFail($categoryData['id']);
 
             return $category->id;
         }
 
-        // Case 2: New category
         if ($categoryData['id'] === -1) {
             $parentId = null;
 
-            // Handle parent category
             if ($categoryData['parent_id'] > 0) {
-                // Existing parent
                 $parent = Category::findOrFail($categoryData['parent_id']);
                 $parentId = $parent->id;
             } elseif ($categoryData['parent_id'] === -1) {
-                // New parent category
                 if (! isset($categoryData['parent'])) {
-                    throw new \Exception('Parent category data is required for new subcategories.');
+                    throw new Exception('Parent category data is required for new subcategories.');
                 }
                 $parentId = $this->processCategory($categoryData['parent']); // Recursive call
             } else {
-                throw new \Exception('Invalid parent_id provided.');
+                throw new Exception('Invalid parent_id provided.');
             }
             if ($newCategory = Category::where('name', ucwords(strtolower($categoryData['name'])))->first()) {
                 $parent = $newCategory->parent;
@@ -74,12 +68,11 @@ class CategoryService
                     $path = $parent->parent->name.' > '.$parent->name;
                 }
 
-                throw new \Exception("A category with the name $newCategory->name already exists under: $path.");
+                throw new Exception("A category with the name $newCategory->name already exists under: $path.");
 
             }
             $hierarchyData = (new Category)->calculateHierarchyData($parentId);
 
-            // Create the new category
             $newCategory = Category::create([
                 'name'      => ucwords(strtolower($categoryData['name'])),
                 'parent_id' => $parentId,
@@ -91,7 +84,7 @@ class CategoryService
             return $newCategory->id;
         }
 
-        throw new \Exception('Invalid category data provided.');
+        throw new Exception('Invalid category data provided.');
     }
 
     /**

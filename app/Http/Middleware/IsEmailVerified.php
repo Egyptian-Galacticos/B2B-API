@@ -20,15 +20,12 @@ class IsEmailVerified
     {
         $user = auth()->user();
 
-        // If no authenticated user, let auth middleware handle it
         if (! $user) {
             return $next($request);
         }
 
-        // Force refresh user data from database to get latest verification status
         $user->refresh();
 
-        // Use the hasVerifiedEmail method which checks both fields properly
         if (! $user->hasVerifiedEmail()) {
             return $this->apiResponseErrors(
                 'Email verification required',

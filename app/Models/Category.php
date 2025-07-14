@@ -70,7 +70,6 @@ class Category extends Model implements HasMedia
             ->performOnCollections('images');
     }
 
-    // Relationships
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'parent_id');
@@ -91,7 +90,6 @@ class Category extends Model implements HasMedia
         return $this->hasMany(Product::class);
     }
 
-    // Query Scopes
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
@@ -151,7 +149,6 @@ class Category extends Model implements HasMedia
         return $query->where('path', 'like', '%'.$path.'%');
     }
 
-    // Helper Methods
     public function isActive(): bool
     {
         return $this->status == 'active';
@@ -164,7 +161,6 @@ class Category extends Model implements HasMedia
 
     public function isPathApproved(): bool
     {
-        // Check if the path is approved by checking all ancestors
         $current = $this;
         while ($current) {
             if ($current->status !== 'active') {
@@ -201,7 +197,6 @@ class Category extends Model implements HasMedia
         return $this->getFirstMediaUrl('images', 'thumb');
     }
 
-    // Business Logic Methods
     public function determineStatusByUserRole($user): string
     {
         return $this->userIsAdmin($user) ? 'active' : 'pending';
@@ -288,7 +283,6 @@ class Category extends Model implements HasMedia
                 'path'  => $newPath,
             ]);
 
-            // Recursively update grandchildren
             $child->updateChildrenPaths();
         }
     }

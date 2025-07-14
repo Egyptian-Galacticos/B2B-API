@@ -55,7 +55,6 @@ class UserFilterRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        // Set default values if not provided
         $this->mergeIfMissing([
             'size'           => 10,
             'sort_by'        => 'created_at',

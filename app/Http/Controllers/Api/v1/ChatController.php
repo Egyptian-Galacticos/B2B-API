@@ -114,11 +114,27 @@ class ChatController extends Controller
     public function sendMessage(SendMessageRequest $request, int $conversationId): JsonResponse
     {
         try {
+            $attachments = [];
+
+            $allFiles = $request->allFiles();
+
+            if (isset($allFiles['attachments'])) {
+                foreach ($allFiles['attachments'] as $index => $attachmentData) {
+                    if (isset($attachmentData['file']) && $attachmentData['file']->isValid()) {
+                        $attachments[] = [
+                            'file'      => $attachmentData['file'],
+                            'file_name' => $request->input("attachments.{$index}.file_name") ?? $attachmentData['file']->getClientOriginalName(),
+                        ];
+                    }
+                }
+            }
+
             $message = $this->chatService->sendMessage(
                 $conversationId,
                 auth()->user()->id,
-                $request->validated('content'),
-                $request->validated('type', 'text')
+                $request->validated('content') ?? '',
+                $request->validated('type', 'text'),
+                $attachments
             );
 
             return $this->apiResponse(
@@ -138,12 +154,12 @@ class ChatController extends Controller
     }
 
     /**
-     * Mark messages as read in a conversation.
+     * Mark all messages in a conversation as read.
      */
-    public function markAsRead(Request $request, int $conversationId): JsonResponse
+    public function markConversationAsRead(Request $request, int $conversationId): JsonResponse
     {
         try {
-            $this->chatService->markMessagesAsRead($conversationId, auth()->user()->id);
+            $this->chatService->markConversationAsRead($conversationId, auth()->user()->id);
 
             return $this->apiResponse(
                 message: 'Messages marked as read',
@@ -197,29 +213,6 @@ class ChatController extends Controller
     }
 
     /**
-     * Reactivate a conversation.
-     */
-    public function reactivateConversation(Request $request, int $conversationId): JsonResponse
-    {
-        try {
-            $this->chatService->reactivateConversation($conversationId, auth()->user()->id);
-
-            return $this->apiResponse(
-                message: 'Conversation reactivated',
-                status: 200
-            );
-        } catch (\Exception $e) {
-            return $this->apiResponseErrors(
-                message: 'Failed to reactivate conversation',
-                errors: [
-                    'error' => $e->getMessage(),
-                ],
-                status: 403
-            );
-        }
-    }
-
-    /**
      * Mark a message as read.
      */
     public function markMessageAsRead(Request $request, int $messageId): JsonResponse
@@ -234,29 +227,6 @@ class ChatController extends Controller
         } catch (\Exception $e) {
             return $this->apiResponseErrors(
                 message: 'Failed to mark message as read',
-                errors: [
-                    'error' => $e->getMessage(),
-                ],
-                status: 403
-            );
-        }
-    }
-
-    /**
-     * Mark all messages in a conversation as read.
-     */
-    public function markConversationAsRead(Request $request, int $conversationId): JsonResponse
-    {
-        try {
-            $this->chatService->markConversationAsRead($conversationId, auth()->user()->id);
-
-            return $this->apiResponse(
-                message: 'Conversation marked as read',
-                status: 200
-            );
-        } catch (\Exception $e) {
-            return $this->apiResponseErrors(
-                message: 'Failed to mark conversation as read',
                 errors: [
                     'error' => $e->getMessage(),
                 ],

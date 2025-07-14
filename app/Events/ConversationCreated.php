@@ -22,8 +22,8 @@ class ConversationCreated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('user.'.$this->conversation->seller_id.'.notifications'),
-            new PrivateChannel('user.'.$this->conversation->buyer_id.'.notifications'),
+            new PrivateChannel('chat.'.$this->conversation->seller_id),
+            new PrivateChannel('chat.'.$this->conversation->buyer_id),
         ];
     }
 
@@ -43,14 +43,14 @@ class ConversationCreated implements ShouldBroadcast
                 'first_name' => $this->conversation->seller->first_name,
                 'last_name'  => $this->conversation->seller->last_name,
                 'full_name'  => $this->conversation->seller->full_name,
-                'logo'       => $this->conversation->seller->company->getFirstMediaUrl('logo'),
+                'logo'       => $this->conversation->seller->company?->getFirstMediaUrl('logo'),
             ],
             'buyer' => [
                 'id'         => $this->conversation->buyer->id,
                 'first_name' => $this->conversation->buyer->first_name,
                 'last_name'  => $this->conversation->buyer->last_name,
                 'full_name'  => $this->conversation->buyer->full_name,
-                'logo'       => $this->conversation->seller->company->getFirstMediaUrl('logo'),
+                'logo'       => $this->conversation->buyer->company?->getFirstMediaUrl('logo'),
             ],
             'created_at' => $this->conversation->created_at->toISOString(),
         ];

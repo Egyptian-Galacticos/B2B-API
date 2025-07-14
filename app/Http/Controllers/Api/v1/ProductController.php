@@ -51,7 +51,7 @@ class ProductController extends Controller
     {
         $queryHandler = new QueryHandler($request);
         $perPage = (int) $request->get('size', 10);
-        $user = Auth::user(); // Get authenticated user
+        $user = Auth::user();
 
         $query = $queryHandler
             ->setBaseQuery(
@@ -73,7 +73,7 @@ class ProductController extends Controller
                 'is_approved',
                 'is_featured',
                 'created_at',
-                'in_wishlist', // Add wishlist sorting
+                'in_wishlist',
             ])
             ->setAllowedFilters([
                 'name',
@@ -131,13 +131,11 @@ class ProductController extends Controller
                 throw new \Exception('Invalid JSON format for category data.');
             }
         }
-        // Process category
         $categoryId = $this->categoryService->resolveCategoryId(
             $validated['category_id'],
             $categoryData ?? null
         );
 
-        // Remove category_id and price_tiers from validated data
         $productData = collect($validated)
             ->except(['category_id', 'category', 'price_tiers'])
             ->merge(['category_id' => $categoryId])
@@ -146,7 +144,6 @@ class ProductController extends Controller
         $product = DB::transaction(function () use ($productData, $validated) {
             $product = Product::create($productData);
 
-            // Create product tiers
             if (isset($validated['price_tiers'])) {
                 $product->tiers()->createMany($validated['price_tiers']);
             }
@@ -155,7 +152,6 @@ class ProductController extends Controller
             return $product;
         });
 
-        // Handle main image upload
         if ($request->hasFile('main_image')) {
             $product
                 ->addMedia($request->file('main_image'))
@@ -163,7 +159,6 @@ class ProductController extends Controller
                 ->toMediaCollection('main_image');
         }
 
-        // Handle multiple images upload
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
                 $product
@@ -173,7 +168,6 @@ class ProductController extends Controller
             }
         }
 
-        // Handle documents upload
         if ($request->hasFile('documents')) {
             foreach ($request->file('documents') as $document) {
                 $product
@@ -209,7 +203,7 @@ class ProductController extends Controller
         try {
             $user = Auth::user();
             $product = Product::with(['seller.company', 'category', 'tiers', 'media', 'tags'])
-                ->withWishlistStatus($user?->id) // Add wishlist status
+                ->withWishlistStatus($user?->id)
                 ->where('is_active', true)
                 ->where('is_approved', true)
                 ->where('slug', $slug)
@@ -236,32 +230,27 @@ class ProductController extends Controller
      */
     public function update(UpdateProductRequest $request): JsonResponse
     {
-        // Get the product from middleware (ownership already verified)
         $product = $request->get('product');
         $validated = $request->validated();
         $validated['dimensions'] = json_decode($validated['dimensions'], true);
         $validated['price_tiers'] = json_decode($validated['price_tiers'], true);
         $validated['product_tags'] = json_decode($validated['product_tags'], true);
 
-        // Remove file fields from validated data as they're handled separately
         $productData = collect($validated)->except(['main_image', 'images', 'documents', 'price_tiers'])->toArray();
 
         $product->update($productData);
         $product->is_approved = false;
         $product->save();
 
-        // Handle product tiers if provided
         if (isset($validated['price_tiers'])) {
             $product->tiers()->delete();
             $product->tiers()->createMany($validated['price_tiers']);
         }
-        // Handle Tags if provided
         if (isset($validated['product_tags'])) {
-            $product->tags()->detach(); // Detach existing tags
+            $product->tags()->detach();
             $product->syncTags($validated['product_tags']);
         }
 
-        // Handle main image upload (replace existing)
         if ($request->hasFile('main_image')) {
             $product->clearMediaCollection('main_image');
             $product
@@ -270,7 +259,6 @@ class ProductController extends Controller
                 ->toMediaCollection('main_image');
         }
 
-        // Handle multiple images upload (add to existing)
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
                 $product
@@ -280,7 +268,6 @@ class ProductController extends Controller
             }
         }
 
-        // Handle documents upload (add to existing)
         if ($request->hasFile('documents')) {
             foreach ($request->file('documents') as $document) {
                 $product
@@ -313,7 +300,6 @@ class ProductController extends Controller
      */
     public function updateStatus(ProductUpdateStatusRequest $request, int $id): JsonResponse
     {
-        // Get the product (ownership already verified in middleware or double-checking here)
         try {
             $product = Product::findOrFail($id);
             $data = $request->validated();
@@ -340,7 +326,6 @@ class ProductController extends Controller
      */
     public function destroy(Request $request): JsonResponse
     {
-        // Get the product from middleware (ownership already verified)
         $product = $request->get('product');
         $product->delete();
 
@@ -350,37 +335,6 @@ class ProductController extends Controller
             200
         );
     }
-
-    /**
-     * delete image to product
-     *
-     * @authenticated
-     */
-    //    public function deleteImage(string $product, int $mediaId): JsonResponse
-    //    {
-    //        // Get the product from middleware (ownership already verified)
-    //        $product = Product::where('slug', $product)->firstOrFail();
-    //
-    //        // Find the media item
-    //        $media = $product->getMedia('product_images')->find($mediaId);
-    //
-    //        if (! $media) {
-    //            return $this->apiResponseErrors(
-    //                'Image not found.',
-    //                ['media_id' => $mediaId],
-    //                404,
-    //            );
-    //        }
-    //
-    //        // Delete the media item
-    //        $media->delete();
-    //
-    //        return $this->apiResponse(
-    //            null,
-    //            'Image deleted successfully.',
-    //            200
-    //        );
-    //    }
 
     /**
      * delete the product document.
@@ -397,10 +351,7 @@ class ProductController extends Controller
                 404,
             );
         }
-        // Get the product from middleware (ownership already verified)
         $product = Product::where('slug', $product)->firstOrFail();
-
-        // Find the media item
 
         $media = $product->getMedia($collection)->find($mediaId);
 
@@ -412,7 +363,6 @@ class ProductController extends Controller
             );
         }
 
-        // Delete the media item
         $media->delete();
 
         return $this->apiResponse(
@@ -429,7 +379,6 @@ class ProductController extends Controller
     {
         $productIds = $request->validated()['product_ids'];
 
-        // Verify ownership
         $ownership = $this->verifyBulkOwnership($productIds, auth()->id());
 
         if (empty($ownership['authorized'])) {
@@ -456,7 +405,6 @@ class ProductController extends Controller
     {
         $productIds = $request->validated()['product_ids'];
 
-        // Verify ownership
         $ownership = $this->verifyBulkOwnership($productIds, auth()->id());
 
         if (empty($ownership['authorized'])) {
@@ -483,7 +431,6 @@ class ProductController extends Controller
     {
         $productIds = $request->validated()['product_ids'];
 
-        // Verify ownership
         $ownership = $this->verifyBulkOwnership($productIds, auth()->id());
 
         if (empty($ownership['authorized'])) {
@@ -506,14 +453,13 @@ class ProductController extends Controller
     public function bulkImport(BulkProductImportRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        $products = $validated['products'] ?? []; // Assuming products come in as an array
+        $products = $validated['products'] ?? [];
 
         $savedProducts = [];
         DB::beginTransaction();
 
         try {
             foreach ($products as $product) {
-                // Handle category ID lookup if category name is provided
                 try {
                     if (isset($product['category_id'])) {
                         $category = Category::findOrFail($product['category_id']);
@@ -533,20 +479,16 @@ class ProductController extends Controller
                     );
                 }
 
-                // Create product from validated data
                 $productModel = Product::create($product);
 
-                // Handle product tiers if provided
                 if (isset($product['price_tiers'])) {
                     $productModel->tiers()->createMany($product['price_tiers']);
                 }
 
-                // Handle product tags if provided
                 if (isset($product['product_tags'])) {
                     $productModel->syncTags($product['product_tags']);
                 }
 
-                // Handle main image upload
                 if (isset($product['main_image']) && filter_var($product['main_image'], FILTER_VALIDATE_URL)) {
                     $productModel
                         ->addMediaFromUrl($product['main_image'])
@@ -554,7 +496,6 @@ class ProductController extends Controller
                         ->toMediaCollection('main_image');
                 }
 
-                // Handle multiple images upload
                 if (isset($product['images']) && is_array($product['images'])) {
                     foreach ($product['images'] as $imageUrl) {
                         if (filter_var($imageUrl, FILTER_VALIDATE_URL)) {
@@ -566,7 +507,6 @@ class ProductController extends Controller
                     }
                 }
 
-                // Handle documents upload
                 if (isset($product['documents']) && is_array($product['documents'])) {
                     foreach ($product['documents'] as $documentUrl) {
                         if (filter_var($documentUrl, FILTER_VALIDATE_URL)) {
@@ -598,7 +538,7 @@ class ProductController extends Controller
                 'Products imported successfully.',
                 201
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
 
             return $this->apiResponseErrors(
@@ -670,10 +610,8 @@ class ProductController extends Controller
             );
         }
 
-        // Base query for statistics
         $statsQuery = Product::query()->where('seller_id', $sellerId);
 
-        // Calculate statistics
         $total_products = $statsQuery->clone()->count();
         $featured_products = $statsQuery->clone()->where('is_featured', true)->count();
         $approved_products = $statsQuery->clone()->where('is_approved', true)->count();
@@ -681,7 +619,6 @@ class ProductController extends Controller
         $active_products = $statsQuery->clone()->where('is_active', true)->count();
         $inactive_products = $statsQuery->clone()->where('is_active', false)->count();
 
-        // Main query for paginated results
         $query = $queryHandler
             ->setBaseQuery(
                 Product::query()
@@ -735,15 +672,4 @@ class ProductController extends Controller
             array_merge($paginationMeta, $statsMeta)
         );
     }
-
-    //    public function getTags(Request $request): JsonResponse
-    //    {
-    //        $tags = Tag::all();
-    //
-    //        return $this->apiResponse(
-    //            TagResource::collection($tags),
-    //            'Tags retrieved successfully.',
-    //            200
-    //        );
-    //    }
 }

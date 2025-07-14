@@ -32,7 +32,7 @@ class MessageFactory extends Factory
                 : Conversation::factory(),
             'sender_id' => $users->random(),
             'content'   => $this->faker->paragraph(),
-            'type'      => $this->faker->randomElement(['text', 'image', 'file']),
+            'type'      => 'text',
             'sent_at'   => $this->faker->dateTimeBetween('-1 month', 'now'),
             'is_read'   => $this->faker->boolean(80),
         ];

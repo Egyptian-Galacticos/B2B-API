@@ -61,7 +61,6 @@ class Contract extends Model
         'total_amount'       => 'decimal:2',
     ];
 
-    // relationships
     public function buyer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'buyer_id')->withTrashed();
@@ -82,7 +81,6 @@ class Contract extends Model
         return $this->hasMany(ContractItem::class);
     }
 
-    // scopes
     public function scopeForUser($query, $userId)
     {
         return $query->where('buyer_id', $userId)->orWhere('seller_id', $userId);

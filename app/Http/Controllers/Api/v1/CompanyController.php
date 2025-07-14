@@ -32,7 +32,6 @@ class CompanyController extends Controller
                 );
             }
 
-            // Get validated data and remove file fields as they're handled separately
             $validated = $request->validated();
             $updateData = collect($validated)->except(['logo'])->toArray();
             $user->company->update($updateData);
@@ -45,7 +44,6 @@ class CompanyController extends Controller
             if ($request->remove_logo) {
                 $user->company->clearMediaCollection('logo');
             }
-            // Handle logo upload (replace existing)
             if ($request->hasFile('logo')) {
                 $user->company->clearMediaCollection('logo');
                 $user->company
