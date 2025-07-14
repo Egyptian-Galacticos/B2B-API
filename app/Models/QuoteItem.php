@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class QuoteItem extends Model
 {
-    /** @use HasFactory<\Database\Factories\QuoteItemFactory> */
     use HasFactory, SoftDeletes;
     protected $fillable = [
         'quote_id',
@@ -22,7 +21,6 @@ class QuoteItem extends Model
         'unit_price' => 'decimal:2',
     ];
 
-    // relationships
     public function quote()
     {
         return $this->belongsTo(Quote::class);

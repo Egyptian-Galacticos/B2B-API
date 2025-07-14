@@ -5,10 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use InvalidArgumentException;
 
 class Rfq extends Model
 {
-    /** @use HasFactory<\Database\Factories\RfqFactory> */
     use HasFactory, SoftDeletes;
     const STATUS_PENDING = 'Pending';
     const STATUS_SEEN = 'Seen';
@@ -37,7 +37,6 @@ class Rfq extends Model
         'status'           => 'string',
     ];
 
-    // relationships
     public function buyer()
     {
         return $this->belongsTo(User::class, 'buyer_id')->withTrashed();
@@ -58,7 +57,6 @@ class Rfq extends Model
         return $this->hasMany(Quote::class);
     }
 
-    // scope
     public function scopePending($query)
     {
         return $query->where('status', self::STATUS_PENDING);
@@ -94,7 +92,6 @@ class Rfq extends Model
         return $query->where('seller_id', $sellerId);
     }
 
-    // accessors
     public function isPending()
     {
         return $this->status === self::STATUS_PENDING;
@@ -140,7 +137,7 @@ class Rfq extends Model
     public function transitionTo($newStatus)
     {
         if (! $this->canTransitionTo($newStatus)) {
-            throw new \InvalidArgumentException("Cannot transition from {$this->status} to {$newStatus}");
+            throw new InvalidArgumentException("Cannot transition from {$this->status} to {$newStatus}");
         }
 
         $this->status = $newStatus;

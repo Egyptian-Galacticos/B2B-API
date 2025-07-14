@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Notifications\CustomResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -19,7 +18,6 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 
 class User extends Authenticatable implements HasMedia, JWTSubject
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, HasRoles, InteractsWithMedia, Notifiable, SoftDeletes;
     protected $fillable = [
         'email',
@@ -318,14 +316,6 @@ class User extends Authenticatable implements HasMedia, JWTSubject
             $q->where('seller_id', $this->id)->orWhere('buyer_id', $this->id);
         })->where('sender_id', '!=', $this->id)->where('is_read', false);
     }
-
-    /**
-     * Scope to get active users only.
-     */
-    // public function scopeActive($query)
-    // {
-    //     return $query->where('status', 'active');
-    // }
 
     /**
      * Scope to get verified users only.

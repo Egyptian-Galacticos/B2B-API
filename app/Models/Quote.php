@@ -9,7 +9,6 @@ use InvalidArgumentException;
 
 class Quote extends Model
 {
-    /** @use HasFactory<\Database\Factories\QuoteFactory> */
     use HasFactory, SoftDeletes;
     const STATUS_SENT = 'sent';
     const STATUS_ACCEPTED = 'accepted';
@@ -35,7 +34,6 @@ class Quote extends Model
         'accepted_at' => 'datetime',
     ];
 
-    // releationships
     public function rfq()
     {
         return $this->belongsTo(Rfq::class)->withDefault();
@@ -56,19 +54,18 @@ class Quote extends Model
         return $this->hasMany(QuoteItem::class);
     }
 
-    // Direct seller relationship (for chat-based quotes)
+    // for chat-based quotes
     public function directSeller()
     {
         return $this->belongsTo(User::class, 'seller_id')->withTrashed();
     }
 
-    // Direct buyer relationship (for chat-based quotes)
+    // for chat-based quotes
     public function directBuyer()
     {
         return $this->belongsTo(User::class, 'buyer_id')->withTrashed();
     }
 
-    // Helper methods to get seller/buyer with fallback to RFQ
     public function getSellerAttribute()
     {
         return $this->seller_id ? $this->directSeller : ($this->rfq ? $this->rfq->seller : null);
@@ -79,7 +76,6 @@ class Quote extends Model
         return $this->buyer_id ? $this->directBuyer : ($this->rfq ? $this->rfq->buyer : null);
     }
 
-    // scopes
     public function scopeSent($query)
     {
         return $query->where('status', self::STATUS_SENT);
