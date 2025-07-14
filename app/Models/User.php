@@ -244,18 +244,19 @@ class User extends Authenticatable implements HasMedia, JWTSubject
 
     /**
      * Get all notifications for this user.
+     * Uses Laravel's built-in notification system.
      */
-    public function notifications(): HasMany
+    public function notifications()
     {
-        return $this->hasMany(Notification::class);
+        return $this->morphMany(\Illuminate\Notifications\DatabaseNotification::class, 'notifiable')->orderBy('created_at', 'desc');
     }
 
     /**
      * Get unread notifications.
      */
-    public function unreadNotifications(): HasMany
+    public function unreadNotifications()
     {
-        return $this->notifications()->where('is_read', false);
+        return $this->notifications()->whereNull('read_at');
     }
 
     /**

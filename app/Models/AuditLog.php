@@ -65,7 +65,7 @@ class AuditLog extends Model
             'user'         => $this->belongsTo(User::class, 'entity_id'),
             'company'      => $this->belongsTo(Company::class, 'entity_id'),
             'kyc_document' => $this->belongsTo(KycDocument::class, 'entity_id'),
-            'notification' => $this->belongsTo(Notification::class, 'entity_id'),
+            'notification' => $this->belongsTo(\Illuminate\Notifications\DatabaseNotification::class, 'entity_id'),
             default        => null,
         };
     }
