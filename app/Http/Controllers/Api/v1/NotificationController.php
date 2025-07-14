@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\NotificationResource;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,7 +26,7 @@ class NotificationController extends Controller
 
             $notifications = $user->notifications;
 
-            return $this->apiResponse($notifications, 'Notifications retrieved successfully.');
+            return $this->apiResponse(NotificationResource::collection($notifications), 'Notifications retrieved successfully.');
         } catch (\Exception $e) {
             return $this->apiResponseErrors('Failed to retrieve notifications.', [$e->getMessage()], 500);
         }
@@ -44,7 +45,7 @@ class NotificationController extends Controller
 
             $unreadNotifications = $user->unreadNotifications;
 
-            return $this->apiResponse($unreadNotifications, 'Unread notifications retrieved successfully.');
+            return $this->apiResponse(NotificationResource::collection($unreadNotifications), 'Unread notifications retrieved successfully.');
         } catch (\Exception $e) {
             return $this->apiResponseErrors('Failed to retrieve unread notifications.', [$e->getMessage()], 500);
         }

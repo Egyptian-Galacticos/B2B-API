@@ -17,6 +17,8 @@ class RFQStatusChangedNotification extends Notification implements ShouldQueue
     public string $priority;
     public string $message;
     public string $title;
+    public string $read_at;
+    public string $created_at;
 
     /**
      * Create a new notification instance.
@@ -35,6 +37,8 @@ class RFQStatusChangedNotification extends Notification implements ShouldQueue
 
         // Directly define the message in the constructor
         $this->message = "Your RFQ #{$this->rfq->id} has been {$this->newStatus}.";
+        $this->read_at = null;
+        $this->created_at = now()->toDateTimeString();
 
         $this->onQueue('default');
     }
@@ -57,12 +61,14 @@ class RFQStatusChangedNotification extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
-            'type'      => 'rfq_status_changed',
-            'title'     => $this->title,
-            'message'   => $this->message,
-            'entity_id' => $this->rfq->id,
-            'status'    => $this->newStatus,
-            'priority'  => $this->priority,
+            'type'       => 'rfq_status_changed',
+            'title'      => $this->title,
+            'message'    => $this->message,
+            'entity_id'  => $this->rfq->id,
+            'status'     => $this->newStatus,
+            'priority'   => $this->priority,
+            'read_at'    => $this->read_at,
+            'created_at' => $this->created_at,
         ];
     }
 
