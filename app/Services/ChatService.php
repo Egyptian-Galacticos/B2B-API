@@ -33,9 +33,8 @@ class ChatService
                 'last_activity_at' => now(),
                 'is_active'        => true,
             ]);
-
             // Broadcast new conversation created event
-            broadcast(new ConversationCreated($conversation->load(['seller', 'buyer'])));
+            broadcast(new ConversationCreated($conversation->load(['seller.company', 'buyer.company'])));
         }
 
         return $conversation;
