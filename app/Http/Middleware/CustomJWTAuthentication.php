@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use Exception;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -15,17 +16,14 @@ class CustomJWTAuthentication
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Attempt to authenticate the user using JWT
         try {
             $user = auth()->user();
 
-            // If no authenticated user, let auth middleware handle it
             if (! $user) {
                 return $next($request);
             }
 
-        } catch (\Exception $e) {
-            // Re-throw the exception so bootstrap handlers can catch it
+        } catch (Exception $e) {
             throw $e;
         }
 
