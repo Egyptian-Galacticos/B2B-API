@@ -8,11 +8,12 @@ use App\Http\Controllers\Api\v1\CategoryController;
 use App\Http\Controllers\Api\v1\ChatController;
 use App\Http\Controllers\Api\v1\CompanyController;
 use App\Http\Controllers\Api\v1\EmailVerificationController;
+use App\Http\Controllers\Api\v1\NotificationController;
 use App\Http\Controllers\Api\v1\ProductController;
 use App\Http\Controllers\Api\v1\SellerUpgradeController;
 use App\Http\Controllers\Api\v1\StatisticsController;
-use App\Http\Controllers\Api\v1\TagController;
 
+use App\Http\Controllers\Api\v1\TagController;
 use App\Http\Controllers\Api\v1\UserController;
 use App\Http\Controllers\Api\v1\WishlistController;
 use Illuminate\Support\Facades\Route;
@@ -58,6 +59,15 @@ Route::prefix('v1')->group(function () {
     // ========================================
     // PROTECTED ROUTES (Authentication Required)
     // ========================================
+
+    // NOTIFICATION ROUTES
+    Route::prefix('notifications')->middleware(['jwt.auth'])->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('/unread', [NotificationController::class, 'unread'])->name('notifications.unread');
+        Route::patch('/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
+        Route::patch('/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
+        Route::patch('/{id}/mark-as-unread', [NotificationController::class, 'markAsUnread'])->name('notifications.mark-as-unread');
+    });
 
     Route::middleware(['jwt.auth'])->group(function () {
 
