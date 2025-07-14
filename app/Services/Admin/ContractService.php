@@ -5,11 +5,12 @@ namespace App\Services\Admin;
 use App\Http\Resources\Admin\AdminContractResource;
 use App\Models\Contract;
 use App\Notifications\ContractInProgressNotification;
+use App\Notifications\ContractStatusChangedNotification;
 use App\Notifications\PaymentMadeToSellerNotification;
 use App\Services\QueryHandler;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Request;
+use Illuminate\Http\Request; // New notification
 use InvalidArgumentException;
 
 class ContractService
@@ -107,16 +108,31 @@ class ContractService
             $updateData['seller_transaction_id'] = $sellerTransactionId;
         }
 
+        // Capture original status to check if a change occurred
+        $originalStatus = $contract->status;
+
+        // Perform the update
         if ($newStatus !== Contract::STATUS_SHIPPED || $contract->status !== Contract::STATUS_VERIFY_SHIPMENT_URL) {
             $contract->update($updateData);
         }
 
-        $contract->load(['buyer', 'seller']);
+        $contract->load(['buyer', 'seller']); // Ensure buyer and seller are loaded for all notifications
 
+        // Dispatch existing notifications
         if ($finalStatus === Contract::STATUS_IN_PROGRESS) {
             $contract->seller->notify(new ContractInProgressNotification($contract));
         } elseif ($finalStatus === Contract::STATUS_DELIVERED_AND_PAID) {
             $contract->seller->notify(new PaymentMadeToSellerNotification($contract));
+        }
+
+        // Dispatch new ContractStatusChangedNotification if status actually changed
+        if ($finalStatus !== $originalStatus) {
+            if ($contract->buyer) {
+                $contract->buyer->notify(new ContractStatusChangedNotification($contract));
+            }
+            if ($contract->seller) {
+                $contract->seller->notify(new ContractStatusChangedNotification($contract));
+            }
         }
 
         $contract->load([
@@ -210,12 +226,27 @@ class ContractService
 
                                 $contract->update($updateData);
 
-                                $contract->load(['buyer', 'seller']);
+                                $originalStatus = $contract->status; // Capture original status
+                                $updateData = ['status' => $finalStatus]; // Define updateData for this scope
+                                $contract->update($updateData);
 
+                                $contract->load(['buyer', 'seller']); // Ensure buyer and seller are loaded
+
+                                // Dispatch existing notifications
                                 if ($finalStatus === Contract::STATUS_IN_PROGRESS) {
                                     $contract->seller->notify(new ContractInProgressNotification($contract));
                                 } elseif ($finalStatus === Contract::STATUS_DELIVERED_AND_PAID) {
                                     $contract->seller->notify(new PaymentMadeToSellerNotification($contract));
+                                }
+
+                                // Dispatch new ContractStatusChangedNotification if status actually changed
+                                if ($finalStatus !== $originalStatus) {
+                                    if ($contract->buyer) {
+                                        $contract->buyer->notify(new ContractStatusChangedNotification($contract));
+                                    }
+                                    if ($contract->seller) {
+                                        $contract->seller->notify(new ContractStatusChangedNotification($contract));
+                                    }
                                 }
 
                                 $contract->load([
