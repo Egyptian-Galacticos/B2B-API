@@ -4,9 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Contract;
 use App\Models\Conversation;
-use App\Models\Escrow;
 use App\Models\Message;
-use App\Models\Payment;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -31,11 +29,6 @@ class DatabaseSeeder extends Seeder
             ContractSeeder::class,
             WishlistSeeder::class,
         ]);
-
-        if (Contract::count() > 0) {
-            Escrow::factory()->count(2)->create();
-            Payment::factory()->count(2)->create();
-        }
 
         if (Contract::count() > 0) {
             Conversation::factory()->forContract()->count(2)->create();
