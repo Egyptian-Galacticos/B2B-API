@@ -44,7 +44,7 @@ Broadcast::channel('conversation.{conversationId}', function ($user, $conversati
 });
 
 // Private user notifications
-Broadcast::channel('user.{userId}.notifications', function ($user, $userId) {
+Broadcast::channel('chat.{userId}', function ($user, $userId) {
     try {
         return (int) $user->id === (int) $userId;
     } catch (\Exception $e) {
@@ -60,12 +60,6 @@ Broadcast::channel('company.{companyId}.notifications', function ($user, $compan
 // Product updates (for sellers)
 Broadcast::channel('seller.{sellerId}.products', function ($user, $sellerId) {
     return (int) $user->id === (int) $sellerId && $user->hasRole('seller');
-});
-
-// User typing indicator in conversation
-Broadcast::channel('chat.conversation.{conversationId}.typing', function ($user, $conversationId) {
-    // Check if user is part of this conversation
-    return $user->conversations()->where('conversations.id', $conversationId)->exists();
 });
 
 // User presence channel

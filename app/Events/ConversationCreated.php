@@ -22,8 +22,8 @@ class ConversationCreated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('user.'.$this->conversation->seller_id.'.notifications'),
-            new PrivateChannel('user.'.$this->conversation->buyer_id.'.notifications'),
+            new PrivateChannel('chat.'.$this->conversation->seller_id),
+            new PrivateChannel('chat.'.$this->conversation->buyer_id),
         ];
     }
 
