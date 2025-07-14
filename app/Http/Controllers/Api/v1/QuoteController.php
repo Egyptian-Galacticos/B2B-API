@@ -8,6 +8,7 @@ use App\Http\Requests\Quote\IndexQuoteRequest;
 use App\Http\Requests\Quote\UpdateQuoteRequest;
 use App\Http\Resources\QuoteResource;
 use App\Models\User;
+use App\Notifications\NewQuoteCreatedNotification;
 use App\Services\QuoteService;
 use App\Traits\ApiResponse;
 use Exception;
@@ -74,6 +75,11 @@ class QuoteController extends Controller
             $message = $quote->rfq
                 ? 'Quote created and sent successfully, RFQ marked as quoted'
                 : 'Quote created from conversation successfully';
+
+            // Notify the buyer about the new quote
+            if ($quote->rfq && $quote->rfq->buyer) {
+                $quote->directBuyer->notify(new NewQuoteCreatedNotification($quote));
+            }
 
             return $this->apiResponse(
                 new QuoteResource($quote),
