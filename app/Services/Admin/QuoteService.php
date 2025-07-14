@@ -4,6 +4,7 @@ namespace App\Services\Admin;
 
 use App\Http\Resources\Admin\AdminQuoteResource;
 use App\Models\Quote;
+use App\Notifications\QuoteStatusChangedNotification;
 use App\Services\QueryHandler;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -96,7 +97,22 @@ class QuoteService
             throw new InvalidArgumentException("Cannot transition from {$quote->status} to {$newStatus}");
         }
 
+        $originalStatus = $quote->status;
         $quote->update(['status' => $newStatus]);
+
+        // Dispatch notification if status changed
+        if ($newStatus !== $originalStatus) {
+            // Load directBuyer and directSeller relationships as User models
+            $quote->load(['directBuyer', 'directSeller']);
+
+            if ($quote->directBuyer) {
+                $quote->directBuyer->notify(new QuoteStatusChangedNotification($quote));
+            }
+            if ($quote->directSeller) {
+                $quote->directSeller->notify(new QuoteStatusChangedNotification($quote));
+            }
+        }
+
         $quote->load([
             'directBuyer.company',
             'directSeller.company',
@@ -173,7 +189,22 @@ class QuoteService
                             if (! $quote->canTransitionTo($status)) {
                                 $errors[] = "Quote {$quote->id}: Cannot transition from {$quote->status} to {$status}";
                             } else {
+                                $originalStatus = $quote->status;
                                 $quote->update(['status' => $status]);
+
+                                // Dispatch notification if status changed
+                                if ($status !== $originalStatus) {
+                                    // Load directBuyer and directSeller relationships as User models
+                                    $quote->load(['directBuyer', 'directSeller']);
+
+                                    if ($quote->directBuyer) {
+                                        $quote->directBuyer->notify(new QuoteStatusChangedNotification($quote));
+                                    }
+                                    if ($quote->directSeller) {
+                                        $quote->directSeller->notify(new QuoteStatusChangedNotification($quote));
+                                    }
+                                }
+
                                 $quote->load([
                                     'directBuyer.company',
                                     'directSeller.company',

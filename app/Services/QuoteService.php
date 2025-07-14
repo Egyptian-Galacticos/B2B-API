@@ -7,6 +7,7 @@ use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Rfq;
 use App\Models\User;
+use App\Notifications\QuoteStatusChangedNotification;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -186,6 +187,7 @@ class QuoteService
                     if ($data['status'] === Quote::STATUS_ACCEPTED) {
                         $updateData['accepted_at'] = now();
                     }
+
                 }
             } else {
 
@@ -208,7 +210,31 @@ class QuoteService
             }
 
             if (! empty($updateData)) {
+                $originalStatus = $quote->status; // Capture original status before update
                 $quote->update($updateData);
+
+                // Dispatch notification if status changed
+                if (isset($updateData['status']) && $updateData['status'] !== $originalStatus) {
+                    if ($isAdmin) {
+                        // Admin made the change, notify both buyer and seller
+                        if ($quote->buyer) {
+                            $quote->buyer->notify(new QuoteStatusChangedNotification($quote));
+                        }
+                        if ($quote->seller) {
+                            $quote->seller->notify(new QuoteStatusChangedNotification($quote));
+                        }
+                    } elseif ($isBuyer) {
+                        // Buyer made the change, notify the seller
+                        if ($quote->seller) {
+                            $quote->seller->notify(new QuoteStatusChangedNotification($quote));
+                        }
+                    } elseif ($isSeller) {
+                        // Seller made the change, notify the buyer
+                        if ($quote->buyer) {
+                            $quote->buyer->notify(new QuoteStatusChangedNotification($quote));
+                        }
+                    }
+                }
             }
 
             $quote->load(['rfq.buyer', 'rfq.seller', 'items.product', 'contract']);
