@@ -17,7 +17,6 @@ class RFQStatusChangedNotification extends Notification implements ShouldQueue
     public string $priority;
     public string $message;
     public string $title;
-    public string $type;
 
     /**
      * Create a new notification instance.
@@ -32,12 +31,10 @@ class RFQStatusChangedNotification extends Notification implements ShouldQueue
         // Extract newStatus and changedBy from the RFQ model
         $this->newStatus = $this->rfq->status ?? 'unknown'; // Assuming 'status' attribute exists
 
-        $this->type = 'rfq_status_changed';
         $this->title = 'RFQ '.Str::title($this->newStatus);
 
         // Directly define the message in the constructor
-        $messagePart = "Your RFQ #{$this->rfq->id} has been {$this->newStatus}.";
-        $this->message = $this->changedBy ? " Changed by {$this->changedBy}." : '';
+        $this->message = "Your RFQ #{$this->rfq->id} has been {$this->newStatus}.";
 
         $this->onQueue('default');
     }
@@ -60,7 +57,7 @@ class RFQStatusChangedNotification extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
-            'type'      => $this->type,
+            'type'      => 'rfq_status_changed',
             'title'     => $this->title,
             'message'   => $this->message,
             'entity_id' => $this->rfq->id,
@@ -79,8 +76,11 @@ class RFQStatusChangedNotification extends Notification implements ShouldQueue
         return $this->toArray($notifiable);
     }
 
+    /**
+     * Get the broadcast event name.
+     */
     public function broadcastType(): string
     {
-        return $this->type; // This will override the default class name
+        return 'rfq.status.changed';
     }
 }

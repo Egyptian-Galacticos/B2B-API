@@ -17,7 +17,6 @@ class ContractStatusChangedNotification extends Notification implements ShouldQu
     public string $priority;
     public string $message;
     public string $title;
-    public string $type;
 
     /**
      * Create a new notification instance.
@@ -33,7 +32,6 @@ class ContractStatusChangedNotification extends Notification implements ShouldQu
         $this->newStatus = $this->contract->status ?? 'unknown'; // Assuming 'status' attribute exists
         $this->changedBy = $this->contract->changed_by ?? null; // Assuming 'changed_by' attribute exists, or is null
 
-        $this->type = 'contract_status_changed';
         $this->title = 'Contract '.Str::title($this->newStatus);
 
         // Directly define the message in the constructor
@@ -62,7 +60,7 @@ class ContractStatusChangedNotification extends Notification implements ShouldQu
     public function toArray(object $notifiable): array
     {
         return [
-            'type'      => $this->type,
+            'type'      => 'contract_status_changed',
             'title'     => $this->title,
             'message'   => $this->message,
             'entity_id' => $this->contract->id,
@@ -81,8 +79,11 @@ class ContractStatusChangedNotification extends Notification implements ShouldQu
         return $this->toArray($notifiable);
     }
 
+    /**
+     * Get the broadcast event name.
+     */
     public function broadcastType(): string
     {
-        return $this->type;
+        return 'contract.status.changed';
     }
 }
