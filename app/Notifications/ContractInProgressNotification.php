@@ -36,16 +36,15 @@ class ContractInProgressNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        // Ensure relationships are loaded
         $this->contract->load(['buyer', 'seller']);
 
         $sellerName = $this->contract->seller->name ??
-                     ($this->contract->seller->first_name.' '.$this->contract->seller->last_name) ??
-                     $this->contract->seller->email ?? 'Seller';
+            ($this->contract->seller->first_name.' '.$this->contract->seller->last_name) ??
+            $this->contract->seller->email ?? 'Seller';
 
         $buyerName = $this->contract->buyer->name ??
-                    ($this->contract->buyer->first_name.' '.$this->contract->buyer->last_name) ??
-                    $this->contract->buyer->email ?? 'Buyer';
+            ($this->contract->buyer->first_name.' '.$this->contract->buyer->last_name) ??
+            $this->contract->buyer->email ?? 'Buyer';
 
         return (new MailMessage)
             ->subject('Contract In Progress - '.($this->contract->contract_number ?? 'N/A'))
