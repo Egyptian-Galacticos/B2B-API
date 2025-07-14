@@ -17,7 +17,7 @@ class RFQStatusChangedNotification extends Notification implements ShouldQueue
     public string $priority;
     public string $message;
     public string $title;
-    public string $read_at;
+    public ?string $read_at;
     public string $created_at;
 
     /**

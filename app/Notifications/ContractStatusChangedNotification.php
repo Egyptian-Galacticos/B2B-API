@@ -17,7 +17,7 @@ class ContractStatusChangedNotification extends Notification implements ShouldQu
     public string $priority;
     public string $message;
     public string $title;
-    public string $read_at;
+    public ?string $read_at;
     public string $created_at;
 
     /**
