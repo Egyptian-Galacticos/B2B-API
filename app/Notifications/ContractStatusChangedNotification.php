@@ -80,4 +80,9 @@ class ContractStatusChangedNotification extends Notification implements ShouldQu
     {
         return $this->toArray($notifiable);
     }
+
+    public function broadcastType(): string
+    {
+        return $this->type;
+    }
 }
