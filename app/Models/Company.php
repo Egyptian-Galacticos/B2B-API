@@ -178,6 +178,12 @@ class Company extends Model implements HasMedia
         $this->addMediaCollection('logo')
             ->singleFile()
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']);
+
+        $this->addMediaCollection('tax_id_images')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+
+        $this->addMediaCollection('commercial_registration_images')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
     }
 
     /**
@@ -185,6 +191,7 @@ class Company extends Model implements HasMedia
      */
     public function registerMediaConversions(?Media $media = null): void
     {
+        // Logo conversions
         $this->addMediaConversion('thumb')
             ->width(300)
             ->height(300)
@@ -196,6 +203,32 @@ class Company extends Model implements HasMedia
             ->height(150)
             ->sharpen(10)
             ->performOnCollections('logo');
+
+        // Tax ID images conversions
+        $this->addMediaConversion('thumb')
+            ->width(400)
+            ->height(300)
+            ->sharpen(10)
+            ->performOnCollections('tax_id_images');
+
+        $this->addMediaConversion('small')
+            ->width(200)
+            ->height(150)
+            ->sharpen(10)
+            ->performOnCollections('tax_id_images');
+
+        // Commercial registration images conversions
+        $this->addMediaConversion('thumb')
+            ->width(400)
+            ->height(300)
+            ->sharpen(10)
+            ->performOnCollections('commercial_registration_images');
+
+        $this->addMediaConversion('small')
+            ->width(200)
+            ->height(150)
+            ->sharpen(10)
+            ->performOnCollections('commercial_registration_images');
     }
 
     /**
