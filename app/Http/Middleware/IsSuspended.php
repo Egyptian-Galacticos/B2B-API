@@ -25,7 +25,7 @@ class IsSuspended
         }
 
         if (empty($allowedStatuses)) {
-            $allowedStatuses = ['active'];
+            $allowedStatuses = ['active', 'pending'];
         }
 
         if (! in_array($user->status, $allowedStatuses)) {
