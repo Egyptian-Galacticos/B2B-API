@@ -204,8 +204,6 @@ class ProductController extends Controller
             $user = Auth::user();
             $product = Product::with(['seller.company', 'category', 'tiers', 'media', 'tags'])
                 ->withWishlistStatus($user?->id)
-                ->where('is_active', true)
-                ->where('is_approved', true)
                 ->where('slug', $slug)
                 ->firstOrFail();
         } catch (ModelNotFoundException $e) {
