@@ -42,9 +42,7 @@ class AdminContractResource extends JsonResource
                 return $this->items->map(function ($item) {
                     return [
                         'id'            => $item->id,
-                        'product_id'    => $item->product_id,
-                        'product_name'  => $item->product?->name,
-                        'product_brand' => $item->product?->brand,
+                        'product'       => $item->product,
                         'quantity'      => $item->quantity,
                         'unit_price'    => $item->unit_price,
                         'total_price'   => $item->quantity * $item->unit_price,

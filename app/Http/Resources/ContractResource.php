@@ -44,12 +44,7 @@ class ContractResource extends JsonResource
                         'unit_price'     => $item->unit_price,
                         'total_price'    => $item->total_price,
                         'specifications' => $item->specifications,
-                        'product'        => $item->product ? [
-                            'id'    => $item->product->id,
-                            'name'  => $item->product->name,
-                            'sku'   => $item->product->sku ?? null,
-                            'brand' => $item->product->brand ?? null,
-                        ] : null,
+                        'product'        => $item->product,
                     ];
                 });
             }),
