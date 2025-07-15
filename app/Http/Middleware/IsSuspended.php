@@ -25,7 +25,7 @@ class IsSuspended
         }
 
         $allowedStatuses = ['active', 'pending'];
-
+        
 
         if (! in_array($user->status, $allowedStatuses)) {
             return $this->getStatusErrorResponse($user->status);
