@@ -16,7 +16,7 @@ class ProductStatusChangedNotification extends Notification implements ShouldQue
     public string $priority;
     public string $message;
     public string $title;
-    public string $read_at;
+    public ?string $read_at;
     public string $created_at;
 
     /**
@@ -37,7 +37,7 @@ class ProductStatusChangedNotification extends Notification implements ShouldQue
         $this->title = 'Product '.Str::title($this->newStatus);
         $this->message = "Your product #{$this->product->id} has been {$this->newStatus}.";
         $this->read_at = null;
-        $this->created_at = now()->toDateTimeString();
+        $this->created_at = now()->toISOString();
 
         $this->onQueue('default');
     }

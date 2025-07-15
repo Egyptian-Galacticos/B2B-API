@@ -14,7 +14,7 @@ class NewContractCreatedNotification extends Notification implements ShouldQueue
     public string $priority;
     public string $message;
     public string $title;
-    public string $read_at;
+    public ?string $read_at;
     public string $created_at;
 
     /**
@@ -30,7 +30,7 @@ class NewContractCreatedNotification extends Notification implements ShouldQueue
         $this->title = 'New Contract Created';
         $this->message = "A new contract #{$this->contract->id} has been created.";
         $this->read_at = null;
-        $this->created_at = now()->toDateTimeString();
+        $this->created_at = now()->toISOString();
 
         $this->onQueue('default');
     }
@@ -57,6 +57,7 @@ class NewContractCreatedNotification extends Notification implements ShouldQueue
             'title'      => $this->title,
             'message'    => $this->message,
             'entity_id'  => $this->contract->id,
+            'status'     => 'created',
             'priority'   => $this->priority,
             'read_at'    => $this->read_at,
             'created_at' => $this->created_at,
